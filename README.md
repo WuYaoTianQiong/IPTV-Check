@@ -48,3 +48,14 @@
 ```bash
 pip install ttkbootstrap
 pip install requests
+```
+
+#### 2. 打包exe文件（自选）
+#### 下载依赖
+```bash
+pip install pyinstaller
+```
+#### 开始打包
+```bash
+pyinstaller --name "IPTV-Check" --onefile --windowed --add-data "assets;assets" --icon="assets/icon.ico" IPTV-Check.py
+```
