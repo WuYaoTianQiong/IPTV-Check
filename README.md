@@ -38,7 +38,7 @@
 强烈建议在此处附上一张程序运行时的截图，以便用户快速了解工具的外观和功能。
 
 **(在这里添加你的截图)**
-`![App Screenshot](path/to/your/screenshot.png)`
+![image](https://github.com/user-attachments/assets/dbd8d1ac-5b89-4e17-b297-7b6ab7959b9c)
 
 ---
 
