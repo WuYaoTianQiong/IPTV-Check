@@ -34,7 +34,8 @@
 ---
 
 ### 程序截图
-![image](https://github.com/user-attachments/assets/dbd8d1ac-5b89-4e17-b297-7b6ab7959b9c)
+![image](https://github.com/user-attachments/assets/0dcb441f-a76a-4338-9d70-5ee81e444ca4)
+
 
 ---
 
