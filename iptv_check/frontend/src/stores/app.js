@@ -7,6 +7,10 @@ import {
   getOnlineSources,
   getResults,
   getResultsStats,
+  getM3uState,
+  startM3uServer,
+  stopM3uServer,
+  getMediaProbeFullStatus,
 } from '../api'
 
 export const useAppStore = defineStore('app', () => {
@@ -26,6 +30,8 @@ export const useAppStore = defineStore('app', () => {
   const searchQuery = ref('')
   const activeView = ref('source')
   const logs = ref([])
+  const m3uState = ref({ running: false, url: '', file_exists: false, valid_channels: 0 })
+  const mediaProbeStatus = ref({ enabled: false, ffmpeg_available: false, usable: false })
 
   const progress = computed(() =>
     checkTotal.value ? Math.round((checkedCount.value / checkTotal.value) * 100) : 0
@@ -83,6 +89,35 @@ export const useAppStore = defineStore('app', () => {
     isChecking.value = data.is_running
   }
 
+  async function fetchM3uState() {
+    try {
+      const { data } = await getM3uState()
+      m3uState.value = data
+    } catch {
+      m3uState.value = { running: false, url: '', file_exists: false, valid_channels: 0 }
+    }
+  }
+
+  async function doStartM3u() {
+    const { data } = await startM3uServer()
+    await fetchM3uState()
+    return data
+  }
+
+  async function doStopM3u() {
+    await stopM3uServer()
+    m3uState.value = { running: false, url: '', file_exists: false, valid_channels: 0 }
+  }
+
+  async function fetchMediaProbeStatus() {
+    try {
+      const { data } = await getMediaProbeFullStatus()
+      mediaProbeStatus.value = data
+    } catch {
+      mediaProbeStatus.value = { enabled: false, ffmpeg_available: false, usable: false }
+    }
+  }
+
   function addLog(message, type = 'info') {
     logs.value.push({
       id: Date.now() + Math.random(),
@@ -105,22 +140,8 @@ export const useAppStore = defineStore('app', () => {
       checkedCount.value++
       if (msg.is_valid) validCount.value++
       else invalidCount.value++
-      
-      // 每10条记录一次详细日志，每50条记录一次汇总
-      if (checkedCount.value % 10 === 0) {
-        const rate = validCount.value / checkedCount.value * 100
-        addLog(`进度 ${checkedCount.value}/${checkTotal.value} | 有效: ${validCount.value} | 无效: ${invalidCount.value} | 有效率: ${rate.toFixed(1)}%`, 'info')
-      } else if (msg.is_valid && checkedCount.value % 3 === 0) {
-        // 每检测3个有效频道时，显示频道名称（给用户反馈）
-        addLog(`✓ ${msg.name} [${msg.latency || '-'}]`, 'success')
-      } else if (checkedCount.value % 20 === 0) {
-        // 每20个频道记录一次简短进度
-        addLog(`已检测 ${checkedCount.value}/${checkTotal.value}`, 'info')
-      }
     } else if (event === 'check_completed') {
       isChecking.value = false
-      // 不使用后端传来的统计数据，保持前端实时累加的结果
-      // 后端发送时可能存在数据未完全同步的问题
       addLog(`检测完成 | 总计: ${checkTotal.value} | 有效: ${validCount.value} | 无效: ${invalidCount.value}`, 'info')
     } else if (event === 'check_started') {
       isChecking.value = true
@@ -128,9 +149,6 @@ export const useAppStore = defineStore('app', () => {
       checkedCount.value = 0
       validCount.value = 0
       invalidCount.value = 0
-      if (logs.value.length > 0 && logs.value[logs.value.length - 1].message.includes('正在启动')) {
-        logs.value.pop()
-      }
       addLog('检测开始', 'info')
     } else if (event === 'channels_loaded') {
       checkTotal.value = msg.total
@@ -158,6 +176,8 @@ export const useAppStore = defineStore('app', () => {
     searchQuery,
     activeView,
     logs,
+    m3uState,
+    mediaProbeStatus,
     progress,
     validRate,
     currentStatus,
@@ -167,6 +187,10 @@ export const useAppStore = defineStore('app', () => {
     fetchOnlineSources,
     fetchResults,
     fetchStats,
+    fetchM3uState,
+    doStartM3u,
+    doStopM3u,
+    fetchMediaProbeStatus,
     addLog,
     clearLogs,
     handleWsMessage,
