@@ -3,7 +3,7 @@ import json
 import time
 import logging
 from typing import Optional, List
-from datetime import datetime
+from datetime import datetime, timedelta
 from contextlib import asynccontextmanager
 
 from sqlmodel import SQLModel, Field, create_engine, Session, select, col
