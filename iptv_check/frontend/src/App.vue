@@ -4,6 +4,7 @@
     <CheckingView v-else-if="store.activeView === 'checking'" />
     <ResultView v-else-if="store.activeView === 'result'" />
     <ReportView v-else-if="store.activeView === 'report'" />
+    <TrendView v-else-if="store.activeView === 'trend'" />
     <ToolboxView v-else-if="store.activeView === 'toolbox'" />
   </AppLayout>
 </template>
@@ -17,6 +18,7 @@ import SourceView from './views/SourceView.vue'
 import CheckingView from './views/CheckingView.vue'
 import ResultView from './views/ResultView.vue'
 import ReportView from './views/ReportView.vue'
+import TrendView from './views/TrendView.vue'
 import ToolboxView from './views/ToolboxView.vue'
 
 const store = useAppStore()

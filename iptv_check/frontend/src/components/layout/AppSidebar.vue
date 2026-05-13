@@ -66,6 +66,7 @@ const navItems = computed(() => [
   { id: 'source', label: '源配置', mobileLabel: '源', icon: Radio },
   { id: 'checking', label: '检测中', mobileLabel: '检测', icon: PlayCircle, badge: store.isChecking ? '进行中' : null },
   { id: 'result', label: '结果', mobileLabel: '结果', icon: BarChart3 },
+  { id: 'trend', label: '趋势', mobileLabel: '趋势', icon: Activity },
   { id: 'toolbox', label: '工具箱', mobileLabel: '工具', icon: Wrench },
 ])
 </script>

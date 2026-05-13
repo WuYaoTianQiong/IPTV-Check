@@ -33,12 +33,14 @@ from iptv_check.infra.exporter import ExportEngine
 from iptv_check.infra.stream_proxy import StreamProxy
 from iptv_check.infra.database import DatabaseManager
 from iptv_check.infra.media_probe import MediaProbe
+from iptv_check.infra.task_scheduler import TaskScheduler
 from iptv_check.core.checker import CheckEngine
 from iptv_check.core.async_checker import AsyncCheckEngine
 from iptv_check.core.isp_detector import ISPDetector
 from iptv_check.core.parser import PlaylistParser
 from iptv_check.core.converter import FormatConverter
 from iptv_check.core.optimizer import SmartOptimizer
+from iptv_check.core.recommender import SourceRecommender
 from iptv_check.config import APP_TITLE, APP_VERSION
 
 logger = logging.getLogger(__name__)
@@ -118,6 +120,10 @@ class AppState:
         self._m3u_service_file = ""
         self._m3u_service_started_at = None
 
+        # 定时任务调度器
+        self._task_scheduler = TaskScheduler()
+        self._scheduled_check_config: Optional[dict] = None
+
         self._load_latest_results()
         self._load_online_sources()
 
@@ -176,6 +182,7 @@ class AppState:
 
     async def stop(self):
         """服务关闭时调用"""
+        await self._task_scheduler.shutdown()
         if self._broadcast_task:
             await self._event_queue.put(None)
             self._broadcast_task.cancel()
@@ -888,6 +895,73 @@ def create_app() -> FastAPI:
             "usable": app_state._use_media_probe and app_state._ffmpeg_available,
         }
 
+    # 智能源推荐 API
+    @app.get("/api/recommend")
+    async def get_recommendations(max_per_group: int = 3, prefer_low_latency: bool = True):
+        if not app_state.check_results:
+            return {"error": "没有检测结果"}
+        recs = SourceRecommender.recommend(
+            app_state.check_results,
+            local_isp=app_state.local_isp,
+            max_channels_per_group=max_per_group,
+            prefer_low_latency=prefer_low_latency,
+        )
+        total = sum(len(v) for v in recs.values())
+        return {
+            "recommendations": {
+                name: [
+                    {
+                        "name": v["channel"].name,
+                        "url": v["result"].channel.url,
+                        "group": v["channel"].group,
+                        "latency": v["result"].latency_display,
+                        "speed": v["result"].speed,
+                        "score": v["score"],
+                        "reasons": v["reasons"],
+                        "sources": v["channel"].sources,
+                    }
+                    for v in variants
+                ]
+                for name, variants in recs.items()
+            },
+            "total_channels": len(recs),
+            "total_variants": total,
+        }
+
+    @app.get("/api/recommend/m3u")
+    async def get_recommend_m3u(max_per_group: int = 3):
+        if not app_state.check_results:
+            raise HTTPException(400, "没有检测结果")
+        recs = SourceRecommender.recommend(
+            app_state.check_results,
+            local_isp=app_state.local_isp,
+            max_channels_per_group=max_per_group,
+        )
+        m3u_content = SourceRecommender.generate_m3u(recs, local_isp=app_state.local_isp)
+        from fastapi.responses import Response
+        return Response(content=m3u_content, media_type="audio/x-mpegurl", headers={"Content-Disposition": "attachment; filename=recommended.m3u"})
+
+    @app.get("/api/recommend/isp")
+    async def get_isp_recommendations(target_isp: str = None):
+        if not app_state.check_results:
+            return {"error": "没有检测结果"}
+        isp = target_isp or app_state.local_isp
+        recs = SourceRecommender.recommend_for_isp(app_state.check_results, isp)
+        return {
+            "isp": isp,
+            "total": len(recs),
+            "channels": [
+                {
+                    "name": r.channel.name,
+                    "url": r.channel.url,
+                    "group": r.channel.group,
+                    "latency": r.latency_display,
+                    "sources": r.channel.sources,
+                }
+                for r in recs
+            ],
+        }
+
     @app.websocket("/ws")
     async def websocket_endpoint(ws: WebSocket):
         await ws.accept()
@@ -903,6 +977,39 @@ def create_app() -> FastAPI:
             pass
         finally:
             app_state.unregister_ws(ws)
+
+    # 定时任务调度 API
+    @app.post("/api/scheduler/start")
+    async def start_scheduled_check(interval_hours: float = 24, file_paths: List[str] = [], online_source_ids: List[str] = []):
+        if app_state._task_scheduler.get_task("auto_check"):
+            raise HTTPException(400, "定时检测已在运行")
+        interval_seconds = int(interval_hours * 3600)
+        async def run_auto_check():
+            req = CheckRequest(
+                file_paths=file_paths or app_state._scheduled_check_config.get("file_paths", []),
+                online_source_ids=online_source_ids or app_state._scheduled_check_config.get("online_source_ids", []),
+            )
+            await _run_streaming_check(req, app_state)
+        app_state._scheduled_check_config = {
+            "file_paths": file_paths,
+            "online_source_ids": online_source_ids,
+            "interval_hours": interval_hours,
+        }
+        app_state._task_scheduler.add_task("auto_check", "自动检测", interval_seconds, run_auto_check)
+        return {"status": "started", "interval_hours": interval_hours}
+
+    @app.post("/api/scheduler/stop")
+    async def stop_scheduled_check():
+        app_state._task_scheduler.remove_task("auto_check")
+        return {"status": "stopped"}
+
+    @app.get("/api/scheduler/state")
+    async def get_scheduler_state():
+        tasks = app_state._task_scheduler.get_all_tasks()
+        return {
+            "tasks": tasks,
+            "config": app_state._scheduled_check_config,
+        }
 
     class UploadRequest(BaseModel):
         filename: str = "upload.m3u"

@@ -54,6 +54,10 @@ export const compareHistory = (h1, h2) => api.get('/trends/history-compare', { p
 
 export const getProxyStats = () => api.get('/proxy/stats')
 
+export const getRecommendations = (maxPerGroup = 3) => api.get('/recommend', { params: { max_per_group: maxPerGroup } })
+export const getRecommendM3u = (maxPerGroup = 3) => api.get('/recommend/m3u', { params: { max_per_group: maxPerGroup }, responseType: 'blob' })
+export const getIspRecommendations = (targetIsp = null) => api.get('/recommend/isp', { params: { target_isp: targetIsp } })
+
 export function createWebSocket(onMessage) {
   const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:'
   const ws = new WebSocket(`${protocol}//${location.host}/ws`)

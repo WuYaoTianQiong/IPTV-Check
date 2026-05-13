@@ -78,33 +78,74 @@
               <div
                 :class="cn(
                   'w-3 h-3 rounded-full',
-                  serverRunning ? 'bg-success' : 'bg-muted-foreground'
+                  m3uRunning ? 'bg-success' : 'bg-muted-foreground'
                 )"
               />
               <div>
                 <div class="text-sm font-medium">服务状态</div>
                 <div class="text-xs text-muted-foreground">
-                  {{ serverRunning ? '运行中' : '已停止' }}
+                  {{ m3uRunning ? '运行中' : '已停止' }}
                 </div>
               </div>
             </div>
             <Button
-              :variant="serverRunning ? 'destructive' : 'default'"
+              :variant="m3uRunning ? 'destructive' : 'default'"
               size="sm"
-              @click="toggleServer"
+              @click="toggleM3uServer"
             >
-              {{ serverRunning ? '停止服务' : '启动服务' }}
+              {{ m3uRunning ? '停止服务' : '启动服务' }}
             </Button>
           </div>
 
-          <div v-if="serverUrl" class="space-y-2">
+          <div v-if="m3uUrl" class="space-y-2">
             <label class="text-sm font-medium">服务地址</label>
             <div class="flex gap-2">
-              <Input :value="serverUrl" readonly class="flex-1" />
-              <Button variant="outline" size="icon" class="shrink-0" @click="copyUrl">
+              <Input :value="m3uUrl" readonly class="flex-1" />
+              <Button variant="outline" size="icon" class="shrink-0" @click="copyM3uUrl">
                 <Copy class="h-4 w-4" />
               </Button>
             </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle class="flex items-center gap-2">
+            <Sparkles class="h-5 w-5 text-primary" />
+            智能源推荐
+          </CardTitle>
+          <CardDescription>
+            基于 ISP 和延迟自动推荐最优频道组合
+          </CardDescription>
+        </CardHeader>
+        <CardContent class="space-y-4">
+          <div class="flex items-center gap-2">
+            <span class="text-sm text-muted-foreground">每组最多</span>
+            <select v-model="recMaxPerGroup" class="rounded border bg-card px-2 py-1 text-sm w-16">
+              <option :value="1">1</option>
+              <option :value="2">2</option>
+              <option :value="3">3</option>
+              <option :value="5">5</option>
+            </select>
+            <span class="text-sm text-muted-foreground">个源</span>
+          </div>
+
+          <Button class="w-full gap-2" @click="loadRecommendations" :disabled="loadingRecs">
+            <Loader2 v-if="loadingRecs" class="h-4 w-4 animate-spin" />
+            <Sparkles v-else class="h-4 w-4" />
+            生成推荐
+          </Button>
+
+          <div v-if="recTotal > 0" class="space-y-2">
+            <div class="flex items-center justify-between text-sm">
+              <span>推荐频道: <strong>{{ recTotal }}</strong></span>
+              <span>总源数: <strong>{{ recVariants }}</strong></span>
+            </div>
+            <Button variant="outline" class="w-full gap-2" @click="downloadRecM3u">
+              <Download class="h-4 w-4" />
+              下载推荐 M3U
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -121,31 +162,101 @@ import {
   Globe,
   Copy,
   Loader2,
+  Sparkles,
+  Download,
 } from 'lucide-vue-next'
 import { cn } from '../lib/utils'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../components/ui/card'
 import { Button } from '../components/ui/button'
 import { Input } from '../components/ui/input'
 import { Select } from '../components/ui/select'
+import { startM3uServer, stopM3uServer, getRecommendations, getRecommendM3u } from '../api'
 
 const convertInput = ref(null)
 const convertFile = ref(null)
 const convertOutputFormat = ref('m3u')
 const converting = ref(false)
-const serverRunning = ref(false)
-const serverUrl = ref('')
+const m3uRunning = ref(false)
+const m3uUrl = ref('')
 const m3uPort = ref(8080)
+
+const recMaxPerGroup = ref(3)
+const loadingRecs = ref(false)
+const recTotal = ref(0)
+const recVariants = ref(0)
 
 onMounted(async () => {
   try {
     const res = await fetch('/api/m3u/state')
     const data = await res.json()
     if (data.running) {
-      serverRunning.value = true
-      serverUrl.value = data.url
+      m3uRunning.value = true
+      m3uUrl.value = data.url
     }
   } catch {}
 })
+
+async function toggleM3uServer() {
+  try {
+    if (m3uRunning.value) {
+      await stopM3uServer()
+      m3uRunning.value = false
+      m3uUrl.value = ''
+    } else {
+      const { data } = await startM3uServer()
+      if (data.url) {
+        m3uRunning.value = true
+        m3uUrl.value = data.url
+      } else {
+        alert('M3U 服务启动失败')
+      }
+    }
+  } catch (e) {
+    alert(`操作失败: ${e.response?.data?.message || e.message}`)
+  }
+}
+
+async function copyM3uUrl() {
+  try {
+    await navigator.clipboard.writeText(m3uUrl.value)
+    alert('已复制到剪贴板')
+  } catch {
+    alert('复制失败')
+  }
+}
+
+async function loadRecommendations() {
+  loadingRecs.value = true
+  try {
+    const { data } = await getRecommendations(recMaxPerGroup.value)
+    if (data.error) {
+      alert(data.error)
+      return
+    }
+    recTotal.value = data.total_channels
+    recVariants.value = data.total_variants
+  } catch (e) {
+    alert(`推荐失败: ${e.response?.data?.message || e.message}`)
+  } finally {
+    loadingRecs.value = false
+  }
+}
+
+async function downloadRecM3u() {
+  try {
+    const res = await getRecommendM3u(recMaxPerGroup.value)
+    const url = URL.createObjectURL(res.data)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'recommended.m3u'
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  } catch (e) {
+    alert('下载失败')
+  }
+}
 
 function handleConvertFile(e) {
   const file = e.target.files?.[0]
@@ -180,36 +291,6 @@ async function doConvert() {
     alert(`转换失败: ${e.message}`)
   } finally {
     converting.value = false
-  }
-}
-
-async function toggleServer() {
-  try {
-    if (serverRunning.value) {
-      await fetch('/api/m3u/stop', { method: 'POST' })
-      serverRunning.value = false
-      serverUrl.value = ''
-    } else {
-      const res = await fetch('/api/m3u/start', { method: 'POST' })
-      const data = await res.json()
-      if (data.url) {
-        serverRunning.value = true
-        serverUrl.value = data.url
-      } else {
-        alert('M3U 服务启动失败')
-      }
-    }
-  } catch (e) {
-    alert(`操作失败: ${e.message}`)
-  }
-}
-
-async function copyUrl() {
-  try {
-    await navigator.clipboard.writeText(serverUrl.value)
-    alert('已复制到剪贴板')
-  } catch {
-    alert('复制失败')
   }
 }
 
