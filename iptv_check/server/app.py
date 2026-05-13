@@ -32,6 +32,7 @@ from iptv_check.infra.check_state_machine import CheckStateMachine
 from iptv_check.infra.exporter import ExportEngine
 from iptv_check.infra.stream_proxy import StreamProxy
 from iptv_check.infra.database import DatabaseManager
+from iptv_check.infra.media_probe import MediaProbe
 from iptv_check.core.checker import CheckEngine
 from iptv_check.core.async_checker import AsyncCheckEngine
 from iptv_check.core.isp_detector import ISPDetector
@@ -110,6 +111,12 @@ class AppState:
         self._async_check_engine: Optional[AsyncCheckEngine] = None
         self._check_state_machine: Optional[CheckStateMachine] = None
         self._use_media_probe = False
+        self._ffmpeg_available = False
+
+        # M3U 服务状态追踪
+        self._m3u_service_running = False
+        self._m3u_service_file = ""
+        self._m3u_service_started_at = None
 
         self._load_latest_results()
         self._load_online_sources()
@@ -150,13 +157,22 @@ class AppState:
             force_close=False,
         )
         self._async_session = aiohttp.ClientSession(connector=connector)
+        self._ffmpeg_available = MediaProbe.is_ffmpeg_available()
         self._async_check_engine = AsyncCheckEngine(
             session=self._async_session,
             cache=self.cache,
             use_media_probe=self._use_media_probe,
         )
         self._check_state_machine = CheckStateMachine()
-        logger.info("异步检测引擎初始化完成")
+        logger.info("异步检测引擎初始化完成，FFmpeg: %s", "可用" if self._ffmpeg_available else "不可用")
+
+        # 恢复 M3U 服务状态
+        m3u_path = os.path.join(BASE_DIR, "exports", "iptv_live.m3u")
+        if os.path.isfile(m3u_path):
+            self._m3u_service_running = True
+            self._m3u_service_file = m3u_path
+            self._m3u_service_started_at = datetime.datetime.utcnow()
+            logger.info("检测到上次遗留的 M3U 文件: %s", m3u_path)
 
     async def stop(self):
         """服务关闭时调用"""
@@ -794,17 +810,43 @@ def create_app() -> FastAPI:
             os.makedirs(os.path.dirname(m3u_path), exist_ok=True)
             with open(m3u_path, "w", encoding="utf-8") as f:
                 f.write(m3u_content)
+            app_state._m3u_service_running = True
+            app_state._m3u_service_file = m3u_path
+            app_state._m3u_service_started_at = datetime.datetime.utcnow()
             return {"status": "started", "url": "http://127.0.0.1:8080/iptv_live.m3u"}
         except Exception as e:
             raise HTTPException(500, f"M3U 服务启动失败: {e}")
 
     @app.post("/api/m3u/stop")
     async def stop_m3u_server():
+        m3u_path = os.path.join(BASE_DIR, "exports", "iptv_live.m3u")
+        if os.path.isfile(m3u_path):
+            try:
+                os.remove(m3u_path)
+                logger.info("M3U 文件已删除")
+            except OSError as e:
+                logger.warning("删除 M3U 文件失败: %s", e)
+        app_state._m3u_service_running = False
+        app_state._m3u_service_file = ""
+        app_state._m3u_service_started_at = None
         return {"status": "stopped"}
 
     @app.get("/api/m3u/state")
     async def m3u_server_state():
-        return {"running": False, "url": ""}
+        m3u_path = os.path.join(BASE_DIR, "exports", "iptv_live.m3u")
+        file_exists = os.path.isfile(m3u_path)
+        if file_exists and not app_state._m3u_service_running:
+            app_state._m3u_service_running = True
+            app_state._m3u_service_file = m3u_path
+        elif not file_exists and app_state._m3u_service_running:
+            app_state._m3u_service_running = False
+            app_state._m3u_service_file = ""
+        return {
+            "running": app_state._m3u_service_running and file_exists,
+            "url": "http://127.0.0.1:8080/iptv_live.m3u" if file_exists else "",
+            "file_exists": file_exists,
+            "valid_channels": len([r for r in app_state.check_results if r.is_valid]) if app_state.check_results else 0,
+        }
 
     @app.get("/api/available-ports")
     async def get_available_ports():
@@ -818,6 +860,33 @@ def create_app() -> FastAPI:
             except OSError:
                 ports.append({"port": port, "available": False})
         return {"ports": ports}
+
+    # 频道趋势分析 API
+    @app.get("/api/trends/channel/{channel_id}")
+    async def get_channel_trend(channel_id: int, days: int = 7):
+        trend = app_state.database.get_channel_trend(channel_id, days)
+        stability = app_state.database.get_channel_stability_stats(channel_id, days)
+        return {
+            "trend": trend,
+            "stability": stability,
+            "days": days,
+        }
+
+    @app.get("/api/trends/stable-channels")
+    async def get_top_stable_channels(days: int = 7, limit: int = 50):
+        return {"channels": app_state.database.get_top_stable_channels(days, limit)}
+
+    @app.get("/api/trends/history-compare")
+    async def compare_history(h1: int, h2: int):
+        return app_state.database.get_history_comparison(h1, h2)
+
+    @app.get("/api/settings/media-probe/status")
+    async def get_media_probe_full_status():
+        return {
+            "enabled": app_state._use_media_probe,
+            "ffmpeg_available": app_state._ffmpeg_available,
+            "usable": app_state._use_media_probe and app_state._ffmpeg_available,
+        }
 
     @app.websocket("/ws")
     async def websocket_endpoint(ws: WebSocket):
