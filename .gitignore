@@ -1,0 +1,89 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.eggs/
+*.egg
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# PyInstaller
+build/
+dist/
+*.manifest
+*.spec
+*.spec.bak
+
+# Node.js
+node_modules/
+.npm/
+_npm_cache/
+package-lock.json
+
+# Temporary files
+temp_player/
+*.tmp
+*.log
+
+# Cache and state files
+check_cache.json
+user_settings.json
+local_sources.json
+.cache/
+*.cache
+
+# Testing
+pytest-*/
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# Test data
+uploads/
+test_playlist.m3u
+*.m3u
+!README.m3u
+
+# Build artifacts
+*.pyc
+*.pyo
+*.pyd
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Art files
+.arts/
+
+# Test scripts
+_test_*.py
+run_tests.py
+
+# Project specific
+IPTV-Check-results.json

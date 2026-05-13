@@ -1,0 +1,17 @@
+__pycache__/
+*.pyc
+*.pyo
+.git/
+.gitignore
+.trae/
+.env
+*.egg-info/
+dist/
+build/
+node_modules/
+data/
+cache_store/
+exports/
+uploads/
+iptv_check/frontend/dist/
+iptv_check/frontend/node_modules/

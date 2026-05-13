@@ -1,0 +1,17 @@
+version: "3.9"
+
+services:
+  iptv-check:
+    build: .
+    container_name: iptv-check
+    ports:
+      - "9528:9528"
+    volumes:
+      - ./data:/app/data
+      - ./cache_store:/app/cache_store
+      - ./exports:/app/exports
+    restart: unless-stopped
+    environment:
+      - PYTHONUNBUFFERED=1
+      - IPTV_CHECK_HOST=0.0.0.0
+      - IPTV_CHECK_PORT=9528
