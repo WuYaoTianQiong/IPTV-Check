@@ -7,9 +7,7 @@ services:
     ports:
       - "9528:9528"
     volumes:
-      - ./data:/app/data
-      - ./cache_store:/app/cache_store
-      - ./exports:/app/exports
+      - ./data:/app/iptv_check/data
     restart: unless-stopped
     environment:
       - PYTHONUNBUFFERED=1

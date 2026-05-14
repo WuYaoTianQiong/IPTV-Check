@@ -28,62 +28,43 @@ build/
 dist/
 *.manifest
 *.spec
-*.spec.bak
 
 # Node.js
 node_modules/
 .npm/
 _npm_cache/
-package-lock.json
 
-# Temporary files
-temp_player/
+# Temporary
 *.tmp
 *.log
 
-# Cache and state files
-check_cache.json
-user_settings.json
-local_sources.json
-.cache/
-*.cache
+# Backend runtime data
+backend/iptv_check/data/
+cache_store/
+data/
+data/
+
+# Frontend build output
+frontend/dist/
 
 # Testing
-pytest-*/
 .pytest_cache/
 .coverage
 htmlcov/
 .tox/
-
-# Test data
-uploads/
-test_playlist.m3u
-*.m3u
-!README.m3u
 
 # Build artifacts
 *.pyc
 *.pyo
 *.pyd
 
-# Jupyter Notebook
-.ipynb_checkpoints
-
 # mypy
 .mypy_cache/
-.dmypy.json
-dmypy.json
 
 # OS
 Thumbs.db
 .DS_Store
 
-# Art files
+# Art / IDE tools
 .arts/
-
-# Test scripts
-_test_*.py
-run_tests.py
-
-# Project specific
-IPTV-Check-results.json
+.codeartsdoer/
