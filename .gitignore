@@ -66,5 +66,18 @@ Thumbs.db
 .DS_Store
 
 # Art / IDE tools
-.arts/
+.art/
 .codeartsdoer/
+
+# Temporary scripts
+_checkpath.py
+_clean_vite.py
+_clean_vite2.py
+_cp.py
+
+# Test output files
+批量检测_*.txt
+批量检测_*.m3u
+批量检测_*.csv
+批量检测_*.xlsx
+*.m3u
