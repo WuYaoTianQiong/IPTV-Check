@@ -1,6 +1,6 @@
 # IPTV-Check 电视直播源检测与管理平台
 
-![Version](https://img.shields.io/badge/Version-5.0-blue.svg)
+![Version](https://img.shields.io/badge/Version-6.0-blue.svg)
 ![Python](https://img.shields.io/badge/Python-3.9+-blue.svg)
 ![License](https://img.shields.io/badge/License-MIT-yellow.svg)
 
@@ -35,6 +35,33 @@
 | **速度测试** | 可选开启每个源的下载速度测试 |
 | **运营商感知** | 自动检测本地宽带运营商，智能匹配兼容的在线源 |
 | **异步引擎** | 纯 aiohttp 异步模型，高并发低资源消耗 |
+| **M3U 完整属性解析** | 解析 tvg-id、tvg-name、tvg-logo、group-title、language、country 等 EXTINF 属性 |
+| **IPv6 自动识别** | 基于地址格式自动识别 IPv6 频道（支持 [xxxx:xxxx] 格式） |
+| **广播电台识别** | 根据分组名称自动识别广播电台频道 |
+
+### 📋 EPG 节目单（新功能）
+
+| 功能 | 说明 |
+|------|------|
+| **XMLTV 格式解析** | 支持解析标准 XMLTV 格式 EPG 数据，提取频道和节目信息 |
+| **三级频道匹配** | 按 tvg-id 精确匹配 → tvg-name 名称匹配 → 频道名模糊匹配，最大化覆盖率 |
+| **节目单查看** | 点击频道日历图标即可查看该频道的完整节目单 |
+| **当前节目高亮** | 正在播出的节目自动高亮标注"正在播放" |
+| **节目时长显示** | 自动计算并显示每个节目的时长（分钟） |
+| **EPG 数据缓存** | 基于 diskcache 的 48 小时 TTL 缓存，避免重复下载 |
+| **手动刷新** | 支持按源手动刷新 EPG 数据 |
+| **EPG 统计** | 实时查看已加载频道数、节目数、缓存状态 |
+
+### 🖼️ 台标管理（新功能）
+
+| 功能 | 说明 |
+|------|------|
+| **台标自动加载** | 频道列表自动加载台标图标，支持 tvg-logo 直链和源 base URL 拼接 |
+| **多源台标匹配** | 优先使用频道自带 tvg-logo，依次从各源的 logo_base_url 搜索 |
+| **台标缓存** | 基于 diskcache 的 30 天 TTL 缓存，二进制存储图片数据 |
+| **批量下载** | 支持批量预下载台标（并发控制，最多 10 个同时） |
+| **自动清理** | 30 天未使用的台标缓存自动清理，释放存储空间 |
+| **Fallback 显示** | 台标加载失败时显示频道名首字母占位符 |
 
 ### 📊 检测报告
 
@@ -68,9 +95,12 @@
 
 | 功能 | 说明 |
 |------|------|
-| **内置源库** | 内置多个精选 IPTV 源（vbskycn、范明明、Kimentanm 等） |
+| **内置源库** | 内置 18 个精选 IPTV 源（国内电视 + 国际电视 + 广播电台三大分类） |
 | **运营商匹配** | 根据本地宽带自动标识兼容的源 |
 | **协议类型标识** | 自动区分 IPv4/IPv6 源 |
+| **质量评级** | S/A/B/C 四级质量评级，直观判断源质量 |
+| **EPG/台标状态** | 源列表显示是否支持 EPG 节目单和台标 |
+| **国内镜像优先** | GitHub 源自动使用国内 CDN 镜像（gh-proxy.com / jsdelivr）加速访问 |
 
 ### 💾 数据持久化
 
@@ -79,6 +109,8 @@
 | **自动保存** | 检测结果自动存入 SQLite 数据库，重启服务不丢失 |
 | **历史记录** | 保留每次检测的快照，支持追溯对比 |
 | **快速加载** | 服务启动时自动恢复上次检测结果 |
+| **多级缓存** | 检测缓存(24h) + EPG缓存(48h) + 台标缓存(30d)，统一 diskcache 管理 |
+| **缓存管理 API** | 支持查看缓存统计、按命名空间清理缓存 |
 
 ### ⭐ 频道收藏
 
@@ -264,14 +296,36 @@ python IPTV-Check.py
 
 内置的在线直播源库包含以下来源（持续更新中）：
 
-| 源名称 | 类型 | 运营商 | 特点 |
-|--------|------|--------|------|
-| vbskycn - IPv4全国源 | IPv4 | 移动/电信/联通 | 带台标和EPG，央视+卫视+地方频道 |
-| vbskycn - IPv6全国源 | IPv6 | 移动/电信/联通 | IPv6专用，高清频道 |
-| 范明明 - IPv6源 | IPv6 | 移动/电信/联通 | 纯IPv6源，国内镜像可用 |
-| Kimentanm - APTV源 | IPv4 | 移动/电信/联通 | 适合APTV播放器 |
-| zbefine - 综合源 | IPv4 | 移动/电信/联通 | 定期维护的综合源 |
-| ChinaIPTV - 实时源 | IPv4 | 移动/电信/联通 | 每15分钟自动更新 |
+#### 国内电视
+
+| 源名称 | 类型 | 运营商 | 评级 | 特点 |
+|--------|------|--------|------|------|
+| 范明明 - IPv6源 | IPv6 | 移动/电信/联通 | S | 国内镜像直连，台标完善，EPG支持 |
+| 范明明 - IPv4源 | IPv4 | 移动/电信/联通 | S | IPv4版本，台标完善，EPG支持 |
+| vbskycn - IPv4全国源 | IPv4 | 移动/电信/联通 | A | 央视+卫视+地方频道，EPG支持 |
+| vbskycn - IPv6全国源 | IPv6 | 移动/电信/联通 | A | IPv6专用，高清频道 |
+| Guovin - IPv4源 | IPv4 | 移动/电信/联通 | A | 自动更新，稳定性高，EPG支持 |
+| Guovin - IPv6源 | IPv6 | 移动/电信/联通 | A | IPv6自动更新源 |
+| Kimentanm - APTV源 | IPv4 | 移动/电信/联通 | A | 适合APTV播放器，台标完善 |
+| suxuang - 我的IPTV | IPv4 | 移动/电信/联通 | B | 个人维护精选源 |
+| zbefine - 综合源 | IPv4 | 移动/电信/联通 | B | 定期维护的综合源 |
+| ChinaIPTV - 实时源 | IPv4 | 移动/电信/联通 | B | 每15分钟自动更新 |
+| YueChan - IPv6源 | IPv6 | 移动/电信/联通 | B | 纯IPv6，高质量频道 |
+
+#### 国际电视
+
+| 源名称 | 类型 | 运营商 | 评级 | 特点 |
+|--------|------|--------|------|------|
+| iptv-org - 中国频道 | IPv4 | 其他 | S | 全球IPTV项目中国频道，1000+频道 |
+| iptv-org - 全球精选 | IPv4 | 其他 | S | 覆盖200+国家，5000+频道 |
+
+#### 广播电台
+
+| 源名称 | 类型 | 运营商 | 评级 | 特点 |
+|--------|------|--------|------|------|
+| IPRD - 中国广播 | IPv4 | 其他 | A | 中国国际广播电台，50+电台 |
+| IPRD - 美国广播 | IPv4 | 其他 | A | 美国广播电台合集，200+电台 |
+| IPRD - 英国广播 | IPv4 | 其他 | A | 英国广播电台合集（BBC等） |
 
 **如何添加自定义源？**
 编辑 `local_sources.json` 文件，按照现有格式添加您的源。
@@ -301,8 +355,10 @@ pyinstaller --name "IPTV-Check" --onefile --windowed --add-data "assets;assets" 
 - **流媒体**：hls.js (浏览器 HLS 播放)
 - **异步 IO**：aiohttp (HTTP 代理 + 检测)
 - **状态管理**：transitions (有限状态机)
-- **缓存**：diskcache (持久化 LRU 缓存)
+- **缓存**：diskcache (持久化 LRU 缓存，多命名空间隔离)
 - **重试**：tenacity + aiohttp-retry
+- **EPG 解析**：xml.etree.ElementTree (XMLTV 标准)
+- **架构模式**：Repository + Service Layer + Event Bus + DI Container
 
 ### 桌面端
 - **GUI 框架**：ttkbootstrap (基于 tkinter)
@@ -329,6 +385,22 @@ MIT License
 ---
 
 ## 更新日志
+
+### V6.0 (架构重构 + EPG/台标/源扩展版)
+- 🏗️ **分层架构重构**：引入 Repository + Service Layer + Event Bus + DI Container 四层架构
+- 🏗️ **模块化路由**：app.py 从 1032 行拆分为 7 个 APIRouter 模块（channels/sources/check/export/epg/logos/cache）
+- 🏗️ **AppState 拆分**：创建 CheckService/BroadcastService/ChannelService/EpgService/LogoService 独立服务
+- 🏗️ **多租户缓存**：基于 diskcache 的多命名空间缓存管理器（detection/epg/logos 隔离）
+- 🏗️ **缓存策略模式**：TTLStrategy / LRUStrategy / PersistentStrategy 可插拔缓存策略
+- ✨ **EPG 节目单**：XMLTV 格式解析 + 三级频道匹配 + 48h 缓存 + 当前节目高亮 + 节目时长计算
+- ✨ **台标管理**：多源台标匹配 + 30d 缓存 + 批量下载 + 自动清理 + Fallback 显示
+- ✨ **M3U 解析增强**：解析 tvg-id/tvg-name/tvg-logo/language/country + IPv6 自动识别 + 广播电台识别
+- ✨ **数据源扩展**：18 个在线源（国内电视 11 + 国际电视 2 + 广播电台 3），7 个 EPG 支持，12 个台标支持
+- ✨ **源分类体系**：国内电视/国际电视/广播电台三大分类 + S/A/B/C 质量评级
+- ✨ **国内镜像**：GitHub 源自动配置 gh-proxy.com / jsdelivr 国内 CDN 镜像
+- ✨ **新增 API**：/api/epg/*、/api/logos/*、/api/cache/*（11 个新端点，总计 48 个）
+- ✨ **前端增强**：LogoImage 台标组件 + EpgGuide 节目单组件 + 源列表评级/EPG/台标状态显示
+- 🔧 **数据模型扩展**：OnlineSource +8 字段（epg_url, logo_base_url, quality_rating 等），Channel +8 字段（tvg_id, tvg_name, logo_url, is_radio 等）
 
 ### V5.0 (架构重构版)
 - 🔧 **架构重构**：引入线程安全状态管理容器（service_state.py）
