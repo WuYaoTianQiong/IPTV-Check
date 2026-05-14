@@ -52,6 +52,7 @@ frontend/dist/
 .coverage
 htmlcov/
 .tox/
+backend/pytest-of-*/
 
 # Build artifacts
 *.pyc
@@ -66,7 +67,7 @@ Thumbs.db
 .DS_Store
 
 # Art / IDE tools
-.art/
+.arts/
 .codeartsdoer/
 
 # Temporary scripts
