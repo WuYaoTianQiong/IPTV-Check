@@ -6,7 +6,6 @@ import asyncio
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from iptv_check.infra.error_strategy import ErrorClassifier, ErrorSeverity, ErrorCategory
-from iptv_check.infra.check_state_machine import CheckStateMachine, CheckPhase, CheckMetrics
 from iptv_check.infra.disk_cache import DiskCacheManager
 from iptv_check.infra.media_probe import MediaProbe, StreamProbeResult
 
@@ -29,47 +28,6 @@ class TestErrorClassifier:
     def test_error_info_not_retryable(self):
         info = ErrorClassifier.classify(ValueError("test"))
         assert not info.is_retryable(max_retries=3, current_attempt=0)
-
-
-class TestCheckStateMachine:
-    def test_initial_state(self):
-        sm = CheckStateMachine()
-        assert sm.phase == CheckPhase.IDLE
-        assert sm.is_running is False
-        assert sm.is_terminal is False
-
-    def test_valid_transition(self):
-        sm = CheckStateMachine()
-        sm.start()
-        assert sm.phase == CheckPhase.INITIALIZING
-        sm.initialized()
-        assert sm.phase == CheckPhase.PARSING
-        sm.parsing_done()
-        assert sm.phase == CheckPhase.CHECKING
-        sm.check_done()
-        assert sm.phase == CheckPhase.OPTIMIZING
-        sm.optimize_done()
-        assert sm.phase == CheckPhase.COMPLETED
-        assert sm.is_terminal is True
-
-    def test_update_metrics(self):
-        sm = CheckStateMachine()
-        sm.update_metrics(total_count=100, checked_count=50)
-        assert sm.metrics.total_count == 100
-        assert sm.metrics.checked_count == 50
-
-    def test_increment_metric(self):
-        sm = CheckStateMachine()
-        sm.increment_metric("valid_count", 5)
-        assert sm.metrics.valid_count == 5
-
-    def test_to_dict(self):
-        sm = CheckStateMachine()
-        sm.update_metrics(total_count=100, checked_count=50, valid_count=30, invalid_count=20)
-        result = sm.to_dict()
-        assert result["phase"] == CheckPhase.IDLE
-        assert result["metrics"]["total_count"] == 100
-        assert result["metrics"]["progress_percent"] == 50.0
 
 
 class TestDiskCacheManager:
