@@ -62,12 +62,26 @@ async def export_results(req: ExportRequest):
     if not results_data:
         raise HTTPException(400, "没有检测结果可导出")
 
+    from iptv_check.models.check_result import CheckResult
+    from iptv_check.models.channel import Channel
+    check_results = []
+    for rd in results_data:
+        ch = Channel(
+            name=rd["channel"]["name"], url=rd["channel"]["url"],
+            group=rd["channel"].get("group", ""), sources=rd["channel"].get("sources", [])
+        )
+        r = CheckResult(
+            channel=ch, is_valid=rd["is_valid"], latency=rd["latency"],
+            speed=rd["speed"], details=rd["details"]
+        )
+        check_results.append(r)
+
     from iptv_check.server.app import DATA_DIR
     export_dir = req.export_dir or os.path.join(DATA_DIR, "exports")
     os.makedirs(export_dir, exist_ok=True)
     try:
         exported = state.export_engine.export_batch(
-            [req.format], results_data, export_dir, req.base_name, local_isp=state.local_isp
+            [req.format], check_results, export_dir, req.base_name, local_isp=state.local_isp
         )
         return {"exported": exported, "dir": export_dir}
     except Exception as e:

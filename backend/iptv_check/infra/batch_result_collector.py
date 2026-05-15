@@ -69,6 +69,8 @@ class BatchResultCollector:
         self._flush_task: Optional[asyncio.Task] = None
         self._running = False
         self._complete_event = asyncio.Event()
+        self._last_progress_broadcast = 0.0
+        self._progress_broadcast_interval = 1.0
 
     @property
     def session_id(self) -> str:
@@ -191,6 +193,11 @@ class BatchResultCollector:
                         self._progress.valid += 1
                     else:
                         self._progress.invalid += 1
+
+                    now = asyncio.get_event_loop().time()
+                    if now - self._last_progress_broadcast >= self._progress_broadcast_interval:
+                        await self._broadcast_progress()
+                        self._last_progress_broadcast = now
 
                     if len(batch) >= self._batch_size:
                         await self._flush_batch(batch)

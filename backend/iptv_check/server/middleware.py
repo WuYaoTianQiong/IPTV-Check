@@ -133,18 +133,25 @@ async def http_exception_handler(request: Request, exc: StarletteHTTPException) 
 
 async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     """Handle any uncaught exceptions"""
+    import traceback
     correlation_id = request.headers.get("X-Correlation-ID") or getattr(request.state, "correlation_id", None)
-    
-    logger.exception(
-        "Unhandled exception: %s",
+
+    tb_str = traceback.format_exc()
+    logger.error(
+        "Unhandled exception in %s %s: %s\n%s",
+        request.method,
+        request.url.path,
         str(exc),
+        tb_str,
         extra={
             "correlation_id": correlation_id,
             "path": request.url.path,
             "method": request.method,
+            "exception_type": type(exc).__name__,
+            "exception_msg": str(exc),
         },
     )
-    
+
     return JSONResponse(
         status_code=500,
         content=format_error_response(
@@ -159,21 +166,23 @@ async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONR
 
 class CorrelationIdMiddleware(BaseHTTPMiddleware):
     """Middleware to inject correlation ID into every request and record metrics"""
-    
+
+    SLOW_REQUEST_THRESHOLD = 2.0  # 2 seconds
+
     async def dispatch(self, request: Request, call_next):
         correlation_id = request.headers.get("X-Correlation-ID")
         if not correlation_id:
             correlation_id = generate_correlation_id()
-        
+
         request.state.correlation_id = correlation_id
-        
+
         start_time = time.time()
         response = await call_next(request)
         process_time = time.time() - start_time
-        
+
         response.headers["X-Correlation-ID"] = correlation_id
         response.headers["X-Process-Time"] = str(round(process_time * 1000, 2))
-        
+
         # Record HTTP metrics
         metrics.record_http_request(
             method=request.method,
@@ -181,7 +190,25 @@ class CorrelationIdMiddleware(BaseHTTPMiddleware):
             status_code=response.status_code,
             duration=process_time,
         )
-        
+
+        # Slow request warning
+        if process_time > self.SLOW_REQUEST_THRESHOLD:
+            logger.warning(
+                "Slow request detected: %s %s took %.2fs (threshold: %.2fs)",
+                request.method,
+                request.url.path,
+                process_time,
+                self.SLOW_REQUEST_THRESHOLD,
+                extra={
+                    "correlation_id": correlation_id,
+                    "path": request.url.path,
+                    "method": request.method,
+                    "duration": process_time,
+                    "threshold": self.SLOW_REQUEST_THRESHOLD,
+                    "event": "slow_request",
+                },
+            )
+
         return response
 
 

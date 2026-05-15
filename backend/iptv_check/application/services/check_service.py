@@ -64,6 +64,7 @@ class CheckService:
         self._session_id = self._event_store.new_session()
         await self._event_store.append(DomainEvents.CHECK_STARTED, {"session_id": self._session_id}, self._session_id)
         await self._broadcast_fn("check_started", {"total": 0, "session_id": self._session_id})
+        await self._broadcast_fn("stage_changed", {"stage": "parsing", "message": "正在解析本地文件..."})
 
         logger.info("[CheckService] 准备创建检测任务")
         task = asyncio.create_task(self._run_check(req))
@@ -146,6 +147,7 @@ class CheckService:
 
         # Phase 2: 下载在线源
         if req.online_source_ids:
+            await self._broadcast_fn("stage_changed", {"stage": "downloading", "message": f"正在下载 {len(req.online_source_ids)} 个在线源..."})
             online_channels = await self._download_sources(req, seen, app_state)
             all_channels.extend(online_channels)
             if online_channels:
@@ -167,12 +169,14 @@ class CheckService:
 
         # Phase 3: 启动检测引擎
         await self._broadcast_fn("channels_loaded", {"total": self._check_total})
+        await self._broadcast_fn("stage_changed", {"stage": "checking", "message": f"正在检测 {self._check_total} 个频道..."})
         logger.info("[检测] 启动检测引擎, 频道数=%d", self._check_total)
 
         self._check_engine.start(all_channels, config, on_result=on_result, on_complete=on_complete)
 
         # Phase 4: 等待完成
         await self._collector.wait_for_complete()
+        await self._broadcast_fn("stage_changed", {"stage": "finalizing", "message": "正在生成报告..."})
 
         with self._lock:
             self._is_running = False
