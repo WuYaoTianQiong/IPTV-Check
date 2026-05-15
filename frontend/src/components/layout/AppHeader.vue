@@ -52,13 +52,16 @@
           <Globe class="h-3 w-3" />
           <span class="hidden sm:inline">{{ store.localIsp }}</span>
           <span class="sm:hidden">{{ store.localIsp.slice(0, 2) }}</span>
+          <Loader2 v-if="store.localIsp === '检测中...' || store.localIsp === '未知'" class="h-3 w-3 animate-spin ml-1" />
         </Badge>
 
         <button
           class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground h-8 w-8"
           @click="store.doRefreshIsp()"
+          :disabled="store.localIsp === '检测中...'"
+          :title="store.localIsp === '检测中...' ? '检测中...' : '刷新运营商'"
         >
-          <RefreshCw class="h-4 w-4" />
+          <RefreshCw :class="cn('h-4 w-4', store.localIsp === '检测中...' && 'animate-spin')" />
         </button>
 
         <button

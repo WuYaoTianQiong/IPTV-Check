@@ -15,9 +15,16 @@ let sse = null
 
 onMounted(async () => {
   await store.fetchInfo()
-  await store.fetchOnlineSources()
   sse = createSSEConnection((msg) => store.handleSSEMessage(msg))
   store.startReconciliation()
+
+  if (store.localIsp === '检测中...' || store.localIsp === '未知') {
+    setTimeout(() => {
+      if (store.localIsp === '检测中...' || store.localIsp === '未知') {
+        store.doRefreshIsp()
+      }
+    }, 10000)
+  }
 })
 
 onUnmounted(() => {

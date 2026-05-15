@@ -19,8 +19,28 @@
       </CardHeader>
       <CardContent>
         <div class="space-y-3 max-h-[480px] overflow-y-auto pr-1">
-          <div v-if="categorizedSources.length === 0" class="text-sm text-muted-foreground py-4 text-center">
-            暂无在线源数据
+          <!-- 加载骨架屏 -->
+          <div v-if="pageLoading" class="space-y-3">
+            <div
+              v-for="i in 6" :key="i"
+              class="rounded-lg bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 dark:from-gray-700 dark:via-gray-600 dark:to-gray-700 animate-pulse"
+              style="height:52px"
+            />
+            <p class="text-xs text-center text-muted-foreground mt-2">正在加载在线源列表...</p>
+          </div>
+          <!-- 加载失败 -->
+          <div v-else-if="loadError" class="text-center py-8">
+            <p class="text-sm text-destructive mb-3">{{ loadError }}</p>
+            <Button variant="outline" size="sm" @click="pageLoading=true; loadError=null; store.fetchOnlineSources().then(()=>{pageLoading=false}).catch(e=>{loadError=e.message||'加载失败';pageLoading=false})">
+              重新加载
+            </Button>
+          </div>
+          <!-- 空数据（非加载状态） -->
+          <div v-else-if="categorizedSources.length === 0" class="text-sm text-muted-foreground py-8 text-center">
+            <p>暂无在线源数据</p>
+            <Button variant="outline" size="sm" class="mt-3" @click="pageLoading=true; loadError=null; store.fetchOnlineSources().then(()=>{pageLoading=false}).catch(e=>{loadError=e.message||'加载失败';pageLoading=false})">
+              重新加载
+            </Button>
           </div>
           <div v-for="cat in categorizedSources" :key="cat.category" class="space-y-1">
             <h4 class="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-2">
@@ -213,7 +233,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import {
   CloudDownload,
   FileUp,
@@ -226,6 +246,8 @@ import {
   Loader2,
 } from 'lucide-vue-next'
 import { useAppStore } from '../stores/app'
+import { useSourceStore } from '../stores/source'
+import { useCheckStore } from '../stores/check'
 import { useRouter } from 'vue-router'
 import { startCheck, uploadFile } from '../api'
 import { useToast } from '../composables/useToast'
@@ -238,12 +260,19 @@ import { Switch } from '../components/ui/switch'
 import { Separator } from '../components/ui/separator'
 
 const store = useAppStore()
+const sourceStore = useSourceStore()
+const checkStore = useCheckStore()
 const router = useRouter()
 const { toast } = useToast()
 const selectedOnlineIds = ref([])
 const uploadedFiles = ref([])
 const fileInput = ref(null)
 const starting = ref(false)
+
+onMounted(() => {
+  sourceStore.fetchOnlineSources().catch(() => {})
+})
+
 const config = reactive({
   timeout_connect: 3,
   timeout_read: 8,
@@ -252,16 +281,9 @@ const config = reactive({
   use_cache: true,
 })
 
-const categorizedSources = computed(() => {
-  const map = {}
-  for (const src of store.onlineSources) {
-    if (src.disabled) continue
-    const cat = src.category || '未分类'
-    if (!map[cat]) map[cat] = []
-    map[cat].push(src)
-  }
-  return Object.entries(map).map(([category, sources]) => ({ category, sources }))
-})
+const categorizedSources = computed(() => sourceStore.categorizedSources)
+const pageLoading = computed(() => sourceStore.isLoading)
+const loadError = computed(() => sourceStore.error)
 
 const canStart = computed(() => selectedOnlineIds.value.length > 0 || uploadedFiles.value.length > 0)
 
@@ -276,7 +298,7 @@ function toggleOnline(id) {
 }
 
 function selectAllMatched() {
-  const matched = store.onlineSources
+  const matched = sourceStore.onlineSources
     .filter(s => !s.disabled && s.isp_compatible)
     .map(s => s.id)
   selectedOnlineIds.value = [...new Set([...selectedOnlineIds.value, ...matched])]
@@ -331,18 +353,13 @@ async function doStart() {
     }
 
     router.push('/checking')
-    store.isChecking = true
-    store.checkTotal = 0
-    store.checkedCount = 0
-    store.validCount = 0
-    store.invalidCount = 0
-    store.logs = []
-    store.addLog('正在启动检测...', 'info')
+    checkStore.startCheckState(0)
+    checkStore.addLog('正在启动检测...', 'info')
 
     await startCheck(payload)
   } catch (e) {
     console.error('启动检测失败:', e)
-    store.isChecking = false
+    checkStore.resetCheckState()
     router.push('/source')
     let msg = '启动检测失败'
     if (e.code === 'ECONNABORTED') {

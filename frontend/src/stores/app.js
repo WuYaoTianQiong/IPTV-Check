@@ -4,59 +4,43 @@ import {
   getInfo,
   getIsp,
   refreshIsp,
-  getOnlineSources,
-  getResults,
-  getResultsStats,
   getM3uState,
   startM3uServer,
   stopM3uServer,
   getMediaProbeFullStatus,
-  getCheckProgress,
   createSSEConnection,
 } from '../api'
 import { useToast } from '../composables/useToast'
-
-const RECONCILIATION_INTERVAL = 5000
+import { useSourceStore } from './source'
+import { useCheckStore } from './check'
+import { useResultStore } from './result'
 
 export const useAppStore = defineStore('app', () => {
   const appInfo = ref({})
   const localIsp = ref('检测中...')
-  const onlineSources = ref([])
-  const isChecking = ref(false)
-  const checkTotal = ref(0)
-  const checkedCount = ref(0)
-  const validCount = ref(0)
-  const invalidCount = ref(0)
-  const checkResults = ref([])
-  const resultsPage = ref(1)
-  const resultsTotal = ref(0)
-  const resultsPerPage = ref(50)
-  const currentTab = ref('all')
-  const searchQuery = ref('')
-  const logs = ref([])
   const m3uState = ref({ running: false, url: '', file_exists: false, valid_channels: 0 })
   const mediaProbeStatus = ref({ enabled: false, ffmpeg_available: false, usable: false })
 
-  let reconciliationTimer = null
+  let ispCheckTimeout = null
+  const ISP_CHECK_TIMEOUT = 10000
 
-  const progress = computed(() =>
-    checkTotal.value ? Math.round((checkedCount.value / checkTotal.value) * 100) : 0
-  )
-  const validRate = computed(() =>
-    checkedCount.value ? Math.round((validCount.value / checkedCount.value) * 100) : 0
-  )
-  const currentStatus = computed(() => {
-    if (!isChecking.value) return '准备就绪'
-    if (checkTotal.value === 0) return '正在加载直播源...'
-    if (checkedCount.value === 0) return `已加载 ${checkTotal.value} 个频道，正在检测...`
-    return `检测中: ${checkedCount.value}/${checkTotal.value}`
-  })
+  const sourceStore = useSourceStore()
+  const checkStore = useCheckStore()
+  const resultStore = useResultStore()
+
+  const isChecking = computed(() => checkStore.isChecking)
+  const onlineSources = computed(() => sourceStore.onlineSources)
+  const checkResults = computed(() => resultStore.checkResults)
 
   async function fetchInfo() {
     const { data } = await getInfo()
     appInfo.value = data
     localIsp.value = data.local_isp
-    isChecking.value = data.is_checking
+    checkStore.isChecking.value = data.is_checking
+
+    if (data.local_isp === '未知' || data.local_isp === '检测中...') {
+      startIspCheckTimeout()
+    }
   }
 
   async function fetchIsp() {
@@ -70,30 +54,20 @@ export const useAppStore = defineStore('app', () => {
   }
 
   async function fetchOnlineSources() {
-    const { data } = await getOnlineSources()
-    onlineSources.value = data.sources
-    if (data.local_isp) localIsp.value = data.local_isp
+    return sourceStore.fetchOnlineSources()
   }
 
   async function fetchResults(params = {}) {
-    const { data } = await getResults({
-      tab: currentTab.value,
-      page: resultsPage.value,
-      per_page: resultsPerPage.value,
-      search: searchQuery.value,
-      ...params,
-    })
-    checkResults.value = data.items
-    resultsTotal.value = data.total
+    return resultStore.fetchResults(params)
   }
 
   async function fetchStats() {
     const { data } = await getResultsStats()
-    checkTotal.value = data.total
-    checkedCount.value = data.checked
-    validCount.value = data.valid
-    invalidCount.value = data.invalid
-    isChecking.value = data.is_running
+    checkStore.checkTotal.value = data.total
+    checkStore.checkedCount.value = data.checked
+    checkStore.validCount.value = data.valid
+    checkStore.invalidCount.value = data.invalid
+    checkStore.isChecking.value = data.is_running
   }
 
   async function fetchM3uState() {
@@ -126,46 +100,19 @@ export const useAppStore = defineStore('app', () => {
   }
 
   function addLog(message, type = 'info') {
-    logs.value.push({
-      id: Date.now() + Math.random(),
-      message,
-      type,
-      time: new Date().toLocaleTimeString(),
-    })
-    if (logs.value.length > 500) {
-      logs.value = logs.value.slice(-300)
-    }
+    checkStore.addLog(message, type)
   }
 
   function clearLogs() {
-    logs.value = []
+    checkStore.clearLogs()
   }
 
   function startReconciliation() {
-    if (reconciliationTimer) return
-    reconciliationTimer = setInterval(async () => {
-      try {
-        const { data } = await getCheckProgress()
-        if (
-          data.total !== checkTotal.value ||
-          data.checked !== checkedCount.value ||
-          data.valid !== validCount.value
-        ) {
-          checkTotal.value = data.total
-          checkedCount.value = data.checked
-          validCount.value = data.valid
-          invalidCount.value = data.invalid
-          isChecking.value = data.is_running
-        }
-      } catch {}
-    }, RECONCILIATION_INTERVAL)
+    checkStore.startReconciliation()
   }
 
   function stopReconciliation() {
-    if (reconciliationTimer) {
-      clearInterval(reconciliationTimer)
-      reconciliationTimer = null
-    }
+    checkStore.stopReconciliation()
   }
 
   function handleSSEMessage(msg) {
@@ -173,72 +120,49 @@ export const useAppStore = defineStore('app', () => {
 
     if (event === 'init') {
       if (msg.local_isp) localIsp.value = msg.local_isp
-      if (msg.is_checking !== undefined) isChecking.value = msg.is_checking
-      if (msg.total !== undefined) checkTotal.value = msg.total
-      if (msg.checked !== undefined) checkedCount.value = msg.checked
-      if (msg.valid !== undefined) validCount.value = msg.valid
-      if (msg.invalid !== undefined) invalidCount.value = msg.invalid
+      if (msg.is_checking !== undefined) checkStore.isChecking.value = msg.is_checking
+      if (msg.total !== undefined) checkStore.checkTotal.value = msg.total
+      if (msg.checked !== undefined) checkStore.checkedCount.value = msg.checked
+      if (msg.valid !== undefined) checkStore.validCount.value = msg.valid
+      if (msg.invalid !== undefined) checkStore.invalidCount.value = msg.invalid
+
+      if (msg.local_isp === '未知' || msg.local_isp === '检测中...') {
+        startIspCheckTimeout()
+      } else {
+        clearIspCheckTimeout()
+      }
+      return
+    }
+
+    if (event === 'isp_updated') {
+      localIsp.value = msg.local_isp
+      clearIspCheckTimeout()
+      addLog(`运营商检测完成：${msg.local_isp}`, 'info')
+      const { toast } = useToast()
+      toast.success('运营商检测完成', `当前运营商：${msg.local_isp}`)
       return
     }
 
     if (event === 'channel_checked') {
-      checkedCount.value++
-      if (msg.is_valid) validCount.value++
-      else invalidCount.value++
-
-      checkResults.value.push({
-        index: checkedCount.value,
-        name: msg.name || '',
-        url: msg.url || '',
-        is_valid: msg.is_valid,
-        latency: msg.latency || '-',
-        speed: msg.speed || '-',
-        status: msg.status || '',
-        group: msg.group || '未分组',
-        sources: msg.sources || '',
-        details: msg.details || '',
-        tag: msg.tag || '',
-      })
-      resultsTotal.value = checkResults.value.length
+      checkStore.handleChannelChecked(msg)
     } else if (event === 'check_completed') {
-      isChecking.value = false
-      if (msg.total !== undefined) checkTotal.value = msg.total
-      if (msg.valid !== undefined) validCount.value = msg.valid
-      if (msg.invalid !== undefined) invalidCount.value = msg.invalid
-      checkedCount.value = msg.total || checkTotal.value
-      resultsTotal.value = checkResults.value.length
-      addLog(`检测完成 | 总计: ${checkTotal.value} | 有效: ${validCount.value} | 无效: ${invalidCount.value}`, 'info')
-      const rate = checkTotal.value ? Math.round((validCount.value / checkTotal.value) * 100) : 0
-      const { toast } = useToast()
-      toast.success('检测完成', `共 ${checkTotal.value} 个频道，有效 ${validCount.value}，有效率 ${rate}%`)
-      if (document.hidden && 'Notification' in window) {
-        try {
-          if (Notification.permission === 'granted') {
-            new Notification('IPTV-Check 检测完成', {
-              body: `共 ${checkTotal.value} 个频道，有效 ${validCount.value}，有效率 ${rate}%`,
-            })
-          } else if (Notification.permission !== 'denied') {
-            Notification.requestPermission()
-          }
-        } catch {}
-      }
+      checkStore.completeCheckState(
+        msg.total || checkStore.checkTotal.value,
+        msg.valid || checkStore.validCount.value,
+        msg.invalid || checkStore.invalidCount.value
+      )
     } else if (event === 'check_started') {
-      isChecking.value = true
-      checkTotal.value = msg.total || 0
-      checkedCount.value = 0
-      validCount.value = 0
-      invalidCount.value = 0
-      checkResults.value = []
-      resultsTotal.value = 0
-      addLog('检测开始', 'info')
-      startReconciliation()
+      checkStore.startCheckState(msg.total || 0)
+      resultStore.reset()
     } else if (event === 'channels_loaded') {
-      if (msg.total !== undefined) checkTotal.value = msg.total
-      addLog(`共加载 ${msg.total} 个频道，开始检测`, 'info')
+      checkStore.handleChannelsLoaded(msg.total)
+    } else if (event === 'progress_update') {
+      checkStore.handleProgressUpdate(msg)
     } else if (event === 'check_stopped') {
-      isChecking.value = false
-      stopReconciliation()
-      addLog('检测已停止', 'warning')
+      checkStore.stopCheckState()
+    } else if (event === 'stage_changed') {
+      checkStore.stage.value = msg.stage || ''
+      checkStore.stageMessage.value = msg.message || ''
     } else if (event === 'health_alert') {
       const { toast } = useToast()
       const unhealthy = msg.unhealthy_sources || []
@@ -255,27 +179,36 @@ export const useAppStore = defineStore('app', () => {
     startReconciliation()
   }
 
+  function startIspCheckTimeout() {
+    if (ispCheckTimeout) return
+    ispCheckTimeout = setTimeout(async () => {
+      if (localIsp.value === '未知' || localIsp.value === '检测中...') {
+        addLog('运营商检测超时，主动重试...', 'warning')
+        try {
+          await doRefreshIsp()
+          clearIspCheckTimeout()
+        } catch (e) {
+          addLog('主动重试失败：' + (e.message || '未知错误'), 'error')
+        }
+      }
+    }, ISP_CHECK_TIMEOUT)
+  }
+
+  function clearIspCheckTimeout() {
+    if (ispCheckTimeout) {
+      clearTimeout(ispCheckTimeout)
+      ispCheckTimeout = null
+    }
+  }
+
   return {
     appInfo,
     localIsp,
-    onlineSources,
-    isChecking,
-    checkTotal,
-    checkedCount,
-    validCount,
-    invalidCount,
-    checkResults,
-    resultsPage,
-    resultsTotal,
-    resultsPerPage,
-    currentTab,
-    searchQuery,
-    logs,
     m3uState,
     mediaProbeStatus,
-    progress,
-    validRate,
-    currentStatus,
+    isChecking,
+    onlineSources,
+    checkResults,
     fetchInfo,
     fetchIsp,
     doRefreshIsp,
@@ -289,8 +222,10 @@ export const useAppStore = defineStore('app', () => {
     addLog,
     clearLogs,
     handleSSEMessage,
+    handleWsMessage,
     initSSE,
     startReconciliation,
     stopReconciliation,
+    clearIspCheckTimeout,
   }
 })

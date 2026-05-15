@@ -4,7 +4,10 @@
       <div>
         <h1 class="text-2xl font-bold tracking-tight">检测结果</h1>
         <p class="text-muted-foreground mt-1">
-          共 {{ store.resultsTotal }} 个频道 · 有效 {{ store.validCount }} · 无效 {{ store.invalidCount }}
+          共 {{ resultStore.resultsTotal }} 个频道 · 有效 {{ checkStore.validCount }} · 无效 {{ checkStore.invalidCount }}
+          <span v-if="historyList.length > 0" class="ml-2 text-xs">
+            · 最近 {{ historyList.length }} 次检测
+          </span>
         </p>
       </div>
       <div class="flex gap-2 flex-wrap">
@@ -20,8 +23,53 @@
       </div>
     </div>
 
+    <!-- 历史检测列表（可折叠） -->
+    <details class="group" v-if="historyList.length > 0">
+      <summary class="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer hover:text-foreground transition-colors select-none py-1">
+        <ChevronRight class="h-4 w-4 group-open:rotate-90 transition-transform" />
+        历史检测 · 最近 {{ historyList.length }} 次
+        <span class="text-xs text-muted-foreground ml-auto">点击切换</span>
+      </summary>
+      <div class="flex gap-2 overflow-x-auto mt-2 pb-2 scrollbar-thin">
+        <div v-for="h in historyList" :key="h.session_id"
+             class="flex flex-col gap-1 min-w-[160px] p-3 rounded-lg cursor-pointer border transition-all"
+             :class="h.session_id === currentSessionId ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50 hover:bg-accent/50'"
+             @click="loadHistorySession(h.session_id)">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-medium">{{ formatTime(h.created_at) }}</span>
+            <Badge v-if="h.session_id === currentSessionId" variant="default" class="text-[10px]">当前</Badge>
+          </div>
+          <div class="text-xs text-muted-foreground">{{ h.total }} 频道</div>
+          <div class="flex gap-2 text-[10px]">
+            <span class="text-green-500">✓ {{ h.valid }} 有效</span>
+            <span class="text-red-500">✗ {{ h.invalid }} 无效</span>
+          </div>
+        </div>
+      </div>
+    </details>
+
     <div class="grid gap-6 lg:grid-cols-[260px_1fr]">
       <div class="space-y-4">
+        <Card>
+          <CardHeader class="pb-2">
+            <CardTitle class="text-sm font-medium">历史检测</CardTitle>
+          </CardHeader>
+          <CardContent class="p-2 space-y-1.5 max-h-[40vh] overflow-y-auto">
+            <div v-for="h in historyList" :key="h.session_id"
+                 class="flex items-center justify-between text-xs px-2 py-1.5 rounded cursor-pointer"
+                 :class="h.session_id === currentSessionId ? 'bg-primary/10 border border-primary/30' : 'hover:bg-accent/50'"
+                 @click="loadHistorySession(h.session_id)">
+              <div class="flex-1 min-w-0">
+                <div class="font-medium truncate">{{ formatTime(h.created_at) }}</div>
+                <div class="text-muted-foreground">{{ h.total }} 频道 · {{ h.valid }} 有效 · {{ h.invalid }} 无效</div>
+              </div>
+            </div>
+            <div v-if="historyList.length === 0" class="text-xs text-muted-foreground text-center py-2">
+              暂无历史记录
+            </div>
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader class="pb-2">
             <CardTitle class="text-sm font-medium">分类导航</CardTitle>
@@ -98,7 +146,7 @@
             <div class="flex flex-col sm:flex-row gap-3">
               <div class="relative flex-1">
                 <Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input v-model="store.searchQuery" placeholder="搜索频道名..." class="pl-9" @input="onSearch" />
+                <Input v-model="resultStore.searchQuery" placeholder="搜索频道名..." class="pl-9" @input="onSearch" />
               </div>
               <div class="flex gap-2 flex-wrap">
                 <select
@@ -115,7 +163,7 @@
                 <Button
                   v-for="tab in tabs" :key="tab.value"
                   variant="outline" size="sm"
-                  :class="store.currentTab === tab.value ? 'bg-primary text-primary-foreground hover:bg-primary/90' : ''"
+                  :class="resultStore.currentTab === tab.value ? 'bg-primary text-primary-foreground hover:bg-primary/90' : ''"
                   @click="switchTab(tab.value)"
                 >
                   {{ tab.label }}
@@ -146,7 +194,7 @@
 
             <div v-if="viewMode === 'grouped'" class="space-y-2">
               <div
-                v-for="item in store.checkResults" :key="item.index"
+                v-for="item in resultStore.checkResults" :key="item.index"
                 class="rounded-lg border p-3 transition-colors hover:border-primary/30"
                 :class="item.has_valid ? 'border-l-2 border-l-success' : 'border-l-2 border-l-destructive'"
               >
@@ -201,7 +249,7 @@
                   </div>
                 </div>
               </div>
-              <div v-if="store.checkResults.length === 0" class="text-center text-muted-foreground py-12">暂无数据</div>
+              <div v-if="resultStore.checkResults.length === 0" class="text-center text-muted-foreground py-12">暂无数据</div>
             </div>
 
             <div v-else class="rounded-lg border overflow-x-auto">
@@ -218,7 +266,7 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="item in store.checkResults" :key="item.index"
+                  <tr v-for="item in resultStore.checkResults" :key="item.index"
                     class="border-b transition-colors hover:bg-accent/50"
                     :class="item.is_valid ? 'border-l-2 border-l-success' : 'border-l-2 border-l-destructive'"
                   >
@@ -249,7 +297,7 @@
                       </div>
                     </td>
                   </tr>
-                  <tr v-if="store.checkResults.length === 0">
+                  <tr v-if="resultStore.checkResults.length === 0">
                     <td colspan="7" class="px-3 py-12 text-center text-muted-foreground">暂无数据</td>
                   </tr>
                 </tbody>
@@ -257,15 +305,15 @@
             </div>
 
             <div class="flex items-center justify-between">
-              <div class="text-sm text-muted-foreground">第 {{ store.resultsPage }} 页 · 共 {{ totalPages }} 页</div>
+              <div class="text-sm text-muted-foreground">第 {{ resultStore.resultsPage }} 页 · 共 {{ totalPages }} 页</div>
               <div class="flex gap-1">
-                <Button variant="outline" size="icon" class="h-8 w-8" :disabled="store.resultsPage <= 1" @click="changePage(store.resultsPage - 1)">
+                <Button variant="outline" size="icon" class="h-8 w-8" :disabled="resultStore.resultsPage <= 1" @click="changePage(resultStore.resultsPage - 1)">
                   <ChevronLeft class="h-4 w-4" />
                 </Button>
                 <Button v-for="p in visiblePages" :key="p" variant="outline" size="sm" class="h-8 min-w-[2rem]"
-                  :class="p === store.resultsPage ? 'bg-primary text-primary-foreground hover:bg-primary/90' : ''"
+                  :class="p === resultStore.resultsPage ? 'bg-primary text-primary-foreground hover:bg-primary/90' : ''"
                   @click="changePage(p)">{{ p }}</Button>
-                <Button variant="outline" size="icon" class="h-8 w-8" :disabled="store.resultsPage >= totalPages" @click="changePage(store.resultsPage + 1)">
+                <Button variant="outline" size="icon" class="h-8 w-8" :disabled="resultStore.resultsPage >= totalPages" @click="changePage(resultStore.resultsPage + 1)">
                   <ChevronRight class="h-4 w-4" />
                 </Button>
               </div>
@@ -289,9 +337,12 @@ import { useRouter } from 'vue-router'
 import {
   Search, ArrowLeft, Wand2, Download, PlayCircle,
   ChevronLeft, ChevronRight, ChevronDown, Calendar,
+  History,
 } from 'lucide-vue-next'
 import { useAppStore } from '../stores/app'
-import { smartOptimize, getCategoryTree, getSourceHealth, getAvailableLanguages } from '../api'
+import { useResultStore } from '../stores/result'
+import { useCheckStore } from '../stores/check'
+import { smartOptimize, getCategoryTree, getSourceHealth, getAvailableLanguages, getCheckHistory } from '../api'
 import { useToast } from '../composables/useToast'
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card'
 import { Button } from '../components/ui/button'
@@ -302,6 +353,8 @@ import ExportDialog from '../components/ExportDialog.vue'
 import EpgGuide from '../components/EpgGuide.vue'
 
 const store = useAppStore()
+const resultStore = useResultStore()
+const checkStore = useCheckStore()
 const router = useRouter()
 const { toast } = useToast()
 const showExport = ref(false)
@@ -334,16 +387,16 @@ const breadcrumb = computed(() => {
 })
 
 const tabs = computed(() => [
-  { value: 'all', label: '全部', count: store.checkTotal },
-  { value: 'valid', label: '有效', count: store.validCount },
-  { value: 'invalid', label: '无效', count: store.invalidCount },
+  { value: 'all', label: '全部', count: checkStore.checkTotal },
+  { value: 'valid', label: '有效', count: checkStore.validCount },
+  { value: 'invalid', label: '无效', count: checkStore.invalidCount },
 ])
 
-const totalPages = computed(() => Math.ceil(store.resultsTotal / store.resultsPerPage) || 1)
+const totalPages = computed(() => Math.ceil(resultStore.resultsTotal / resultStore.resultsPerPage) || 1)
 const visiblePages = computed(() => {
   const pages = []
   const maxVisible = 7
-  let start = Math.max(1, store.resultsPage - Math.floor(maxVisible / 2))
+  let start = Math.max(1, resultStore.resultsPage - Math.floor(maxVisible / 2))
   let end = Math.min(totalPages.value, start + maxVisible - 1)
   if (end - start + 1 < maxVisible) start = Math.max(1, end - maxVisible + 1)
   for (let i = start; i <= end; i++) pages.push(i)
@@ -352,30 +405,29 @@ const visiblePages = computed(() => {
 
 function onSearch() {
   clearTimeout(searchTimer)
-  searchTimer = setTimeout(() => { store.resultsPage = 1; doFetch() }, 400)
+  searchTimer = setTimeout(() => { resultStore.setPage(1); doFetch() }, 400)
 }
 
 function switchTab(tab) {
-  store.currentTab = tab
-  store.resultsPage = 1
+  resultStore.setTab(tab)
   doFetch()
 }
 
 function switchViewMode(mode) {
   viewMode.value = mode
-  store.resultsPage = 1
+  resultStore.setPage(1)
   doFetch()
 }
 
 function switchMediaType(type) {
   mediaType.value = type
-  store.resultsPage = 1
+  resultStore.setPage(1)
   doFetch()
   loadCategoryTree()
 }
 
 function changePage(page) {
-  store.resultsPage = page
+  resultStore.setPage(page)
   doFetch()
 }
 
@@ -383,21 +435,21 @@ function selectRegion(regionName) {
   if (expandedRegion.value === regionName && selectedRegion.value === regionName && !selectedGroup.value) {
     expandedRegion.value = ''
     selectedRegion.value = ''
-    store.resultsPage = 1
+    resultStore.setPage(1)
     doFetch()
     return
   }
   selectedRegion.value = regionName
   selectedGroup.value = ''
   expandedRegion.value = regionName
-  store.resultsPage = 1
+  resultStore.setPage(1)
   doFetch()
 }
 
 function selectGroup(regionName, groupName) {
   selectedRegion.value = regionName
   selectedGroup.value = groupName
-  store.resultsPage = 1
+  resultStore.setPage(1)
   doFetch()
 }
 
@@ -405,7 +457,7 @@ function clearSelection() {
   selectedRegion.value = ''
   selectedGroup.value = ''
   expandedRegion.value = ''
-  store.resultsPage = 1
+  resultStore.setPage(1)
   doFetch()
 }
 
@@ -459,10 +511,10 @@ async function doOptimize() {
 }
 
 function doFetch() {
-  if (store.isChecking && store.checkResults.length > 0) {
+  if (checkStore.isChecking && resultStore.checkResults.length > 0) {
     return
   }
-  store.fetchResults({
+  resultStore.fetchResults({
     view_mode: viewMode.value,
     group_path: selectedGroup.value || '',
     sort: 'best',
@@ -494,15 +546,52 @@ async function loadLanguages() {
 
 function switchLanguage(lang) {
   selectedLanguage.value = lang
-  store.resultsPage = 1
+  resultStore.setPage(1)
   doFetch()
 }
 
-watch(() => store.resultsPerPage, () => { store.resultsPage = 1; doFetch() })
+const historyList = ref([])
+const currentSessionId = ref('')
+
+const historyApi = async () => {
+  try {
+    const res = await getCheckHistory()
+    historyList.value = res.data || []
+    if (historyList.value.length > 0 && !currentSessionId.value) {
+      currentSessionId.value = historyList.value[0].session_id
+    }
+  } catch (e) {
+    console.error('加载历史记录失败:', e)
+  }
+}
+
+async function loadHistorySession(sessionId) {
+  currentSessionId.value = sessionId
+  toast.success('已切换', '加载历史检测结果')
+  resultStore.fetchResults({
+    session_id: sessionId,
+    view_mode: viewMode.value,
+    group_path: selectedGroup.value || '',
+    sort: 'best',
+    media_type: mediaType.value,
+    language: selectedLanguage.value || '',
+  })
+}
+
+function formatTime(timeStr) {
+  if (!timeStr) return ''
+  const d = new Date(timeStr)
+  return d.toLocaleString('zh-CN', {
+    month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit',
+  })
+}
+
+watch(() => resultStore.resultsPerPage, () => { resultStore.setPage(1); doFetch() })
 
 watch([selectedRegion, selectedGroup, viewMode], () => { doFetch() }, { deep: true })
 
 onMounted(async () => {
-  await Promise.all([doFetch(), loadCategoryTree(), loadSourceHealth(), loadLanguages()])
+  await Promise.all([doFetch(), loadCategoryTree(), loadSourceHealth(), loadLanguages(), historyApi()])
 })
 </script>

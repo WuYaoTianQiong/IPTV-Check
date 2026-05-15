@@ -2,7 +2,10 @@
   <div class="space-y-6 max-w-4xl mx-auto">
     <div class="text-center">
       <h1 class="text-2xl font-bold tracking-tight">检测中</h1>
-      <p class="text-muted-foreground mt-1">{{ store.currentStatus }}</p>
+      <p class="text-muted-foreground mt-1">{{ statusText }}</p>
+      <p v-if="checkStore.eta" class="text-xs text-muted-foreground mt-1">
+        预计剩余时间: {{ checkStore.eta }}
+      </p>
     </div>
 
     <Card class="overflow-hidden">
@@ -22,36 +25,36 @@
                 stroke="var(--color-primary)"
                 stroke-width="8"
                 stroke-linecap="round"
-                :stroke-dasharray="`${store.progress * 2.64} 264`"
+                :stroke-dasharray="`${smoothPercent * 2.64} 264`"
                 class="transition-all duration-500 ease-out"
               />
             </svg>
             <div class="absolute inset-0 flex flex-col items-center justify-center">
-              <span class="text-4xl font-bold">{{ store.progress }}%</span>
+              <span class="text-4xl font-bold">{{ smoothPercent }}%</span>
               <span class="text-sm text-muted-foreground">完成</span>
             </div>
           </div>
 
           <div class="grid grid-cols-3 gap-8 mt-8 w-full max-w-md">
             <div class="text-center">
-              <div class="text-3xl font-bold text-success">{{ store.validCount }}</div>
+              <div class="text-3xl font-bold text-success">{{ checkStore.validCount }}</div>
               <div class="text-sm text-muted-foreground mt-1">有效</div>
             </div>
             <div class="text-center">
-              <div class="text-3xl font-bold text-destructive">{{ store.invalidCount }}</div>
+              <div class="text-3xl font-bold text-destructive">{{ checkStore.invalidCount }}</div>
               <div class="text-sm text-muted-foreground mt-1">无效</div>
             </div>
             <div class="text-center">
-              <div class="text-3xl font-bold">{{ store.checkTotal }}</div>
+              <div class="text-3xl font-bold">{{ checkStore.checkTotal }}</div>
               <div class="text-sm text-muted-foreground mt-1">总计</div>
             </div>
           </div>
 
           <div class="w-full mt-6">
-            <Progress :model-value="store.progress" />
+            <Progress :model-value="smoothPercent" class="transition-all duration-300" />
             <div class="flex justify-between mt-2 text-xs text-muted-foreground">
-              <span>已检测 {{ store.checkedCount }} / {{ store.checkTotal }}</span>
-              <span>有效率 {{ store.validRate }}%</span>
+              <span>已检测 {{ checkStore.checkedCount }} / {{ checkStore.checkTotal }}</span>
+              <span>有效率 {{ checkStore.validRate }}%</span>
             </div>
           </div>
         </div>
@@ -72,7 +75,7 @@
             class="h-64 overflow-y-auto rounded-lg bg-muted/50 p-3 font-mono text-xs space-y-1"
           >
             <div
-              v-for="log in store.logs"
+              v-for="log in checkStore.logs"
               :key="log.id"
               :class="cn(
                 'px-2 py-1 rounded',
@@ -85,7 +88,7 @@
               <span class="text-muted-foreground mr-2">{{ log.time }}</span>
               {{ log.message }}
             </div>
-            <div v-if="store.logs.length === 0" class="text-muted-foreground text-center py-8">
+            <div v-if="checkStore.logs.length === 0" class="text-muted-foreground text-center py-8">
               等待检测开始...
             </div>
           </div>
@@ -104,7 +107,7 @@
             variant="destructive"
             class="w-full gap-2"
             @click="doStop"
-            :disabled="!store.isChecking"
+            :disabled="!checkStore.isChecking"
           >
             <Square class="h-4 w-4" />
             停止检测
@@ -112,11 +115,11 @@
           <Button
             class="w-full gap-2"
             @click="goResults"
-            :disabled="store.checkedCount === 0"
+            :disabled="checkStore.checkedCount === 0"
           >
             <BarChart3 class="h-4 w-4" />
             查看结果
-            <Badge v-if="store.isChecking" variant="secondary" class="ml-1 text-[10px]">
+            <Badge v-if="checkStore.isChecking" variant="secondary" class="ml-1 text-[10px]">
               检测中
             </Badge>
           </Button>
@@ -127,7 +130,7 @@
 </template>
 
 <script setup>
-import { ref, watch, nextTick, onMounted, onUnmounted } from 'vue'
+import { ref, watch, nextTick, onMounted, onUnmounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   Terminal,
@@ -135,27 +138,62 @@ import {
   Square,
   BarChart3,
 } from 'lucide-vue-next'
-import { useAppStore } from '../stores/app'
-import { stopCheck, getCheckProgress } from '../api'
+import { useCheckStore } from '../stores/check'
+import { useResultStore } from '../stores/result'
+import { stopCheck } from '../api'
 import { cn } from '../lib/utils'
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card'
 import { Button } from '../components/ui/button'
 import { Progress } from '../components/ui/progress'
 import { Badge } from '../components/ui/badge'
 
-const store = useAppStore()
+const checkStore = useCheckStore()
+const resultStore = useResultStore()
 const router = useRouter()
 const logContainer = ref(null)
 
+const smoothPercent = ref(0)
+let animationFrame = null
+
+watch(() => checkStore.progress, (newVal) => {
+  if (animationFrame) cancelAnimationFrame(animationFrame)
+  const start = smoothPercent.value
+  const diff = newVal - start
+  const duration = 400
+  const startTime = performance.now()
+  function step(now) {
+    const elapsed = now - startTime
+    const t = Math.min(elapsed / duration, 1)
+    const eased = 1 - Math.pow(1 - t, 3)
+    smoothPercent.value = Math.round(start + diff * eased)
+    if (t < 1) {
+      animationFrame = requestAnimationFrame(step)
+    }
+  }
+  animationFrame = requestAnimationFrame(step)
+})
+
+const statusText = computed(() => {
+  if (!checkStore.isChecking) return '准备就绪'
+  const p = checkStore.progress
+  if (p === 0 && checkStore.checkTotal === 0) return '正在加载直播源...'
+  if (p < 5) return '正在下载频道列表...'
+  if (p < 30) return '正在连接各频道...'
+  if (p < 60) return '正在验证流媒体...'
+  if (p < 90) return '正在测试分段可用性...'
+  if (p < 100) return '正在生成报告...'
+  return '检测完成'
+})
+
 onMounted(() => {
-  store.startReconciliation()
+  checkStore.startReconciliation()
 })
 
 onUnmounted(() => {
-  store.stopReconciliation()
+  checkStore.stopReconciliation()
 })
 
-watch(() => store.logs.length, () => {
+watch(() => checkStore.logs.length, () => {
   nextTick(() => {
     if (logContainer.value) {
       logContainer.value.scrollTop = logContainer.value.scrollHeight
@@ -173,6 +211,6 @@ async function doStop() {
 
 function goResults() {
   router.push('/result')
-  store.fetchResults()
+  resultStore.fetchResults()
 }
 </script>
