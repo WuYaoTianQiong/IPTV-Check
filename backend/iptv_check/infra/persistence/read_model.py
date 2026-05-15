@@ -183,41 +183,49 @@ class ReadModel:
         if not sid:
             return {"total": 0, "page": page, "per_page": per_page, "items": []}
 
-        where_clauses = [
-            f"session_id = '{sid}'",
-            "event_type = 'channel_checked'",
-        ]
-        if tab == "valid":
-            where_clauses.append("json_extract(payload, '$.is_valid') = 1")
-        elif tab == "invalid":
-            where_clauses.append("json_extract(payload, '$.is_valid') = 0")
-
-        if media_type == "tv":
-            where_clauses.append("COALESCE(json_extract(payload, '$.is_radio'), 0) = 0")
-        elif media_type == "radio":
-            where_clauses.append("COALESCE(json_extract(payload, '$.is_radio'), 0) = 1")
-
-        if language:
-            lang_safe = language.replace("'", "''")
-            where_clauses.append(f"LOWER(json_extract(payload, '$.language')) = LOWER('{lang_safe}')")
-
-        where_sql = " AND ".join(where_clauses)
-
         with self._session() as session:
+            # Build parameterized query
+            params = {"sid": sid}
+            conditions = ["session_id = :sid", "event_type = 'channel_checked'"]
+
+            if tab == "valid":
+                conditions.append("json_extract(payload, '$.is_valid') = 1")
+            elif tab == "invalid":
+                conditions.append("json_extract(payload, '$.is_valid') = 0")
+
+            if media_type == "tv":
+                conditions.append("COALESCE(json_extract(payload, '$.is_radio'), 0) = 0")
+            elif media_type == "radio":
+                conditions.append("COALESCE(json_extract(payload, '$.is_radio'), 0) = 1")
+
+            if language:
+                conditions.append("LOWER(json_extract(payload, '$.language')) = LOWER(:language)")
+                params["language"] = language
+
+            where_sql = " AND ".join(conditions)
+
             total = _scalar(session,
-                sa_text(f"SELECT COUNT(*) FROM check_events WHERE {where_sql}")
+                sa_text(f"SELECT COUNT(*) FROM check_events WHERE {where_sql}").bindparams(**params)
             ) or 0
 
-            search_clause = ""
+            search_conditions = list(conditions)
+            search_params = dict(params)
             if search:
-                search_safe = search.replace("'", "''").lower()
-                search_clause = f" AND (LOWER(json_extract(payload, '$.name')) LIKE '%{search_safe}%' OR LOWER(json_extract(payload, '$.url')) LIKE '%{search_safe}%')"
+                search_conditions.append(
+                    "(LOWER(json_extract(payload, '$.name')) LIKE :search OR LOWER(json_extract(payload, '$.url')) LIKE :search)"
+                )
+                search_params["search"] = f"%{search.lower()}%"
 
+            search_where = " AND ".join(search_conditions)
             total_with_search = _scalar(session,
-                sa_text(f"SELECT COUNT(*) FROM check_events WHERE {where_sql}{search_clause}")
+                sa_text(f"SELECT COUNT(*) FROM check_events WHERE {search_where}").bindparams(**search_params)
             ) or 0
 
             offset = (page - 1) * per_page
+            query_params = dict(search_params)
+            query_params["limit"] = per_page
+            query_params["offset"] = offset
+
             results = session.exec(
                 sa_text(f"""
                     SELECT
@@ -230,10 +238,10 @@ class ReadModel:
                         json_extract(payload, '$.group') as grp,
                         json_extract(payload, '$.sources') as sources
                     FROM check_events
-                    WHERE {where_sql}{search_clause}
+                    WHERE {search_where}
                     ORDER BY created_at ASC
-                    LIMIT {per_page} OFFSET {offset}
-                """)
+                    LIMIT :limit OFFSET :offset
+                """).bindparams(**query_params)
             ).all()
 
             items = []
@@ -247,7 +255,7 @@ class ReadModel:
                     "sources": r[7] or "",
                     "is_valid": is_valid,
                     "status": "有效" if is_valid else "无效",
-                    "latency": str(int(r[3])) if r[3] and int(r[3]) >= 0 else "-",
+                    "latency": str(int(r[3])) if r[3] and r[3] != "-" and int(r[3]) >= 0 else "-",
                     "speed": r[4] or "-",
                     "details": r[5] or "",
                 })
@@ -261,7 +269,7 @@ class ReadModel:
 
         with self._session() as session:
             results = session.exec(
-                sa_text(f"""
+                sa_text("""
                     SELECT
                         json_extract(payload, '$.name'),
                         json_extract(payload, '$.url'),
@@ -273,9 +281,9 @@ class ReadModel:
                         json_extract(payload, '$.sources'),
                         json_extract(payload, '$.url_key')
                     FROM check_events
-                    WHERE session_id = '{sid}' AND event_type = 'channel_checked'
+                    WHERE session_id = :sid AND event_type = 'channel_checked'
                     ORDER BY created_at ASC
-                """)
+                """).bindparams(sid=sid)
             ).all()
 
             return [
@@ -288,7 +296,7 @@ class ReadModel:
                         "url_key": r[8] or "",
                     },
                     "is_valid": bool(r[2]),
-                    "latency": float(r[3]) if r[3] and float(r[3]) >= 0 else -1,
+                    "latency": float(r[3]) if r[3] and r[3] != "-" and float(r[3]) >= 0 else -1,
                     "speed": r[4] or "-",
                     "details": r[5] or "",
                 }
@@ -306,32 +314,32 @@ class ReadModel:
         with self._session() as session:
             having_clauses = []
             if tab == "valid":
-                having_clauses.append("SUM(CASE WHEN je_is_valid = 1 THEN 1 ELSE 0 END) > 0")
+                having_clauses.append("valid_count > 0")
             elif tab == "invalid":
-                having_clauses.append("SUM(CASE WHEN je_is_valid = 1 THEN 1 ELSE 0 END) = 0")
+                having_clauses.append("valid_count = 0")
 
-            group_where = ""
+            params = {"sid": sid}
+            filters = ["session_id = :sid", "event_type = 'channel_checked'"]
+
             if group_path:
-                gp_safe = group_path.replace("'", "''")
-                group_where = f" AND json_extract(payload, '$.group') = '{gp_safe}'"
+                filters.append("json_extract(payload, '$.group') = :group_path")
+                params["group_path"] = group_path
 
-            search_where = ""
             if search:
-                s_safe = search.replace("'", "''").lower()
-                search_where = f" AND LOWER(json_extract(payload, '$.name')) LIKE '%{s_safe}%'"
+                filters.append("LOWER(json_extract(payload, '$.name')) LIKE :search")
+                params["search"] = f"%{search.lower()}%"
 
-            media_where = ""
             if media_type == "tv":
-                media_where = " AND COALESCE(json_extract(payload, '$.is_radio'), 0) = 0"
+                filters.append("COALESCE(json_extract(payload, '$.is_radio'), 0) = 0")
             elif media_type == "radio":
-                media_where = " AND COALESCE(json_extract(payload, '$.is_radio'), 0) = 1"
+                filters.append("COALESCE(json_extract(payload, '$.is_radio'), 0) = 1")
 
-            language_where = ""
             if language:
-                lang_safe = language.replace("'", "''")
-                language_where = f" AND LOWER(json_extract(payload, '$.language')) = LOWER('{lang_safe}')"
+                filters.append("LOWER(json_extract(payload, '$.language')) = LOWER(:language)")
+                params["language"] = language
 
             having_sql = (" HAVING " + " AND ".join(having_clauses)) if having_clauses else ""
+            where_sql = " AND ".join(filters)
 
             base = f"""
                 SELECT
@@ -341,21 +349,22 @@ class ReadModel:
                     SUM(CASE WHEN json_extract(payload, '$.is_valid') = 1 THEN 1 ELSE 0 END) as valid_count,
                     MIN(CASE WHEN json_extract(payload, '$.is_valid') = 1 AND CAST(json_extract(payload, '$.latency') AS REAL) > 0 THEN CAST(json_extract(payload, '$.latency') AS REAL) END) as best_latency
                 FROM check_events
-                WHERE session_id = '{sid}' AND event_type = 'channel_checked'{group_where}{search_where}{media_where}{language_where}
+                WHERE {where_sql}
                 GROUP BY ch_name
                 {having_sql}
             """
 
-            total = _scalar(session, sa_text(f"SELECT COUNT(*) FROM ({base}) sub")) or 0
+            total = _scalar(session, sa_text(f"SELECT COUNT(*) FROM ({base}) sub").bindparams(**params)) or 0
 
-            order_sql = "best_latency ASC NULLS LAST, valid_count DESC" if sort == "best" else "ch_name ASC"
+            order_sql = "best_latency ASC, valid_count DESC" if sort == "best" else "ch_name ASC"
             offset = (page - 1) * per_page
+            page_params = {**params, "limit": per_page, "offset": offset}
 
             groups = session.exec(sa_text(f"""
                 SELECT ch_name, ch_group, source_count, valid_count, best_latency FROM ({base}) sub
                 ORDER BY {order_sql}
-                LIMIT {per_page} OFFSET {offset}
-            """)).all()
+                LIMIT :limit OFFSET :offset
+            """).bindparams(**page_params)).all()
 
             items = []
             for idx, g in enumerate(groups):
@@ -365,7 +374,8 @@ class ReadModel:
                 valid_count = g[3] or 0
                 best_latency = g[4]
 
-                sources_rows = session.exec(sa_text(f"""
+                detail_params = {"sid": sid, "ch_name": name}
+                sources_rows = session.exec(sa_text("""
                     SELECT
                         json_extract(payload, '$.url'),
                         json_extract(payload, '$.is_valid'),
@@ -374,22 +384,26 @@ class ReadModel:
                         json_extract(payload, '$.details'),
                         json_extract(payload, '$.sources')
                     FROM check_events
-                    WHERE session_id = '{sid}' AND event_type = 'channel_checked'
-                      AND json_extract(payload, '$.name') = '{name.replace("'", "''")}'
-                    ORDER BY CAST(json_extract(payload, '$.latency') AS REAL) ASC NULLS LAST
-                """)).all()
+                    WHERE session_id = :sid AND event_type = 'channel_checked'
+                      AND json_extract(payload, '$.name') = :ch_name
+                    ORDER BY CASE WHEN json_extract(payload, '$.latency') IS NULL THEN 1 ELSE 0 END, CAST(json_extract(payload, '$.latency') AS REAL) ASC
+                """).bindparams(**detail_params)).all()
 
                 sources = []
                 recommended_idx = -1
                 best_score = -1
                 for si, sr in enumerate(sources_rows):
                     is_valid = bool(sr[1])
-                    lat = float(sr[2]) if sr[2] and float(sr[2]) >= 0 else 9999
+                    try:
+                        lat = float(sr[2]) if sr[2] else None
+                    except (ValueError, TypeError):
+                        lat = None
+                    lat = lat if lat is not None and lat >= 0 else 9999
                     score = (1000 if is_valid else 0) + max(0, 1000 - lat)
                     sources.append({
                         "url": sr[0] or "",
                         "is_valid": is_valid,
-                        "latency": str(int(sr[2])) if sr[2] and int(sr[2]) >= 0 else "-",
+                        "latency": str(int(sr[2])) if sr[2] and sr[2] != "-" else "-",
                         "speed": sr[3] or "-",
                         "details": sr[4] or "",
                         "source_name": sr[5] or "",
@@ -404,7 +418,7 @@ class ReadModel:
                     "group": grp,
                     "source_count": source_count,
                     "valid_count": valid_count,
-                    "best_latency": str(int(best_latency)) if best_latency and best_latency > 0 else "-",
+                    "best_latency": str(int(best_latency)) if best_latency and str(best_latency) != "-" and best_latency > 0 else "-",
                     "has_valid": valid_count > 0,
                     "sources": sources,
                     "recommended_source_idx": recommended_idx,
@@ -418,11 +432,15 @@ class ReadModel:
             return []
 
         with self._session() as session:
-            media_where = ""
+            params = {"sid": sid}
+            filters = ["session_id = :sid", "event_type = 'channel_checked'"]
+
             if media_type == "tv":
-                media_where = " AND COALESCE(json_extract(payload, '$.is_radio'), 0) = 0"
+                filters.append("COALESCE(json_extract(payload, '$.is_radio'), 0) = 0")
             elif media_type == "radio":
-                media_where = " AND COALESCE(json_extract(payload, '$.is_radio'), 0) = 1"
+                filters.append("COALESCE(json_extract(payload, '$.is_radio'), 0) = 1")
+
+            where_sql = " AND ".join(filters)
 
             rows = session.exec(sa_text(f"""
                 SELECT
@@ -433,10 +451,10 @@ class ReadModel:
                     COUNT(*) as total,
                     SUM(CASE WHEN json_extract(payload, '$.is_valid') = 1 THEN 1 ELSE 0 END) as valid
                 FROM check_events
-                WHERE session_id = '{sid}' AND event_type = 'channel_checked'{media_where}
+                WHERE {where_sql}
                 GROUP BY grp, country, is_radio, content_type
                 ORDER BY valid DESC, total DESC
-            """)).all()
+            """).bindparams(**params)).all()
 
             tree = {
                 "央视": {"count": 0, "valid": 0, "children": {}},
@@ -523,18 +541,18 @@ class ReadModel:
             return []
 
         with self._session() as session:
-            rows = session.exec(sa_text(f"""
+            rows = session.exec(sa_text("""
                 SELECT
                     json_extract(payload, '$.language') as lang,
                     COUNT(*) as total,
                     SUM(CASE WHEN json_extract(payload, '$.is_valid') = 1 THEN 1 ELSE 0 END) as valid
                 FROM check_events
-                WHERE session_id = '{sid}' AND event_type = 'channel_checked'
+                WHERE session_id = :sid AND event_type = 'channel_checked'
                   AND json_extract(payload, '$.language') IS NOT NULL
                   AND json_extract(payload, '$.language') != ''
                 GROUP BY lang
                 ORDER BY total DESC
-            """)).all()
+            """).bindparams(sid=sid)).all()
 
             return [
                 {"language": r[0] or "", "count": r[1] or 0, "valid": r[2] or 0}

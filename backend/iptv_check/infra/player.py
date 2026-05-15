@@ -9,7 +9,7 @@ from urllib.parse import urlparse, parse_qs
 from typing import Optional
 from io import BytesIO
 
-from iptv_check.infra.config.settings import PLAYER_HTML_TEMPLATE
+from iptv_check.infra.player_renderer import player_renderer
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +28,7 @@ class PlayerService:
         self._http_client = http_client
 
     def play(self, url: str, name: str):
-        self._player_html = PLAYER_HTML_TEMPLATE.format(url=url, name=name)
+        self._player_html = player_renderer.render(url, name)
         port = self._ensure_server()
         if port is not None:
             webbrowser.open(f"http://127.0.0.1:{port}/player.html")

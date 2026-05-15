@@ -33,15 +33,16 @@ class FormatConverter:
                 match = re.search(r",(.+)", line)
                 name = match.group(1).strip() if match else "N/A"
                 lines.append(line)
-            elif "://" in line and not line.startswith("#"):
-                lines.append(f"#EXTINF:-1,{name}")
-                lines.append(line)
-                name = "N/A"
             elif "," in line:
                 parts = line.split(",", 1)
                 if "://" in parts[-1]:
                     lines.append(f"#EXTINF:-1,{parts[0].strip()}")
                     lines.append(parts[1].strip())
+                    name = "N/A"
+            elif "://" in line and not line.startswith("#"):
+                lines.append(f"#EXTINF:-1,{name}")
+                lines.append(line)
+                name = "N/A"
         return "\n".join(lines)
 
     @staticmethod

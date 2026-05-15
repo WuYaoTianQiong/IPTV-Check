@@ -302,7 +302,7 @@ class DatabaseManager:
             # 获取所有频道在该时间段内的检测结果
             query = text("""
                 SELECT 
-                    c.id, c.name, c.url, c.group,
+                    c.id, c.name, c.url, c."group" as channel_group,
                     COUNT(cr.id) as total_checks,
                     SUM(CASE WHEN cr.is_valid = 1 THEN 1 ELSE 0 END) as valid_count,
                     AVG(CASE WHEN cr.is_valid = 1 AND cr.latency > 0 THEN cr.latency END) as avg_latency

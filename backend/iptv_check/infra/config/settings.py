@@ -1,55 +1,56 @@
+"""
+Unified application settings using pydantic-settings.
+All configuration is centralized here with type validation.
+"""
 import os
 import sys
 import json
-import logging
 from pathlib import Path
-from typing import Optional, List
+from typing import Optional
 
 from pydantic_settings import BaseSettings
-from pydantic import Field, field_validator, model_validator
+from pydantic import Field, model_validator
 
-logger = logging.getLogger(__name__)
-
+# ============================================================
+# Path Settings
+# ============================================================
 
 class PathSettings(BaseSettings):
     """统一路径管理，所有路径集中配置并自动校验"""
     
-    """Base directory of the backend package"""
     base_dir: Path = Field(
         default_factory=lambda: Path(__file__).parent.parent.parent,
-        alias="IPTV_BASE_DIR"
+        description="Base directory of the backend package"
     )
     
-    """Data directory for databases, caches, exports"""
-    data_dir: Path = Field(
-        default_factory=lambda: Path(__file__).parent.parent.parent / "data",
-        alias="IPTV_DATA_DIR"
+    data_dir: Optional[Path] = Field(
+        default=None,
+        description="Data directory for databases, caches, exports"
     )
     
-    """Static files directory (frontend build output)"""
-    static_dir: Path = Field(
-        default_factory=lambda: Path(__file__).parent.parent.parent / "static",
-        alias="IPTV_STATIC_DIR"
+    static_dir: Optional[Path] = Field(
+        default=None,
+        description="Static files directory (frontend build output)"
     )
     
     model_config = {
         "env_file": ".env",
         "env_file_encoding": "utf-8",
         "env_prefix": "IPTV_",
-        "populate_by_name": True,
         "extra": "ignore",
     }
 
     @model_validator(mode="after")
-    def validate_paths(self) -> "PathSettings":
-        self.data_dir.mkdir(parents=True, exist_ok=True)
-        return self
-
-    def ensure_dirs(self):
-        """确保所有配置的目录存在"""
+    def set_defaults_and_validate(self) -> "PathSettings":
+        """Set default paths and ensure directories exist"""
+        if self.data_dir is None:
+            self.data_dir = self.base_dir / "data"
+        if self.static_dir is None:
+            self.static_dir = self.base_dir / "static"
+        # Ensure all configured directories exist
         for dir_path in [self.data_dir, self.static_dir]:
             dir_path.mkdir(parents=True, exist_ok=True)
-            logger.debug("Directory ensured: %s", dir_path)
+        return self
 
     @property
     def cache_store_dir(self) -> Path:
@@ -72,79 +73,108 @@ class PathSettings(BaseSettings):
         return self.data_dir / "assets"
 
 
+# ============================================================
+# Application Settings
+# ============================================================
+
 class AppSettings(BaseSettings):
-    cache_expiry_hours: int = Field(24, alias="CACHE_EXPIRY_HOURS")
-    pages_per_view: int = Field(50, alias="PAGES_PER_VIEW")
-
-    max_threads: int = Field(80, alias="MAX_THREADS")
-    min_threads: int = Field(5, alias="MIN_THREADS")
-
-    download_timeout: int = Field(30, alias="DOWNLOAD_TIMEOUT")
-    download_retries: int = Field(3, alias="DOWNLOAD_RETRIES")
-    download_concurrency: int = Field(5, alias="DOWNLOAD_CONCURRENCY")
-
-    breaker_fail_max: int = Field(5, alias="BREAKER_FAIL_MAX")
-    breaker_reset_timeout: int = Field(60, alias="BREAKER_RESET_TIMEOUT")
-
-    reconciliation_interval_ms: int = Field(5000, alias="RECONCILIATION_INTERVAL_MS")
-
-    http_pool_connections: int = Field(10, alias="HTTP_POOL_CONNECTIONS")
-    http_pool_maxsize: int = Field(30, alias="HTTP_POOL_MAXSIZE")
-    http_max_retries: int = Field(3, alias="HTTP_MAX_RETRIES")
-
-    check_timeout_connect: int = Field(3, alias="CHECK_TIMEOUT_CONNECT")
-    check_timeout_read: int = Field(8, alias="CHECK_TIMEOUT_READ")
-
-    stream_proxy_max_connections: int = Field(100, alias="STREAM_PROXY_MAX_CONNECTIONS")
-    stream_proxy_timeout_connect: int = Field(10, alias="STREAM_PROXY_TIMEOUT_CONNECT")
-    stream_proxy_timeout_read: int = Field(30, alias="STREAM_PROXY_TIMEOUT_READ")
-
-    db_path: Optional[str] = Field(None, alias="DB_PATH")
-
-    cors_origins: list[str] = Field(["*"], alias="CORS_ORIGINS")
-
+    """Application configuration with type validation"""
+    
+    # Cache settings
+    cache_expiry_hours: int = Field(default=24, ge=1, le=720)
+    
+    # Pagination
+    pages_per_view: int = Field(default=50, ge=10, le=200)
+    
+    # Thread pool settings
+    max_threads: int = Field(default=80, ge=1, le=500)
+    min_threads: int = Field(default=5, ge=1, le=50)
+    
+    # Download settings
+    download_timeout: int = Field(default=30, ge=5, le=300)
+    download_retries: int = Field(default=3, ge=0, le=10)
+    download_concurrency: int = Field(default=5, ge=1, le=50)
+    
+    # Circuit breaker settings
+    breaker_fail_max: int = Field(default=5, ge=1, le=100)
+    breaker_reset_timeout: int = Field(default=60, ge=10, le=600)
+    
+    # Task reconciliation
+    reconciliation_interval_ms: int = Field(default=5000, ge=1000, le=60000)
+    
+    # HTTP client settings
+    http_pool_connections: int = Field(default=10, ge=1, le=100)
+    http_pool_maxsize: int = Field(default=30, ge=1, le=500)
+    http_max_retries: int = Field(default=3, ge=0, le=10)
+    
+    # Check settings
+    check_timeout_connect: int = Field(default=3, ge=1, le=30)
+    check_timeout_read: int = Field(default=8, ge=1, le=60)
+    
+    # Stream proxy settings
+    stream_proxy_max_connections: int = Field(default=100, ge=1, le=1000)
+    stream_proxy_timeout_connect: int = Field(default=10, ge=1, le=60)
+    stream_proxy_timeout_read: int = Field(default=30, ge=1, le=120)
+    
+    # Database
+    db_path: Optional[str] = Field(default=None)
+    
+    # CORS
+    cors_origins: list[str] = Field(default_factory=lambda: ["*"])
+    
     model_config = {
         "env_file": ".env",
         "env_file_encoding": "utf-8",
         "env_prefix": "IPTV_",
-        "populate_by_name": True,
         "extra": "ignore",
     }
 
 
-settings = AppSettings()
-path_settings = PathSettings()
+# ============================================================
+# App metadata
+# ============================================================
 
-APP_VERSION = "4.0"
+APP_VERSION = "4.1.0"
 APP_TITLE = f"电视直播源检测工具 V{APP_VERSION}"
 
-CACHE_FILE = "check_cache.json"
-CACHE_EXPIRY_HOURS = settings.cache_expiry_hours
-PAGES_PER_VIEW = settings.pages_per_view
-SETTINGS_FILE = "user_settings.json"
+
+# ============================================================
+# Global settings instances (initialized once)
+# ============================================================
+
+path_settings: PathSettings = None  # type: ignore
+settings: AppSettings = None  # type: ignore
 
 
-def get_app_path():
-    if getattr(sys, "frozen", False):
-        return sys._MEIPASS
-    return os.path.dirname(os.path.abspath(__file__))
+def initialize_settings() -> tuple[PathSettings, AppSettings]:
+    """Initialize and return global settings instances"""
+    global path_settings, settings
+    
+    path_settings = PathSettings()
+    settings = AppSettings()
+    
+    return path_settings, settings
 
 
-def get_base_dir():
-    return str(path_settings.base_dir)
+def get_settings() -> AppSettings:
+    """Get app settings (initialize if needed)"""
+    global settings
+    if settings is None:
+        _, settings = initialize_settings()
+    return settings
 
 
-def get_data_dir():
-    return str(path_settings.data_dir)
+def get_path_settings() -> PathSettings:
+    """Get path settings (initialize if needed)"""
+    global path_settings
+    if path_settings is None:
+        path_settings, _ = initialize_settings()
+    return path_settings
 
 
-def get_static_dir():
-    return str(path_settings.static_dir)
-
-
-def get_asset_path(filename):
-    return str(path_settings.data_assets_dir / filename)
-
+# ============================================================
+# ISP Configuration (loaded from file or defaults)
+# ============================================================
 
 _DEFAULT_ISP_KEYWORDS = {
     "移动": ["移动", "chinamobile", "cmcc", "cmcci", "cncmcc", "mobile", "mobaibox", "中国移动", "211.136", "223.110"],
@@ -204,8 +234,10 @@ _DEFAULT_IP_PREFIXES = {
 }
 
 
-def _load_isp_config():
-    config_path = path_settings.data_dir / "isp_config.json"
+def load_isp_config():
+    """Load ISP configuration from file or use defaults"""
+    ps = get_path_settings()
+    config_path = ps.data_dir / "isp_config.json"
     if config_path.exists():
         try:
             with open(config_path, "r", encoding="utf-8") as f:
@@ -216,149 +248,50 @@ def _load_isp_config():
                 data.get("ip_prefixes", _DEFAULT_IP_PREFIXES),
             )
         except Exception as e:
-            logger.warning("加载 isp_config.json 失败，使用默认值: %s", e)
+            import logging
+            logging.getLogger(__name__).warning("加载 isp_config.json 失败，使用默认值: %s", e)
     return _DEFAULT_ISP_KEYWORDS, _DEFAULT_ISP_APIS, _DEFAULT_IP_PREFIXES
 
 
-ISP_KEYWORDS, ISP_APIS, IP_PREFIXES = _load_isp_config()
+ISP_KEYWORDS, ISP_APIS, IP_PREFIXES = load_isp_config()
 
 
-def _load_player_template() -> str:
-    template_path = path_settings.data_assets_dir / "player.html"
-    if template_path.exists():
-        try:
-            with open(template_path, "r", encoding="utf-8") as f:
-                return f.read()
-        except Exception as e:
-            logger.warning("加载 player.html 失败，使用内嵌模板: %s", e)
-    return _DEFAULT_PLAYER_HTML
+# ============================================================
+# Backward compatibility constants
+# ============================================================
+# New code should use `settings.*` and `path_settings.*`
+# These are kept for gradual migration of existing code
+
+# These get updated when initialize_settings() is called
+CACHE_FILE: str = "cache.db"
+CACHE_EXPIRY_HOURS: int = 24
+SETTINGS_FILE: str = "settings.json"
+PLAYER_HTML_TEMPLATE: str = "player.html"
 
 
-_DEFAULT_PLAYER_HTML = """<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>播放：__NAME__</title>
-<script src="/hls-static/hls.min.js"></script>
-<style>
-*{margin:0;padding:0;box-sizing:border-box}
-body{background:#000;color:#fff;font-family:system-ui,-apple-system,sans-serif;display:flex;flex-direction:column;height:100vh}
-.video-wrap{flex:1;display:flex;align-items:center;justify-content:center;position:relative}
-video{width:100%;max-height:100%}
-.bar{background:rgba(0,0,0,0.85);padding:8px 12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;border-top:1px solid rgba(255,255,255,0.1);min-height:40px}
-.bar .label{font-size:12px;color:#aaa;white-space:nowrap}
-.bar .src-btn{font-size:11px;padding:3px 8px;border:1px solid rgba(255,255,255,0.2);border-radius:4px;background:transparent;color:#ccc;cursor:pointer;white-space:nowrap;max-width:200px;overflow:hidden;text-overflow:ellipsis}
-.bar .src-btn:hover{border-color:rgba(255,255,255,0.5);color:#fff}
-.bar .src-btn.active{border-color:#4CAF50;color:#4CAF50;background:rgba(76,175,80,0.1)}
-.bar .src-btn.recommended::after{content:"★";margin-left:2px;color:#FFD700;font-size:9px}
-.toast{position:absolute;top:12px;left:50%;transform:translateX(-50%);background:rgba(76,175,80,0.9);color:#fff;padding:6px 14px;border-radius:6px;font-size:12px;opacity:0;transition:opacity 0.3s;pointer-events:none;z-index:10}
-.toast.show{opacity:1}
-.toast.warn{background:rgba(255,152,0,0.9)}
-</style>
-</head>
-<body>
-<div class="video-wrap">
-  <video id="video" controls autoplay></video>
-  <div id="toast" class="toast"></div>
-</div>
-<div class="bar" id="bar">
-  <span class="label">源列表:</span>
-</div>
-<script>
-var video=document.getElementById('video');
-var bar=document.getElementById('bar');
-var toastEl=document.getElementById('toast');
-var sources=JSON.parse('__SOURCES__');
-var currentIdx=0;
-var hls=null;
-var fallbackTimer=null;
-
-function showToast(msg,type){
-  toastEl.textContent=msg;
-  toastEl.className='toast show'+(type==='warn'?' warn':'');
-  clearTimeout(toastEl._t);
-  toastEl._t=setTimeout(function(){toastEl.className='toast'},3000);
-}
-
-function loadSource(idx){
-  if(idx<0||idx>=sources.length)return;
-  currentIdx=idx;
-  var src=sources[idx];
-  if(hls){hls.destroy();hls=null;}
-  video.onerror=function(){onSourceError(idx)};
-  if(typeof Hls!=='undefined'&&Hls.isSupported()&&src.url.indexOf('.m3u8')>0){
-    hls=new Hls({enableWorker:true,lowLatencyMode:true});
-    hls.loadSource(src.url);
-    hls.attachMedia(video);
-    hls.on(Hls.Events.MANIFEST_PARSED,function(){video.play();showToast('源'+(idx+1)+' 播放中')});
-    hls.on(Hls.Events.ERROR,function(e,data){if(data.fatal)onSourceError(idx)});
-  }else{
-    video.src=src.url;
-    video.play().catch(function(){});
-    showToast('源'+(idx+1)+' 播放中');
-  }
-  updateBar();
-  clearTimeout(fallbackTimer);
-  fallbackTimer=setTimeout(function(){
-    if(video.paused||video.readyState<2){onSourceError(idx)}
-  },15000);
-}
-
-function onSourceError(idx){
-  showToast('源'+(idx+1)+' 不可用，尝试下一个...','warn');
-  var next=idx+1;
-  while(next<sources.length){
-    if(sources[next].is_valid){loadSource(next);return}
-    next++;
-  }
-  if(idx>0){loadSource(0);return}
-  showToast('所有源均不可用','warn');
-}
-
-function updateBar(){
-  var btns=bar.querySelectorAll('.src-btn');
-  btns.forEach(function(b,i){
-    b.className='src-btn'+(i===currentIdx?' active':'')+(sources[i].recommended?' recommended':'');
-  });
-}
-
-sources.forEach(function(src,i){
-  var btn=document.createElement('button');
-  btn.className='src-btn'+(i===0?' active':'')+(src.recommended?' recommended':'');
-  btn.textContent='源'+(i+1)+(src.latency?' ('+src.latency+'ms)':'');
-  btn.title=src.url;
-  btn.onclick=function(){loadSource(i)};
-  bar.appendChild(btn);
-});
-
-if(sources.length>0)loadSource(0);
-</script>
-</body>
-</html>"""
-
-PLAYER_HTML_TEMPLATE_RAW = _load_player_template()
-
-PLAYER_HTML_TEMPLATE = ""
+def render_player_html(stream_url: str = "", channel_name: str = "", **kwargs) -> str:
+    """Render player HTML page for streaming (delegates to PlayerRenderer)"""
+    from iptv_check.infra.player_renderer import player_renderer
+    sources = kwargs.get("sources")
+    return player_renderer.render(stream_url, channel_name, sources=sources)
 
 
-def render_player_html(url: str, name: str, sources: list = None) -> str:
-    import json
+def _update_compat_constants():
+    """Update backward compatibility constants after settings are initialized"""
+    global CACHE_FILE, CACHE_EXPIRY_HOURS, SETTINGS_FILE, PLAYER_HTML_TEMPLATE
+    
+    ps = get_path_settings()
+    s = get_settings()
+    CACHE_FILE = str(ps.data_dir / "cache.db")
+    CACHE_EXPIRY_HOURS = s.cache_expiry_hours
+    SETTINGS_FILE = "settings.json"
+    PLAYER_HTML_TEMPLATE = str(ps.data_dir / "player.html")
 
-    if sources and len(sources) > 1 and "__SOURCES__" in PLAYER_HTML_TEMPLATE_RAW:
-        html = PLAYER_HTML_TEMPLATE_RAW.replace("__NAME__", name)
-        src_json = json.dumps(sources, ensure_ascii=False).replace("'", "\\'")
-        html = html.replace("__URL__", sources[0].get("url", url) if sources else url)
-        html = html.replace("'__SOURCES__'", src_json)
-        return html
 
-    if sources and "__SOURCES__" in _DEFAULT_PLAYER_HTML:
-        html = _DEFAULT_PLAYER_HTML.replace("__NAME__", name)
-        src_json = json.dumps(sources, ensure_ascii=False).replace("'", "\\'")
-        html = html.replace("__URL__", sources[0].get("url", url) if sources else url)
-        html = html.replace("'__SOURCES__'", src_json)
-        return html
-
-    html = PLAYER_HTML_TEMPLATE_RAW.replace("__NAME__", name)
-    html = html.replace("__URL__", url)
-    return html
+# Call during import to ensure constants have valid values
+# (They'll be updated again when initialize_settings() is called)
+try:
+    _update_compat_constants()
+except Exception:
+    # During early import, settings may not be fully initialized yet
+    pass

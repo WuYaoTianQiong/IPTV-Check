@@ -34,6 +34,55 @@ class EventStore:
         self._engine = None
         self._current_session_id: str = ""
         self._write_semaphore = asyncio.Semaphore(1)
+        # Initialize engine first to ensure tables exist
+        _ = self.engine
+        self._load_latest_session()
+        # Seed history from existing completed sessions if table is empty
+        self._seed_history_from_events()
+
+    def _seed_history_from_events(self):
+        """从现有事件数据中导入历史记录（一次性操作）"""
+        from sqlalchemy import text
+        try:
+            with self.engine.connect() as conn:
+                count = conn.execute(text("SELECT COUNT(*) FROM check_history")).fetchone()[0]
+                if count > 0:
+                    return
+                logger.info("正在从事件数据导入历史记录...")
+                result = conn.execute(
+                    text("""
+                        SELECT session_id, COUNT(*) as total
+                        FROM check_events 
+                        WHERE event_type='channel_checked'
+                        GROUP BY session_id
+                        HAVING total > 0
+                        ORDER BY session_id DESC
+                    """)
+                ).fetchall()
+                for row in result:
+                    sid, total = row[0], row[1]
+                    valid = conn.execute(
+                        text("SELECT COUNT(*) FROM check_events WHERE session_id=:sid AND event_type='channel_checked' AND json_extract(payload, '$.is_valid') = 1"),
+                        {"sid": sid}
+                    ).fetchone()[0]
+                    conn.execute(
+                        text("INSERT OR IGNORE INTO check_history (session_id, total, valid, invalid, elapsed, created_at) VALUES (:sid, :total, :valid, :invalid, 0, '')"),
+                        {"sid": sid, "total": total, "valid": valid, "invalid": total - valid}
+                    )
+                conn.commit()
+                logger.info("已导入 %d 条历史记录", len(result))
+        except Exception as e:
+            logger.warning("导入历史记录失败: %s", e)
+
+    def _load_latest_session(self):
+        """Load the latest completed session on startup"""
+        try:
+            latest_id = self.get_latest_session_id()
+            if latest_id:
+                self._current_session_id = latest_id
+                logger.info("恢复上次检测会话: %s", latest_id)
+        except Exception as e:
+            logger.warning("无法恢复上次检测会话: %s", e)
 
     @property
     def engine(self):
@@ -46,6 +95,22 @@ class EventStore:
                 pool_pre_ping=True,
             )
             SQLModel.metadata.create_all(self._engine)
+            # Ensure check_history table exists
+            with self._engine.connect() as conn:
+                from sqlalchemy import text
+                conn.execute(
+                    text("""
+                        CREATE TABLE IF NOT EXISTS check_history (
+                            session_id TEXT PRIMARY KEY,
+                            total INTEGER NOT NULL DEFAULT 0,
+                            valid INTEGER NOT NULL DEFAULT 0,
+                            invalid INTEGER NOT NULL DEFAULT 0,
+                            elapsed REAL NOT NULL DEFAULT 0.0,
+                            created_at TEXT NOT NULL
+                        )
+                    """)
+                )
+                conn.commit()
             logger.info("EventStore 初始化: %s", self._db_path)
         return self._engine
 
@@ -116,12 +181,76 @@ class EventStore:
                 for e in results
             ]
 
-    def get_latest_session_id(self) -> Optional[str]:
-        with self.get_session() as session:
-            result = session.exec(
-                select(CheckEventModel.session_id)
-                .where(CheckEventModel.event_type == "check_started")
-                .order_by(CheckEventModel.created_at.desc())
-                .limit(1)
-            ).first()
-            return result
+    def save_history(self, session_id: str, total: int = 0, valid: int = 0, invalid: int = 0, elapsed: float = 0.0) -> None:
+        """保存本次检测的历史记录到 check_history 表"""
+        from datetime import datetime
+        from sqlalchemy import text
+        
+        try:
+            with self.engine.connect() as conn:
+                conn.execute(
+                    text("""
+                        INSERT OR REPLACE INTO check_history (session_id, total, valid, invalid, elapsed, created_at)
+                        VALUES (:session_id, :total, :valid, :invalid, :elapsed, :created_at)
+                    """),
+                    {
+                        "session_id": session_id,
+                        "total": total,
+                        "valid": valid,
+                        "invalid": invalid,
+                        "elapsed": elapsed,
+                        "created_at": datetime.utcnow().isoformat(),
+                    }
+                )
+                conn.commit()
+            logger.info("保存检测历史: session=%s, total=%d, valid=%d, invalid=%d", session_id, total, valid, invalid)
+        except Exception as e:
+            logger.warning("保存检测历史失败: %s", e)
+
+    def get_latest_session_id(self) -> str:
+        """获取最新完成的会话ID（按channel_checked数量最多的会话）"""
+        from sqlalchemy import text
+        try:
+            with self.engine.connect() as conn:
+                # Find session with most channel_checked events
+                result = conn.execute(
+                    text("""
+                        SELECT session_id, COUNT(*) as cnt 
+                        FROM check_events 
+                        WHERE event_type='channel_checked' 
+                        GROUP BY session_id 
+                        ORDER BY cnt DESC, session_id DESC 
+                        LIMIT 1
+                    """)
+                ).fetchone()
+                if result and result[1] > 0:
+                    logger.info("找到最新会话: %s (%d 个频道)", result[0], result[1])
+                    return result[0]
+                return ""
+        except Exception as e:
+            logger.warning("获取最新会话失败: %s", e)
+            return ""
+
+    def get_history(self, limit: int = 20) -> list[dict]:
+        """获取历史检测记录"""
+        from sqlalchemy import text
+        try:
+            with self.engine.connect() as conn:
+                result = conn.execute(
+                    text("SELECT session_id, total, valid, invalid, elapsed, created_at FROM check_history ORDER BY created_at DESC LIMIT :limit"),
+                    {"limit": limit}
+                ).fetchall()
+                return [
+                    {
+                        "session_id": row[0],
+                        "total": row[1],
+                        "valid": row[2],
+                        "invalid": row[3],
+                        "elapsed": row[4],
+                        "created_at": row[5],
+                    }
+                    for row in result
+                ]
+        except Exception as e:
+            logger.warning("获取历史记录失败: %s", e)
+            return []

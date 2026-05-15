@@ -1,14 +1,16 @@
 import asyncio
 import base64
 import logging
-import re
 import time
+from collections import defaultdict
 from typing import Optional, Set
-from urllib.parse import unquote, urljoin
+from urllib.parse import unquote
 
 import aiohttp
 from aiohttp import web
 from fastapi.responses import Response as FastAPIResponse, StreamingResponse
+
+from iptv_check.infra.hls_rewriter import rewrite_hls_urls
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +29,14 @@ STREAM_CONTENT_TYPES = {
     "video/mp4",
 }
 
+KNOWN_REFERER_MAP = {
+    "nntv.cn": "https://www.nntv.cn/",
+    "livehwc4.com": "https://www.nntv.cn/",
+    "kankanlive.com": "https://www.nntv.cn/",
+    "mobaibox.com": "https://www.baidu.com/",
+    "cntv.cn": "https://www.cctv.com/",
+}
+
 
 class StreamProxy:
     def __init__(
@@ -39,7 +49,7 @@ class StreamProxy:
         self._max_connections = max_connections
         self._timeout_playlist = aiohttp.ClientTimeout(
             connect=timeout_connect,
-            sock_read=timeout_connect,
+            sock_read=timeout_read,
         )
         self._timeout_stream = aiohttp.ClientTimeout(
             connect=timeout_connect,
@@ -49,6 +59,12 @@ class StreamProxy:
         self._error_count = 0
         self._last_stats_time = time.time()
         self._proxy_base = "/proxy"
+        # Per-source error tracking for automatic circuit breaking
+        self._source_errors: dict[str, int] = defaultdict(int)
+        self._source_consecutive_errors: dict[str, int] = defaultdict(int)
+        self._source_circuit_open: dict[str, float] = {}
+        self._circuit_threshold = 5
+        self._circuit_cooldown_secs = 30
 
     async def initialize(self):
         if self._session is None or self._session.closed:
@@ -79,17 +95,36 @@ class StreamProxy:
         try:
             decoded = base64.b64decode(encoded_url).decode("utf-8")
             return unquote(decoded)
+        except UnicodeDecodeError:
+            try:
+                decoded = unquote(encoded_url)
+                decoded = base64.b64decode(decoded).decode("utf-8")
+                return unquote(decoded)
+            except Exception as e2:
+                logger.warning("URL 解码失败 (二次尝试): %s", e2)
+                raise ValueError(f"无效的代理 URL 编码: {str(e2)}")
         except Exception as e:
             logger.warning("URL 解码失败: %s", e)
             raise ValueError(f"无效的代理 URL 编码: {str(e)}")
 
-    def _build_forward_headers(self, request: web.Request) -> dict:
+    def _infer_referer(self, target_url: str) -> str:
+        """根据目标 URL 推断正确的 Referer"""
+        url_lower = target_url.lower()
+        for domain, referer in KNOWN_REFERER_MAP.items():
+            if domain in url_lower:
+                return referer
+        return "https://www.baidu.com/"
+
+    def _build_forward_headers(self, request: web.Request, target_url: str = "") -> dict:
         headers = {}
         for key, value in request.headers.items():
             if key.lower() in FORWARD_HEADERS:
                 headers[key] = value
         if "referer" not in headers:
-            headers["referer"] = "https://www.baidu.com"
+            if target_url:
+                headers["referer"] = self._infer_referer(target_url)
+            else:
+                headers["referer"] = "https://www.baidu.com"
         return headers
 
     def _encode_url(self, url: str) -> str:
@@ -98,7 +133,13 @@ class StreamProxy:
     async def proxy_unified(self, target_url: str, request: web.Request, custom_headers: dict = None):
         self._request_count += 1
         self._maybe_log_stats()
-        forward_headers = self._build_forward_headers(request)
+
+        source_domain = self._extract_domain(target_url)
+        if self._is_source_circuit_open(source_domain):
+            logger.warning("Source circuit OPEN for %s — fast-failing request", source_domain)
+            raise aiohttp.ClientError(f"Circuit open for {source_domain}")
+
+        forward_headers = self._build_forward_headers(request, target_url)
         if custom_headers:
             forward_headers.update(custom_headers)
         try:
@@ -109,10 +150,27 @@ class StreamProxy:
                 ssl=False,
                 allow_redirects=True,
             )
+        except aiohttp.ServerTimeoutError as e:
+            self._error_count += 1
+            self._record_source_error(source_domain)
+            logger.warning("代理请求超时 [%s → %s]: %s", source_domain, target_url[:80], e)
+            raise
+        except aiohttp.ClientConnectorError as e:
+            self._error_count += 1
+            self._record_source_error(source_domain)
+            logger.warning("代理连接拒绝 [%s → %s]: %s", source_domain, target_url[:80], e)
+            raise
+        except aiohttp.ClientSSLError as e:
+            self._error_count += 1
+            logger.warning("代理SSL错误 [%s → %s]: %s", source_domain, target_url[:80], e)
+            raise
         except aiohttp.ClientError as e:
             self._error_count += 1
-            logger.warning("代理请求失败 [%s]: %s", target_url, e)
+            self._record_source_error(source_domain)
+            logger.warning("代理请求失败 [%s → %s]: %s", source_domain, target_url[:80], e)
             raise
+
+        self._record_source_ok(source_domain)
 
         content_type = response.headers.get("Content-Type", "").lower()
 
@@ -122,7 +180,11 @@ class StreamProxy:
             except Exception as e:
                 logger.warning("读取播放列表内容失败: %s", e)
                 raise
-            modified_playlist = self._rewrite_hls_urls(playlist_content, target_url)
+            modified_playlist = self._rewrite_hls_urls(
+                playlist_content, target_url,
+                request_scheme=request.url.scheme,
+                request_host=request.url.netloc,
+            )
             return FastAPIResponse(
                 content=modified_playlist,
                 media_type="application/vnd.apple.mpegurl",
@@ -151,29 +213,21 @@ class StreamProxy:
         finally:
             response.close()
 
-    def _rewrite_hls_urls(self, playlist_content: str, original_url: str) -> str:
-        m3u8_url = original_url.split("?")[0]
-        base_url = m3u8_url.rsplit("/", 1)[0] + "/"
-
-        def replace_url(match):
-            url = match.group(0)
-            if url.startswith(("http://", "https://")):
-                encoded = self._encode_url(url)
-                return f"{self._proxy_base}?url={encoded}"
-            elif not url.startswith("#"):
-                full_url = urljoin(base_url, url)
-                encoded = self._encode_url(full_url)
-                return f"{self._proxy_base}?url={encoded}"
-            return url
-
-        pattern = r'(?:https?://[^\s"\'#,]+|[^\s"\'#,]+\.(?:m3u8|ts|aac|mp4|mp3)[^\s"\'#,]*)'
-        return re.sub(pattern, replace_url, playlist_content)
+    def _rewrite_hls_urls(self, playlist_content: str, original_url: str, request_scheme: str = "http", request_host: str = "") -> str:
+        """Rewrite HLS URLs to use proxy (delegates to hls_rewriter module)."""
+        proxy_base = f"{request_scheme}://{request_host}/proxy" if request_host else self._proxy_base
+        return rewrite_hls_urls(playlist_content, original_url, proxy_base=proxy_base)
 
     async def proxy_stream(self, target_url: str, request: web.Request):
         self._request_count += 1
         self._maybe_log_stats()
 
-        forward_headers = self._build_forward_headers(request)
+        source_domain = self._extract_domain(target_url)
+        if self._is_source_circuit_open(source_domain):
+            logger.warning("Source circuit OPEN for %s — fast-failing stream", source_domain)
+            raise aiohttp.ClientError(f"Circuit open for {source_domain}")
+
+        forward_headers = self._build_forward_headers(request, target_url)
 
         try:
             response = await self._session.get(
@@ -185,9 +239,11 @@ class StreamProxy:
             )
         except aiohttp.ClientError as e:
             self._error_count += 1
+            self._record_source_error(source_domain)
             logger.warning("代理请求失败 [%s]: %s", target_url, e)
             raise
 
+        self._record_source_ok(source_domain)
         content_type = response.headers.get("Content-Type", "application/octet-stream")
 
         response_headers = {
@@ -220,7 +276,12 @@ class StreamProxy:
     async def proxy_hls_playlist(self, target_url: str, request: web.Request):
         self._request_count += 1
 
-        forward_headers = self._build_forward_headers(request)
+        source_domain = self._extract_domain(target_url)
+        if self._is_source_circuit_open(source_domain):
+            logger.warning("Source circuit OPEN for %s — fast-failing playlist", source_domain)
+            raise aiohttp.ClientError(f"Circuit open for {source_domain}")
+
+        forward_headers = self._build_forward_headers(request, target_url)
 
         try:
             response = await self._session.get(
@@ -232,8 +293,11 @@ class StreamProxy:
             )
         except aiohttp.ClientError as e:
             self._error_count += 1
+            self._record_source_error(source_domain)
             logger.warning("HLS 播放列表获取失败 [%s]: %s", target_url, e)
             raise
+
+        self._record_source_ok(source_domain)
 
         try:
             playlist_content = await response.text()
@@ -241,7 +305,7 @@ class StreamProxy:
             logger.warning("读取播放列表内容失败: %s", e)
             raise
 
-        modified_playlist = self._rewrite_hls_urls(playlist_content, target_url)
+        modified_playlist = self._rewrite_hls_urls(playlist_content, target_url, request_scheme=request.scheme, request_host=request.host)
 
         return web.Response(
             text=modified_playlist,
@@ -267,8 +331,54 @@ class StreamProxy:
             self._last_stats_time = now
 
     def get_stats(self) -> dict:
+        circuits_open = list(self._source_circuit_open.keys())
         return {
             "total_requests": self._request_count,
             "total_errors": self._error_count,
             "session_open": self._session is not None and not self._session.closed,
+            "source_errors": dict(self._source_errors),
+            "circuits_open": circuits_open,
         }
+
+    # ──── source health tracking (circuit breaker) ────
+
+    def _record_source_ok(self, source_domain: str):
+        """Clear error state for a healthy source."""
+        self._source_consecutive_errors.pop(source_domain, None)
+        self._source_circuit_open.pop(source_domain, None)
+
+    def _record_source_error(self, source_domain: str):
+        """Increment error counter and open circuit if threshold exceeded."""
+        self._source_errors[source_domain] += 1
+        consecutive = self._source_consecutive_errors[source_domain] + 1
+        self._source_consecutive_errors[source_domain] = consecutive
+        if consecutive >= self._circuit_threshold:
+            self._source_circuit_open[source_domain] = time.time()
+            logger.warning(
+                "Source circuit OPEN for %s after %d consecutive errors",
+                source_domain, consecutive,
+            )
+
+    def _is_source_circuit_open(self, source_domain: str) -> bool:
+        """Check if the circuit for a source is currently open (blocked)."""
+        opened_at = self._source_circuit_open.get(source_domain)
+        if opened_at is None:
+            return False
+        elapsed = time.time() - opened_at
+        if elapsed > self._circuit_cooldown_secs:
+            # Cooldown expired: reset to half-open for next attempt
+            self._source_consecutive_errors[source_domain] = 0
+            del self._source_circuit_open[source_domain]
+            logger.info("Source circuit HALF-OPEN for %s after %.1fs cooldown", source_domain, elapsed)
+            return False
+        return True
+
+    def _extract_domain(self, url: str) -> str:
+        """Extract a simplified domain key from a URL for tracking."""
+        url_lower = url.lower()
+        for prefix in ("http://", "https://"):
+            if url_lower.startswith(prefix):
+                rest = url_lower[len(prefix):]
+                domain = rest.split("/")[0].split(":")[0].split("?")[0]
+                return domain
+        return url_lower.split("/")[0].split("?")[0]

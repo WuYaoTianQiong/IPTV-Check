@@ -9,6 +9,7 @@ class CheckConfig:
     min_threads: int = 5
     run_speed_test: bool = True
     use_cache: bool = True
+    max_latency_ms: int = 5000
 
     @property
     def timeout_tuple(self) -> tuple:
