@@ -1,1 +1,0 @@
-import{o as s,a as r,H as t,m as a,u as o,e as n}from"./index-Dn36SyW_.js";const l={__name:"CardDescription",setup(c){return(e,m)=>(s(),r("p",a({class:o(n)("text-sm text-muted-foreground",e.$attrs.class??"")},e.$attrs),[t(e.$slots,"default")],16))}};export{l as _};
