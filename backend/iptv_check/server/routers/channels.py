@@ -1,7 +1,7 @@
 import logging
 from typing import List, Optional
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 from sqlmodel import select
 
@@ -15,69 +15,112 @@ class UploadRequest(BaseModel):
 
 
 def _get_state():
-    from iptv_check.server.app import app_state
-    return app_state
+    """获取 AppState 单例实例"""
+    try:
+        from iptv_check.server.app import AppState
+        return AppState.get_instance()
+    except Exception:
+        from iptv_check.server.app import app_state
+        return app_state
 
 
 def _get_check_service():
-    from iptv_check.server.app import app_state
-    return app_state._check_service
+    state = _get_state()
+    if state is None:
+        return None
+    return state._check_service
 
 
 @router.get("/results")
-async def get_results(tab: str = "all", page: int = 1, per_page: int = 50, search: str = "",
-                      group_path: str = "", view_mode: str = "grouped", sort: str = "best",
-                      media_type: str = "all", language: str = ""):
-    state = _get_state()
-    service = _get_check_service()
+async def get_results(
+    tab: str = "all",
+    page: int = 1,
+    per_page: int = 50,
+    search: str = "",
+    group_path: str = "",
+    view_mode: str = "grouped",
+    sort: str = "best",
+    media_type: str = "all",
+    language: str = "",
+    session_id: str = "",
+):
+    """获取检测结果，支持通过 session_id 查看历史会话"""
+    import traceback
+    import sys
+    try:
+        state = _get_state()
+        service = _get_check_service()
 
-    if service and service.session_id:
-        if view_mode == "grouped":
-            return state.read_model.get_grouped_channels(
-                session_id=service.session_id,
-                tab=tab, group_path=group_path, page=page, per_page=per_page,
-                search=search, sort=sort, media_type=media_type, language=language,
-            )
-        return state.read_model.get_checked_channels(
-            session_id=service.session_id,
-            tab=tab, page=page, per_page=per_page, search=search,
-            media_type=media_type, language=language,
-        )
+        # session_id 优先级：URL 参数 > service.session_id > event_store.current_session_id
+        effective_session_id = session_id or (service.session_id if service else "") or (state.event_store.current_session_id if state else "")
 
-    if not state.is_checking and state.database:
-        try:
-            return state.database.query_results_paginated(tab=tab, page=page, per_page=per_page, search=search)
-        except Exception:
-            pass
+        if effective_session_id:
+            try:
+                if view_mode == "grouped":
+                    return state.read_model.get_grouped_channels(
+                        session_id=effective_session_id,
+                        tab=tab, group_path=group_path, page=page, per_page=per_page,
+                        search=search, sort=sort, media_type=media_type, language=language,
+                    )
+                return state.read_model.get_checked_channels(
+                    session_id=effective_session_id,
+                    tab=tab, page=page, per_page=per_page, search=search,
+                    media_type=media_type, language=language,
+                )
+            except Exception as e:
+                logger.error("获取检测结果失败: %s\n%s", e, traceback.format_exc())
+                return {"total": 0, "page": page, "per_page": per_page, "items": [], "error": str(e)}
 
-    return {"total": 0, "page": page, "per_page": per_page, "items": []}
+        if state and not state.is_checking and state.database:
+            try:
+                return state.database.query_results_paginated(tab=tab, page=page, per_page=per_page, search=search)
+            except Exception as e:
+                logger.error("查询历史结果失败: %s\n%s", e, traceback.format_exc())
+
+        return {"total": 0, "page": page, "per_page": per_page, "items": []}
+    except Exception as e:
+        print(f"[CRITICAL ERROR in /api/results] {type(e).__name__}: {e}", file=sys.stderr)
+        traceback.print_exc(file=sys.stderr)
+        raise
 
 
 @router.get("/results/category-tree")
 async def get_category_tree(media_type: str = "all"):
     state = _get_state()
     service = _get_check_service()
-    if not service or not service.session_id:
+    if not state or not service or not service.session_id:
         return []
-    return state.read_model.get_category_tree(session_id=service.session_id, media_type=media_type)
+    try:
+        return state.read_model.get_category_tree(session_id=service.session_id, media_type=media_type)
+    except Exception as e:
+        logger.error("获取分类树失败: %s", e, exc_info=True)
+        return []
 
 
 @router.get("/results/languages")
 async def get_available_languages():
     state = _get_state()
     service = _get_check_service()
-    if not service or not service.session_id:
+    if not state or not service or not service.session_id:
         return []
-    return state.read_model.get_available_languages(service.session_id)
+    try:
+        return state.read_model.get_available_languages(service.session_id)
+    except Exception as e:
+        logger.error("获取语言列表失败: %s", e, exc_info=True)
+        return []
 
 
 @router.get("/results/source-health")
 async def get_source_health():
     state = _get_state()
     service = _get_check_service()
-    if not service or not service.session_id:
+    if not state or not service or not service.session_id:
         return []
-    return state.read_model.get_source_download_stats(service.session_id)
+    try:
+        return state.read_model.get_source_download_stats(service.session_id)
+    except Exception as e:
+        logger.error("获取源健康状态失败: %s", e, exc_info=True)
+        return []
 
 
 @router.get("/results/stats")
@@ -101,9 +144,16 @@ async def get_results_stats():
 
 
 @router.get("/results/history")
-async def get_check_history(limit: int = 20):
+async def get_check_history():
+    """获取历史检测记录"""
     state = _get_state()
-    return {"history": state.database.get_check_history(limit)}
+    if not state:
+        return []
+    try:
+        return state.event_store.get_history(limit=50)
+    except Exception as e:
+        logger.warning("获取历史记录失败: %s", e)
+        return []
 
 
 @router.post("/results/save")
@@ -165,68 +215,111 @@ async def remove_favorite(fav_id: int):
 
 @router.get("/report")
 async def get_quality_report():
-    state = _get_state()
-    service = _get_check_service()
-    results_data = []
-    if service and service.session_id:
-        results_data = state.read_model.get_checked_results_raw(service.session_id)
+    import traceback
+    try:
+        state = _get_state()
+        if not state:
+            return {"error": "服务未初始化"}
 
-    if not results_data:
-        return {"error": "没有检测结果"}
+        service = _get_check_service()
+        results_data = []
+        if service and service.session_id:
+            try:
+                results_data = state.read_model.get_checked_results_raw(service.session_id)
+            except Exception as e:
+                logger.error("读取检测结果失败: %s\n%s", e, traceback.format_exc())
+                return {"error": f"读取检测结果失败: {str(e)}"}
 
-    from iptv_check.models.check_result import CheckResult
-    from iptv_check.models.channel import Channel
-    results = []
-    for rd in results_data:
-        ch = Channel(name=rd["channel"]["name"], url=rd["channel"]["url"], group=rd["channel"].get("group", ""), sources=rd["channel"].get("sources", []))
-        r = CheckResult(channel=ch, is_valid=rd["is_valid"], latency=rd["latency"], speed=rd["speed"], details=rd["details"])
-        results.append(r)
+        if not results_data:
+            return {"error": "没有检测结果"}
 
-    valid = [r for r in results if r.is_valid]
-    invalid = [r for r in results if not r.is_valid]
-    latencies = [r.latency for r in valid if r.latency > 0]
+        from iptv_check.models.check_result import CheckResult
+        from iptv_check.models.channel import Channel
+        results = []
+        for rd in results_data:
+            try:
+                ch = Channel(
+                    name=rd.get("channel", {}).get("name", "未知"),
+                    url=rd.get("channel", {}).get("url", ""),
+                    group=rd.get("channel", {}).get("group", ""),
+                    sources=rd.get("channel", {}).get("sources", []),
+                )
+                r = CheckResult(
+                    channel=ch,
+                    is_valid=rd.get("is_valid", False),
+                    latency=rd.get("latency", -1),
+                    speed=rd.get("speed", "-"),
+                    details=rd.get("details", ""),
+                )
+                results.append(r)
+            except Exception as e:
+                logger.warning("解析检测结果项失败: %s", e)
+                continue
 
-    latency_ranges = {"<50ms": 0, "50-100ms": 0, "100-200ms": 0, "200-500ms": 0, "500ms+": 0}
-    for l in latencies:
-        if l < 50: latency_ranges["<50ms"] += 1
-        elif l < 100: latency_ranges["50-100ms"] += 1
-        elif l < 200: latency_ranges["100-200ms"] += 1
-        elif l < 500: latency_ranges["200-500ms"] += 1
-        else: latency_ranges["500ms+"] += 1
+        if not results:
+            return {"error": "没有有效的检测结果"}
 
-    source_stats = {}
-    for r in results:
-        for src in r.channel.sources:
-            if src not in source_stats:
-                source_stats[src] = {"total": 0, "valid": 0, "latencies": []}
-            source_stats[src]["total"] += 1
-            if r.is_valid:
-                source_stats[src]["valid"] += 1
-                if r.latency > 0:
-                    source_stats[src]["latencies"].append(r.latency)
+        valid = [r for r in results if r.is_valid]
+        invalid = [r for r in results if not r.is_valid]
+        latencies = []
+        for r in valid:
+            try:
+                lv = float(r.latency) if r.latency not in ("-", "", -1) else -1
+                if lv > 0:
+                    latencies.append(lv)
+            except (ValueError, TypeError):
+                pass
 
-    source_ranking = []
-    for name, stats in source_stats.items():
-        avg_lat = sum(stats["latencies"]) / len(stats["latencies"]) if stats["latencies"] else 0
-        source_ranking.append({
-            "name": name, "total": stats["total"], "valid": stats["valid"],
-            "invalid": stats["total"] - stats["valid"],
-            "rate": round(stats["valid"] / stats["total"] * 100, 1) if stats["total"] > 0 else 0,
-            "avg_latency": round(avg_lat, 0),
-        })
-    source_ranking.sort(key=lambda x: x["rate"], reverse=True)
+        latency_ranges = {"<50ms": 0, "50-100ms": 0, "100-200ms": 0, "200-500ms": 0, "500ms+": 0}
+        for l in latencies:
+            if l < 50: latency_ranges["<50ms"] += 1
+            elif l < 100: latency_ranges["50-100ms"] += 1
+            elif l < 200: latency_ranges["100-200ms"] += 1
+            elif l < 500: latency_ranges["200-500ms"] += 1
+            else: latency_ranges["500ms+"] += 1
 
-    from iptv_check.server.app import _compute_group_stats
-    return {
-        "total": len(results), "valid": len(valid), "invalid": len(invalid),
-        "valid_rate": round(len(valid) / len(results) * 100, 1) if results else 0,
-        "avg_latency": round(sum(latencies) / len(latencies), 0) if latencies else 0,
-        "min_latency": min(latencies) if latencies else 0,
-        "max_latency": max(latencies) if latencies else 0,
-        "latency_distribution": latency_ranges,
-        "source_ranking": source_ranking,
-        "group_stats": _compute_group_stats(results),
-    }
+        source_stats = {}
+        for r in results:
+            if not r.channel:
+                continue
+            for src in r.channel.sources or []:
+                if src not in source_stats:
+                    source_stats[src] = {"total": 0, "valid": 0, "latencies": []}
+                source_stats[src]["total"] += 1
+                if r.is_valid:
+                    source_stats[src]["valid"] += 1
+                    try:
+                        lat = float(r.latency)
+                        if lat > 0:
+                            source_stats[src]["latencies"].append(lat)
+                    except (ValueError, TypeError):
+                        pass
+
+        source_ranking = []
+        for name, stats in source_stats.items():
+            avg_lat = sum(stats["latencies"]) / len(stats["latencies"]) if stats["latencies"] else 0
+            source_ranking.append({
+                "name": name, "total": stats["total"], "valid": stats["valid"],
+                "invalid": stats["total"] - stats["valid"],
+                "rate": round(stats["valid"] / stats["total"] * 100, 1) if stats["total"] > 0 else 0,
+                "avg_latency": round(avg_lat, 0),
+            })
+        source_ranking.sort(key=lambda x: x["rate"], reverse=True)
+
+        from iptv_check.server.app import _compute_group_stats
+        return {
+            "total": len(results), "valid": len(valid), "invalid": len(invalid),
+            "valid_rate": round(len(valid) / len(results) * 100, 1) if results else 0,
+            "avg_latency": round(sum(latencies) / len(latencies), 0) if latencies else 0,
+            "min_latency": min(latencies) if latencies else 0,
+            "max_latency": max(latencies) if latencies else 0,
+            "latency_distribution": latency_ranges,
+            "source_ranking": source_ranking,
+            "group_stats": _compute_group_stats(results),
+        }
+    except Exception as e:
+        logger.error("生成质量报告失败: %s\n%s", e, traceback.format_exc())
+        return {"error": f"生成报告失败: {str(e)}"}
 
 
 @router.get("/trends/channel/{channel_id}")
@@ -251,101 +344,187 @@ async def compare_history(h1: int, h2: int):
 
 @router.get("/recommend")
 async def get_recommendations(max_per_group: int = 3, prefer_low_latency: bool = True):
-    state = _get_state()
-    service = _get_check_service()
-    if not service or not service.session_id:
-        return {"error": "没有检测结果"}
+    import traceback
+    try:
+        state = _get_state()
+        service = _get_check_service()
+        if not service or not service.session_id:
+            return {"error": "没有检测结果"}
 
-    results_data = state.read_model.get_checked_results_raw(service.session_id)
-    if not results_data:
-        return {"error": "没有检测结果"}
+        try:
+            results_data = state.read_model.get_checked_results_raw(service.session_id)
+        except Exception as e:
+            logger.error("读取检测结果失败: %s\n%s", e, traceback.format_exc())
+            return {"error": f"读取检测结果失败: {str(e)}"}
 
-    from iptv_check.models.check_result import CheckResult
-    from iptv_check.models.channel import Channel
-    check_results = []
-    for rd in results_data:
-        ch = Channel(name=rd["channel"]["name"], url=rd["channel"]["url"], group=rd["channel"].get("group", ""), sources=rd["channel"].get("sources", []))
-        r = CheckResult(channel=ch, is_valid=rd["is_valid"], latency=rd["latency"], speed=rd["speed"], details=rd["details"])
-        check_results.append(r)
+        if not results_data:
+            return {"error": "没有检测结果"}
 
-    from iptv_check.core.recommender import SourceRecommender
-    recs = SourceRecommender.recommend(
-        check_results, local_isp=state.local_isp,
-        max_channels_per_group=max_per_group, prefer_low_latency=prefer_low_latency,
-    )
-    total = sum(len(v) for v in recs.values())
-    return {
-        "recommendations": {
-            name: [
-                {
-                    "name": v["channel"].name, "url": v["result"].channel.url,
-                    "group": v["channel"].group, "latency": v["result"].latency_display,
-                    "speed": v["result"].speed, "score": v["score"],
-                    "reasons": v["reasons"], "sources": v["channel"].sources,
-                }
-                for v in variants
-            ]
-            for name, variants in recs.items()
-        },
-        "total_channels": len(recs), "total_variants": total,
-    }
+        from iptv_check.models.check_result import CheckResult
+        from iptv_check.models.channel import Channel
+        check_results = []
+        for rd in results_data:
+            try:
+                ch = Channel(
+                    name=rd.get("channel", {}).get("name", "未知"),
+                    url=rd.get("channel", {}).get("url", ""),
+                    group=rd.get("channel", {}).get("group", ""),
+                    sources=rd.get("channel", {}).get("sources", []),
+                )
+                r = CheckResult(
+                    channel=ch,
+                    is_valid=rd.get("is_valid", False),
+                    latency=rd.get("latency", -1),
+                    speed=rd.get("speed", "-"),
+                    details=rd.get("details", ""),
+                )
+                check_results.append(r)
+            except Exception as e:
+                logger.warning("解析推荐数据项失败: %s", e)
+                continue
+
+        if not check_results:
+            return {"error": "没有有效的检测结果"}
+
+        from iptv_check.core.recommender import SourceRecommender
+        recs = SourceRecommender.recommend(
+            check_results, local_isp=state.local_isp,
+            max_channels_per_group=max_per_group, prefer_low_latency=prefer_low_latency,
+        )
+        total = sum(len(v) for v in recs.values())
+        return {
+            "recommendations": {
+                name: [
+                    {
+                        "name": v["channel"].name, "url": v["result"].channel.url,
+                        "group": v["channel"].group, "latency": v["result"].latency_display,
+                        "speed": v["result"].speed, "score": v["score"],
+                        "reasons": v["reasons"], "sources": v["channel"].sources,
+                    }
+                    for v in variants
+                ]
+                for name, variants in recs.items()
+            },
+            "total_channels": len(recs), "total_variants": total,
+        }
+    except Exception as e:
+        logger.error("获取推荐失败: %s\n%s", e, traceback.format_exc())
+        return {"error": f"获取推荐失败: {str(e)}"}
 
 
 @router.get("/recommend/m3u")
 async def get_recommend_m3u(max_per_group: int = 3):
-    state = _get_state()
-    service = _get_check_service()
-    if not service or not service.session_id:
-        raise HTTPException(400, "没有检测结果")
+    import traceback
+    try:
+        state = _get_state()
+        service = _get_check_service()
+        if not service or not service.session_id:
+            raise HTTPException(400, "没有检测结果")
 
-    results_data = state.read_model.get_checked_results_raw(service.session_id)
-    if not results_data:
-        raise HTTPException(400, "没有检测结果")
+        try:
+            results_data = state.read_model.get_checked_results_raw(service.session_id)
+        except Exception as e:
+            logger.error("读取检测结果失败: %s\n%s", e, traceback.format_exc())
+            raise HTTPException(500, f"读取检测结果失败: {e}")
 
-    from iptv_check.models.check_result import CheckResult
-    from iptv_check.models.channel import Channel
-    check_results = []
-    for rd in results_data:
-        ch = Channel(name=rd["channel"]["name"], url=rd["channel"]["url"], group=rd["channel"].get("group", ""), sources=rd["channel"].get("sources", []))
-        r = CheckResult(channel=ch, is_valid=rd["is_valid"], latency=rd["latency"], speed=rd["speed"], details=rd["details"])
-        check_results.append(r)
+        if not results_data:
+            raise HTTPException(400, "没有检测结果")
 
-    from iptv_check.core.recommender import SourceRecommender
-    from fastapi.responses import Response
-    recs = SourceRecommender.recommend(check_results, local_isp=state.local_isp, max_channels_per_group=max_per_group)
-    m3u_content = SourceRecommender.generate_m3u(recs, local_isp=state.local_isp)
-    return Response(content=m3u_content, media_type="audio/x-mpegurl", headers={"Content-Disposition": "attachment; filename=recommended.m3u"})
+        from iptv_check.models.check_result import CheckResult
+        from iptv_check.models.channel import Channel
+        check_results = []
+        for rd in results_data:
+            try:
+                ch = Channel(
+                    name=rd.get("channel", {}).get("name", "未知"),
+                    url=rd.get("channel", {}).get("url", ""),
+                    group=rd.get("channel", {}).get("group", ""),
+                    sources=rd.get("channel", {}).get("sources", []),
+                )
+                r = CheckResult(
+                    channel=ch,
+                    is_valid=rd.get("is_valid", False),
+                    latency=rd.get("latency", -1),
+                    speed=rd.get("speed", "-"),
+                    details=rd.get("details", ""),
+                )
+                check_results.append(r)
+            except Exception as e:
+                logger.warning("解析推荐数据项失败: %s", e)
+                continue
+
+        if not check_results:
+            raise HTTPException(400, "没有有效的检测结果")
+
+        from iptv_check.core.recommender import SourceRecommender
+        from fastapi.responses import Response
+        recs = SourceRecommender.recommend(check_results, local_isp=state.local_isp, max_channels_per_group=max_per_group)
+        m3u_content = SourceRecommender.generate_m3u(recs, local_isp=state.local_isp)
+        return Response(content=m3u_content, media_type="audio/x-mpegurl", headers={"Content-Disposition": "attachment; filename=recommended.m3u"})
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("生成推荐 M3U 失败: %s\n%s", e, traceback.format_exc())
+        raise HTTPException(500, f"生成推荐 M3U 失败: {e}")
 
 
 @router.get("/recommend/isp")
 async def get_isp_recommendations(target_isp: str = None):
-    state = _get_state()
-    service = _get_check_service()
-    if not service or not service.session_id:
-        return {"error": "没有检测结果"}
+    import traceback
+    try:
+        state = _get_state()
+        service = _get_check_service()
+        if not service or not service.session_id:
+            return {"error": "没有检测结果"}
 
-    results_data = state.read_model.get_checked_results_raw(service.session_id)
-    if not results_data:
-        return {"error": "没有检测结果"}
+        try:
+            results_data = state.read_model.get_checked_results_raw(service.session_id)
+        except Exception as e:
+            logger.error("读取检测结果失败: %s\n%s", e, traceback.format_exc())
+            return {"error": f"读取检测结果失败: {str(e)}"}
 
-    from iptv_check.models.check_result import CheckResult
-    from iptv_check.models.channel import Channel
-    check_results = []
-    for rd in results_data:
-        ch = Channel(name=rd["channel"]["name"], url=rd["channel"]["url"], group=rd["channel"].get("group", ""), sources=rd["channel"].get("sources", []))
-        r = CheckResult(channel=ch, is_valid=rd["is_valid"], latency=rd["latency"], speed=rd["speed"], details=rd["details"])
-        check_results.append(r)
+        if not results_data:
+            return {"error": "没有检测结果"}
 
-    from iptv_check.core.recommender import SourceRecommender
-    isp = target_isp or state.local_isp
-    recs = SourceRecommender.recommend_for_isp(check_results, isp)
-    return {
-        "isp": isp, "total": len(recs),
-        "channels": [
-            {"name": r.channel.name, "url": r.channel.url, "group": r.channel.group, "latency": r.latency_display, "sources": r.channel.sources}
-            for r in recs
-        ],
-    }
+        from iptv_check.models.check_result import CheckResult
+        from iptv_check.models.channel import Channel
+        check_results = []
+        for rd in results_data:
+            try:
+                ch = Channel(
+                    name=rd.get("channel", {}).get("name", "未知"),
+                    url=rd.get("channel", {}).get("url", ""),
+                    group=rd.get("channel", {}).get("group", ""),
+                    sources=rd.get("channel", {}).get("sources", []),
+                )
+                r = CheckResult(
+                    channel=ch,
+                    is_valid=rd.get("is_valid", False),
+                    latency=rd.get("latency", -1),
+                    speed=rd.get("speed", "-"),
+                    details=rd.get("details", ""),
+                )
+                check_results.append(r)
+            except Exception as e:
+                logger.warning("解析 ISP 推荐数据项失败: %s", e)
+                continue
+
+        if not check_results:
+            return {"error": "没有有效的检测结果"}
+
+        from iptv_check.core.recommender import SourceRecommender
+        isp = target_isp or state.local_isp
+        recs = SourceRecommender.recommend_for_isp(check_results, isp)
+        return {
+            "isp": isp, "total": len(recs),
+            "channels": [
+                {"name": r.channel.name, "url": r.channel.url, "group": r.channel.group, "latency": r.latency_display, "sources": r.channel.sources}
+                for r in recs
+            ],
+        }
+    except Exception as e:
+        logger.error("获取 ISP 推荐失败: %s\n%s", e, traceback.format_exc())
+        return {"error": f"获取 ISP 推荐失败: {str(e)}"}
 
 
 @router.post("/upload")

@@ -31,6 +31,7 @@ dependencies = [
 [project.optional-dependencies]
 desktop = ["ttkbootstrap>=1.5"]
 excel = ["openpyxl>=3.0"]
+scheduler = ["apscheduler>=3.10"]
 dev = ["pytest>=7.0", "pytest-asyncio>=0.21", "ruff>=0.1"]
 
 [project.scripts]
@@ -45,3 +46,4 @@ target-version = "py38"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+asyncio_mode = "auto"

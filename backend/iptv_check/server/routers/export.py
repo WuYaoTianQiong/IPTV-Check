@@ -32,20 +32,46 @@ def _get_state():
     return app_state
 
 
+def _get_check_service():
+    state = _get_state()
+    if state is None:
+        return None
+    return getattr(state, "_check_service", None)
+
+
 @router.post("/export")
 async def export_results(req: ExportRequest):
+    import traceback
     state = _get_state()
-    if not state.check_results:
+    service = _get_check_service()
+    session_id = ""
+    if service and service.session_id:
+        session_id = service.session_id
+    elif state and state.event_store:
+        session_id = state.event_store.current_session_id
+
+    if not session_id:
         raise HTTPException(400, "没有检测结果可导出")
+
+    try:
+        results_data = state.read_model.get_checked_results_raw(session_id)
+    except Exception as e:
+        logger.error("读取检测结果失败: %s\n%s", e, traceback.format_exc())
+        raise HTTPException(500, f"读取检测结果失败: {e}")
+
+    if not results_data:
+        raise HTTPException(400, "没有检测结果可导出")
+
     from iptv_check.server.app import DATA_DIR
     export_dir = req.export_dir or os.path.join(DATA_DIR, "exports")
     os.makedirs(export_dir, exist_ok=True)
     try:
         exported = state.export_engine.export_batch(
-            [req.format], state.check_results, export_dir, req.base_name, local_isp=state.local_isp
+            [req.format], results_data, export_dir, req.base_name, local_isp=state.local_isp
         )
         return {"exported": exported, "dir": export_dir}
     except Exception as e:
+        logger.error("导出失败: %s\n%s", e, traceback.format_exc())
         raise HTTPException(500, f"导出失败: {e}")
 
 
@@ -76,25 +102,84 @@ async def convert_text(req: ConvertTextRequest):
 
 @router.post("/optimize")
 async def smart_optimize():
+    import traceback
     state = _get_state()
-    if not state.check_results:
+    service = _get_check_service()
+    session_id = ""
+    if service and service.session_id:
+        session_id = service.session_id
+    elif state and state.event_store:
+        session_id = state.event_store.current_session_id
+
+    if not session_id:
         raise HTTPException(400, "没有检测结果可优选")
+
+    try:
+        results_data = state.read_model.get_checked_results_raw(session_id)
+    except Exception as e:
+        logger.error("读取检测结果失败: %s\n%s", e, traceback.format_exc())
+        raise HTTPException(500, f"读取检测结果失败: {e}")
+
+    if not results_data:
+        raise HTTPException(400, "没有检测结果可优选")
+
+    from iptv_check.models.check_result import CheckResult
+    from iptv_check.models.channel import Channel
+    check_results = []
+    for rd in results_data:
+        ch = Channel(
+            name=rd["channel"]["name"], url=rd["channel"]["url"],
+            group=rd["channel"].get("group", ""), sources=rd["channel"].get("sources", [])
+        )
+        r = CheckResult(channel=ch, is_valid=rd["is_valid"], latency=rd["latency"], speed=rd["speed"], details=rd["details"])
+        check_results.append(r)
+
     from iptv_check.core.optimizer import SmartOptimizer
-    original_count = len([r for r in state.check_results if r.is_valid])
-    state.check_results = SmartOptimizer.optimize(state.check_results)
-    optimized_count = len([r for r in state.check_results if r.is_valid])
+    original_count = len([r for r in check_results if r.is_valid])
+    optimized = SmartOptimizer.optimize(check_results)
+    optimized_count = len([r for r in optimized if r.is_valid])
     return {"original_valid": original_count, "optimized_valid": optimized_count, "removed": original_count - optimized_count}
 
 
 @router.post("/export/aggregated")
 async def export_aggregated_m3u(max_alternatives: int = 3):
     import re
+    import traceback
     from datetime import datetime
     from fastapi.responses import Response
+    from iptv_check.models.check_result import CheckResult
+    from iptv_check.models.channel import Channel
+
     state = _get_state()
-    if not state.check_results:
+    service = _get_check_service()
+    session_id = ""
+    if service and service.session_id:
+        session_id = service.session_id
+    elif state and state.event_store:
+        session_id = state.event_store.current_session_id
+
+    if not session_id:
         raise HTTPException(400, "没有检测结果可导出")
-    valid_results = [r for r in state.check_results if r.is_valid]
+
+    try:
+        results_data = state.read_model.get_checked_results_raw(session_id)
+    except Exception as e:
+        logger.error("读取检测结果失败: %s\n%s", e, traceback.format_exc())
+        raise HTTPException(500, f"读取检测结果失败: {e}")
+
+    if not results_data:
+        raise HTTPException(400, "没有检测结果可导出")
+
+    check_results = []
+    for rd in results_data:
+        ch = Channel(
+            name=rd["channel"]["name"], url=rd["channel"]["url"],
+            group=rd["channel"].get("group", ""), sources=rd["channel"].get("sources", [])
+        )
+        r = CheckResult(channel=ch, is_valid=rd["is_valid"], latency=rd["latency"], speed=rd["speed"], details=rd["details"])
+        check_results.append(r)
+
+    valid_results = [r for r in check_results if r.is_valid]
     channel_groups: dict = {}
     for r in valid_results:
         name_key = re.sub(r'[\s\-_|]', '', r.channel.name).lower()
@@ -121,12 +206,42 @@ async def export_aggregated_m3u(max_alternatives: int = 3):
 @router.post("/m3u/start")
 async def start_m3u_server():
     import datetime
+    import traceback
+    from iptv_check.models.check_result import CheckResult
+    from iptv_check.models.channel import Channel
     state = _get_state()
+    service = _get_check_service()
     from iptv_check.server.app import DATA_DIR
+
+    session_id = ""
+    if service and service.session_id:
+        session_id = service.session_id
+    elif state and state.event_store:
+        session_id = state.event_store.current_session_id
+
+    if not session_id:
+        raise HTTPException(400, "没有检测结果可服务")
+
     try:
-        if not state.check_results:
-            raise HTTPException(400, "没有检测结果可服务")
-        valid_results = [r for r in state.check_results if r.is_valid]
+        results_data = state.read_model.get_checked_results_raw(session_id)
+    except Exception as e:
+        logger.error("读取检测结果失败: %s\n%s", e, traceback.format_exc())
+        raise HTTPException(500, f"读取检测结果失败: {e}")
+
+    if not results_data:
+        raise HTTPException(400, "没有检测结果可服务")
+
+    check_results = []
+    for rd in results_data:
+        ch = Channel(
+            name=rd["channel"]["name"], url=rd["channel"]["url"],
+            group=rd["channel"].get("group", ""), sources=rd["channel"].get("sources", [])
+        )
+        r = CheckResult(channel=ch, is_valid=rd["is_valid"], latency=rd["latency"], speed=rd["speed"], details=rd["details"])
+        check_results.append(r)
+
+    try:
+        valid_results = [r for r in check_results if r.is_valid]
         m3u_content = state.export_engine.export_m3u(valid_results, local_isp=state.local_isp)
         m3u_path = os.path.join(DATA_DIR, "exports", "iptv_live.m3u")
         os.makedirs(os.path.dirname(m3u_path), exist_ok=True)
@@ -137,6 +252,7 @@ async def start_m3u_server():
         state._m3u_service_started_at = datetime.datetime.utcnow()
         return {"status": "started", "url": "http://127.0.0.1:8080/iptv_live.m3u"}
     except Exception as e:
+        logger.error("M3U 服务启动失败: %s\n%s", e, traceback.format_exc())
         raise HTTPException(500, f"M3U 服务启动失败: {e}")
 
 
@@ -168,11 +284,26 @@ async def m3u_server_state():
     elif not file_exists and state._m3u_service_running:
         state._m3u_service_running = False
         state._m3u_service_file = ""
+    valid_count = 0
+    if hasattr(state, 'read_model') and state.read_model:
+        from iptv_check.infra.config.settings import path_settings as _ps
+        db_path = _ps.data_dir / "iptv_check.db"
+        import sqlite3
+        try:
+            conn = sqlite3.connect(str(db_path))
+            conn.row_factory = sqlite3.Row
+            cur = conn.execute("SELECT COUNT(*) as cnt FROM channels WHERE is_valid = 1")
+            row = cur.fetchone()
+            valid_count = row["cnt"] if row else 0
+            conn.close()
+        except Exception:
+            pass
+
     return {
         "running": state._m3u_service_running and file_exists,
         "url": "http://127.0.0.1:8080/iptv_live.m3u" if file_exists else "",
         "file_exists": file_exists,
-        "valid_channels": len([r for r in state.check_results if r.is_valid]) if state.check_results else 0,
+        "valid_channels": valid_count,
     }
 
 

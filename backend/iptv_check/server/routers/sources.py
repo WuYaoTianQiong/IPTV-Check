@@ -52,6 +52,9 @@ async def refresh_isp():
 async def get_info():
     from iptv_check.infra.config.settings import APP_VERSION, APP_TITLE
     state = _get_state()
+    # 如果 ISP 检测未完成，触发检测并等待完成
+    if state.local_isp == "未知":
+        await state.detect_isp()
     return {
         "version": APP_VERSION,
         "title": APP_TITLE,

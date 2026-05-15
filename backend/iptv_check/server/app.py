@@ -25,11 +25,14 @@ from iptv_check.infra.disk_cache import DiskCacheManager
 from iptv_check.infra.persistence_settings import SettingsManager
 from iptv_check.infra.persistence.event_store import EventStore
 from iptv_check.infra.persistence.read_model import ReadModel
-from iptv_check.infra.check_engine import ThreadPoolCheckEngine
+from iptv_check.infra.check_engine import AsyncCheckEngine
+from iptv_check.core.m3u8_validator import M3U8Validator
 from iptv_check.infra.exporter import ExportEngine
 from iptv_check.infra.stream_proxy import StreamProxy
 from iptv_check.infra.database import DatabaseManager
 from iptv_check.infra.media_probe import MediaProbe
+from iptv_check.infra.di import DIContainer
+from iptv_check.infra.exceptions import CheckAlreadyRunningError, CheckNotRunningError, StreamProxyError
 from iptv_check.core.isp_detector import ISPDetector
 from iptv_check.core.parser import PlaylistParser
 from iptv_check.core.converter import FormatConverter
@@ -43,7 +46,10 @@ from iptv_check.application.services.logo_service import LogoService
 from iptv_check.infra.config.settings import settings, path_settings
 from iptv_check.infra.config.settings import APP_TITLE, APP_VERSION
 from iptv_check.infra.task_scheduler import TaskScheduler
-
+from iptv_check.infra.event_bus import event_bus, Events
+from iptv_check.infra.metrics import metrics
+from iptv_check.infra.sse_broker import SSEBroker
+from iptv_check.server.middleware import register_exception_handlers, register_middleware
 from iptv_check.server.routers.channels import router as channels_router
 from iptv_check.server.routers.sources import router as sources_router
 from iptv_check.server.routers.check import router as check_router
@@ -51,10 +57,14 @@ from iptv_check.server.routers.export import router as export_router
 from iptv_check.server.routers.epg import router as epg_router
 from iptv_check.server.routers.logos import router as logos_router
 from iptv_check.server.routers.cache import router as cache_router
+from iptv_check.infra.logging_config import setup_logging
+
+# 配置日志系统
+setup_logging(level="INFO", json_format=False)
 
 logger = logging.getLogger(__name__)
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+BASE_DIR = str(path_settings.base_dir)
 DATA_DIR = str(path_settings.data_dir)
 STATIC_DIR = str(path_settings.static_dir)
 
@@ -62,6 +72,8 @@ STATIC_DIR = str(path_settings.static_dir)
 def _compute_group_stats(results):
     groups = {}
     for r in results:
+        if not r or not r.channel:
+            continue
         g = r.channel.group or "未分组"
         if g not in groups:
             groups[g] = {"total": 0, "valid": 0}
@@ -72,7 +84,27 @@ def _compute_group_stats(results):
 
 
 class AppState:
+    _instance: Optional['AppState'] = None
+    
+    @classmethod
+    def get_instance(cls) -> 'AppState':
+        """单例模式：确保全局唯一实例"""
+        if cls._instance is None:
+            cls._instance = cls()
+        return cls._instance
+    
+    @classmethod
+    def reset_instance(cls) -> None:
+        """重置实例（仅用于测试）"""
+        cls._instance = None
+    
     def __init__(self):
+        # 防止重复初始化
+        if AppState._instance is not None:
+            # 已经初始化过了，直接返回
+            return
+        AppState._instance = self
+        
         self.http_client = ResilientHttpClient()
         self.stream_proxy = StreamProxy(
             max_connections=settings.stream_proxy_max_connections,
@@ -107,8 +139,7 @@ class AppState:
         self._epg_service: Optional[EpgService] = None
         self._logo_service: Optional[LogoService] = None
 
-        self._sse_subscribers: List[asyncio.Queue] = []
-        self._sse_counter: int = 0
+        self._sse_broker = SSEBroker(max_subscribers=50, max_queue_size=100)
         self._check_service: Optional[CheckService] = None
 
         self._load_online_sources()
@@ -129,6 +160,11 @@ class AppState:
             logger.warning("加载在线源失败: %s", e)
 
     async def start(self):
+        # 订阅 ISP 检测完成事件，实现实时推送
+        # 注意：需要在 detect_isp 中直接调用 broadcast，而非通过事件总线
+        # 因为 blinker 不支持 async 处理器
+        event_bus.connect(Events.ISP_DETECTED, lambda sender, **kwargs: asyncio.create_task(self._on_isp_detected(sender, **kwargs)))
+        
         asyncio.create_task(self.detect_isp())
         await self.stream_proxy.initialize()
 
@@ -139,7 +175,12 @@ class AppState:
         self._async_session = aiohttp.ClientSession(connector=connector)
         self._ffmpeg_available = MediaProbe.is_ffmpeg_available()
 
-        check_engine = ThreadPoolCheckEngine(self.http_client, self.cache)
+        check_engine = AsyncCheckEngine(
+            http_session=self._async_session,
+            cache=self.cache,
+            m3u8_validator=M3U8Validator(self.http_client),
+            proxy_base="http://127.0.0.1:9529/proxy",
+        )
         self._check_service = CheckService(
             event_store=self.event_store,
             read_model=self.read_model,
@@ -175,31 +216,20 @@ class AppState:
         self.local_isp = await self.isp_detector.detect_local_isp_async()
         return self.local_isp
 
+    async def _on_isp_detected(self, sender, **kwargs):
+        """ISP 检测完成事件处理器，主动广播状态更新"""
+        isp = kwargs.get("isp", "未知")
+        logger.info("ISP 检测完成：%s", isp)
+        await self.broadcast("isp_updated", {"local_isp": isp})
+
     async def broadcast(self, event: str, data: dict):
-        self._sse_counter += 1
-        msg = {"event": event}
-        msg.update(data)
-        sse_msg = f"id: {self._sse_counter}\nevent: {event}\ndata: {json.dumps(msg, ensure_ascii=False)}\n\n"
-        dead = []
-        for i, queue in enumerate(self._sse_subscribers):
-            try:
-                await queue.put(sse_msg)
-            except Exception:
-                dead.append(i)
-        for i in sorted(dead, reverse=True):
-            if i < len(self._sse_subscribers):
-                self._sse_subscribers.pop(i)
+        await self._sse_broker.broadcast(event, data)
 
-    def subscribe_sse(self) -> asyncio.Queue:
-        queue = asyncio.Queue()
-        self._sse_subscribers.append(queue)
-        return queue
+    async def subscribe_sse(self):
+        return await self._sse_broker.subscribe()
 
-    def unsubscribe_sse(self, queue: asyncio.Queue):
-        try:
-            self._sse_subscribers.remove(queue)
-        except ValueError:
-            pass
+    async def unsubscribe_sse(self, subscriber):
+        await self._sse_broker.unsubscribe(subscriber)
 
 
 app_state: Optional[AppState] = None
@@ -207,17 +237,22 @@ app_state: Optional[AppState] = None
 
 def create_app() -> FastAPI:
     global app_state
+    
+    # 使用单例模式获取或创建 AppState 实例
+    app_state = AppState.get_instance()
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
-        global app_state
-        app_state = AppState()
         await app_state.start()
         yield
         await app_state.stop()
 
     app = FastAPI(title=APP_TITLE, version=APP_VERSION, lifespan=lifespan)
 
+    # Register middleware (correlation ID, request logging)
+    register_middleware(app)
+
+    # Register CORS middleware
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins,
@@ -225,6 +260,9 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+    # Register exception handlers
+    register_exception_handlers(app)
 
     app.include_router(channels_router)
     app.include_router(sources_router)
@@ -234,18 +272,21 @@ def create_app() -> FastAPI:
     app.include_router(logos_router)
     app.include_router(cache_router)
 
-    static_dir = Path(STATIC_DIR)
+    static_dir = path_settings.static_dir
     lib_dir = static_dir / "lib"
     js_dir = static_dir / "js"
     fonts_dir = static_dir / "fonts"
-    static_hls_dir = Path(DATA_DIR) / "static"
-    assets_dir = Path(DATA_DIR) / "assets"
+    static_hls_dir = path_settings.data_dir / "static"
+    assets_dir = path_settings.data_dir / "assets"
 
-    path_settings.ensure_dirs()
+    # Directories are automatically created by PathSettings model_validator
 
     if (static_dir / "assets").is_dir():
-        app.mount("/assets", StaticFiles(directory=str(static_dir / "assets")), name="assets")
+        app.mount("/assets", StaticFiles(directory=str(static_dir / "assets"), html=True), name="assets")
         logger.info("Static assets mounted from: %s", static_dir / "assets")
+    if static_dir.is_dir():
+        app.mount("/static", StaticFiles(directory=str(static_dir)), name="static-root")
+        logger.info("Static files mounted from: %s", static_dir)
     if lib_dir.is_dir():
         app.mount("/lib", StaticFiles(directory=str(lib_dir)), name="lib")
     if js_dir.is_dir():
@@ -290,7 +331,8 @@ def create_app() -> FastAPI:
             return FileResponse(str(icon_path), media_type="image/x-icon")
         return Response(status_code=204)
 
-    from iptv_check.infra.config.settings import render_player_html
+    from iptv_check.infra.player_renderer import player_renderer
+    from iptv_check.infra.config.settings import render_player_html  # keep compat
 
     @app.get("/player")
     async def player_page(url: str = "", name: str = "", sources: str = ""):
@@ -308,7 +350,7 @@ def create_app() -> FastAPI:
             except Exception:
                 pass
 
-        html = render_player_html(stream_url, channel_name, sources=source_list)
+        html = player_renderer.render(stream_url, channel_name, sources=source_list)
         return HTMLResponse(html)
 
     @app.get("/proxy")
@@ -327,7 +369,7 @@ def create_app() -> FastAPI:
             return await app_state.stream_proxy.proxy_unified(target_url, request, custom_headers)
         except Exception as e:
             logger.warning("代理请求失败 %s: %s", target_url, e)
-            raise HTTPException(502, f"代理错误: {str(e)[:100]}")
+            raise StreamProxyError(str(e)[:100])
 
     @app.get("/proxy/hls")
     async def proxy_hls_playlist_new(request: Request, url: str = ""):
@@ -341,7 +383,7 @@ def create_app() -> FastAPI:
             return await app_state.stream_proxy.proxy_hls_playlist(target_url, request)
         except Exception as e:
             logger.warning("HLS 播放列表代理失败 %s: %s", target_url, e)
-            raise HTTPException(502, f"代理错误: {str(e)[:100]}")
+            raise StreamProxyError(str(e)[:100])
 
     @app.get("/proxy/stats")
     async def proxy_stats():
@@ -356,7 +398,7 @@ def create_app() -> FastAPI:
 
     @app.get("/api/events/stream")
     async def sse_stream(request: Request):
-        queue = app_state.subscribe_sse()
+        subscriber = await app_state.subscribe_sse()
 
         async def generate():
             progress = app_state.read_model.get_check_progress()
@@ -372,21 +414,57 @@ def create_app() -> FastAPI:
                 while True:
                     if await request.is_disconnected():
                         break
-                    try:
-                        msg = await asyncio.wait_for(queue.get(), timeout=30)
+                    msg = await subscriber.get(timeout=30)
+                    if msg:
                         yield msg
-                    except asyncio.TimeoutError:
+                    else:
                         yield f"event: heartbeat\ndata: {{}}\n\n"
             finally:
-                app_state.unsubscribe_sse(queue)
+                await app_state.unsubscribe_sse(subscriber)
 
         return StreamingResponse(generate(), media_type="text/event-stream")
 
     @app.get("/api/check/progress")
     async def get_check_progress():
-        if not app_state._check_service:
+        if not app_state or not app_state._check_service:
             return {"total": 0, "checked": 0, "valid": 0, "invalid": 0, "is_running": False, "progress_percent": 0.0}
         return app_state._check_service.get_progress()
+
+    @app.get("/api/debug/state")
+    async def debug_state():
+        """调试路由：返回 app_state 的完整状态"""
+        import traceback
+        try:
+            if app_state is None:
+                return {"error": "app_state is None"}
+            return {
+                "app_state": "OK",
+                "is_checking": app_state.is_checking,
+                "database": app_state.database is not None,
+                "_check_service": app_state._check_service is not None,
+                "session_id": app_state._check_service.session_id if app_state._check_service else None,
+                "read_model": app_state.read_model is not None,
+            }
+        except Exception as e:
+            return {"error": str(e), "traceback": traceback.format_exc()}
+
+    @app.get("/api/metrics")
+    async def get_metrics():
+        """Prometheus-compatible metrics endpoint"""
+        return Response(content=metrics.generate_metrics(), media_type="text/plain")
+
+    @app.get("/api/sse/stats")
+    async def get_sse_stats():
+        """SSE broker statistics"""
+        return app_state._sse_broker.get_stats()
+
+    @app.get("/{full_path:path}")
+    async def spa_fallback(full_path: str):
+        """SPA fallback - serve index.html for all non-API frontend routes (MUST be last)"""
+        index_file = static_dir / "index.html"
+        if index_file.is_file():
+            return FileResponse(str(index_file))
+        raise HTTPException(404, "Frontend not built")
 
     return app
 
