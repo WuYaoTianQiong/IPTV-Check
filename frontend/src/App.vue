@@ -1,7 +1,9 @@
 <template>
-  <AppLayout>
-    <RouterView />
-  </AppLayout>
+  <ErrorBoundary>
+    <AppLayout>
+      <router-view />
+    </AppLayout>
+  </ErrorBoundary>
 </template>
 
 <script setup>
@@ -9,6 +11,7 @@ import { onMounted, onUnmounted } from 'vue'
 import { useAppStore } from './stores/app'
 import { createSSEConnection } from './api'
 import AppLayout from './components/layout/AppLayout.vue'
+import ErrorBoundary from './components/ErrorBoundary.vue'
 
 const store = useAppStore()
 let sse = null

@@ -28,9 +28,9 @@ export const useAppStore = defineStore('app', () => {
   const checkStore = useCheckStore()
   const resultStore = useResultStore()
 
-  const isChecking = computed(() => checkStore.isChecking)
-  const onlineSources = computed(() => sourceStore.onlineSources)
-  const checkResults = computed(() => resultStore.checkResults)
+  const isChecking = computed(() => checkStore.isChecking.value)
+  const onlineSources = computed(() => sourceStore.onlineSources.value)
+  const checkResults = computed(() => resultStore.checkResults.value)
 
   async function fetchInfo() {
     const { data } = await getInfo()

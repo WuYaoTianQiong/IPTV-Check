@@ -281,9 +281,9 @@ const config = reactive({
   use_cache: true,
 })
 
-const categorizedSources = computed(() => sourceStore.categorizedSources)
-const pageLoading = computed(() => sourceStore.isLoading)
-const loadError = computed(() => sourceStore.error)
+const categorizedSources = computed(() => sourceStore.categorizedSources.value)
+const pageLoading = computed(() => sourceStore.isLoading.value)
+const loadError = computed(() => sourceStore.error.value)
 
 const canStart = computed(() => selectedOnlineIds.value.length > 0 || uploadedFiles.value.length > 0)
 
