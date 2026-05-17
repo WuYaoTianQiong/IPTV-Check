@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { getResults, getResultsStats } from '../api'
+import { getResults, getResultsStats, getCheckHistory } from '../api'
 
 export const useResultStore = defineStore('result', () => {
   const checkResults = ref([])
@@ -11,18 +11,25 @@ export const useResultStore = defineStore('result', () => {
   const searchQuery = ref('')
   const isLoading = ref(false)
   const error = ref(null)
+  const history = ref([])
+  const selectedSessionId = ref('')
+  const isHistoryLoading = ref(false)
 
   async function fetchResults(params = {}) {
     isLoading.value = true
     error.value = null
     try {
-      const { data } = await getResults({
+      const baseParams = {
         tab: currentTab.value,
         page: resultsPage.value,
         per_page: resultsPerPage.value,
         search: searchQuery.value,
         ...params,
-      })
+      }
+      if (selectedSessionId.value) {
+        baseParams.session_id = selectedSessionId.value
+      }
+      const { data } = await getResults(baseParams)
       checkResults.value = data.items || []
       resultsTotal.value = data.total || 0
       return data
@@ -32,6 +39,27 @@ export const useResultStore = defineStore('result', () => {
     } finally {
       isLoading.value = false
     }
+  }
+
+  async function fetchHistory() {
+    isHistoryLoading.value = true
+    try {
+      const { data } = await getCheckHistory(50)
+      history.value = Array.isArray(data) ? data : []
+      if (history.value.length > 0 && !selectedSessionId.value) {
+        selectedSessionId.value = history.value[0].session_id
+      }
+    } catch (e) {
+      console.warn('加载历史记录失败:', e)
+      history.value = []
+    } finally {
+      isHistoryLoading.value = false
+    }
+  }
+
+  function selectSession(sessionId) {
+    selectedSessionId.value = sessionId
+    resultsPage.value = 1
   }
 
   function setTab(tab) {
@@ -56,6 +84,9 @@ export const useResultStore = defineStore('result', () => {
     searchQuery.value = ''
     isLoading.value = false
     error.value = null
+    history.value = []
+    selectedSessionId.value = ''
+    isHistoryLoading.value = false
   }
 
   return {
@@ -67,7 +98,12 @@ export const useResultStore = defineStore('result', () => {
     searchQuery,
     isLoading,
     error,
+    history,
+    selectedSessionId,
+    isHistoryLoading,
     fetchResults,
+    fetchHistory,
+    selectSession,
     setTab,
     setSearch,
     setPage,

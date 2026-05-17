@@ -67,7 +67,7 @@
 
 <script setup>
 import { computed } from 'vue'
-import { Radio, PlayCircle, BarChart3, Wrench, Activity, TrendingUp } from 'lucide-vue-next'
+import { Tv, Radio, PlayCircle, BarChart3, Wrench, Activity, Star } from 'lucide-vue-next'
 import { useAppStore } from '../../stores/app'
 import { cn } from '../../lib/utils'
 import { Badge } from '../ui/badge'
@@ -75,10 +75,11 @@ import { Badge } from '../ui/badge'
 const store = useAppStore()
 
 const navItems = computed(() => [
+  { id: 'live', to: '/live', label: '看电视', mobileLabel: '电视', icon: Tv },
   { id: 'source', to: '/source', label: '源配置', mobileLabel: '源', icon: Radio },
   { id: 'checking', to: '/checking', label: '检测中', mobileLabel: '检测', icon: PlayCircle, badge: store.isChecking ? '进行中' : null },
   { id: 'result', to: '/result', label: '结果', mobileLabel: '结果', icon: BarChart3 },
-  { id: 'trend', to: '/trend', label: '趋势', mobileLabel: '趋势', icon: TrendingUp },
+  { id: 'favorites', to: '/favorites', label: '收藏', mobileLabel: '收藏', icon: Star },
   { id: 'toolbox', to: '/toolbox', label: '工具箱', mobileLabel: '工具', icon: Wrench },
 ])
 </script>

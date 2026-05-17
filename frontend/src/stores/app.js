@@ -9,6 +9,8 @@ import {
   stopM3uServer,
   getMediaProbeFullStatus,
   createSSEConnection,
+  loadAllEpg,
+  saveResults,
 } from '../api'
 import { useToast } from '../composables/useToast'
 import { useSourceStore } from './source'
@@ -20,6 +22,7 @@ export const useAppStore = defineStore('app', () => {
   const localIsp = ref('检测中...')
   const m3uState = ref({ running: false, url: '', file_exists: false, valid_channels: 0 })
   const mediaProbeStatus = ref({ enabled: false, ffmpeg_available: false, usable: false })
+  const syncProgress = ref({ is_syncing: false, stage: '', current_url_index: 0, total_urls: 0, current_url_label: '', fetched_channel_count: 0, added: 0, updated: 0, elapsed_seconds: 0, eta_seconds: null })
 
   let ispCheckTimeout = null
   const ISP_CHECK_TIMEOUT = 10000
@@ -27,16 +30,28 @@ export const useAppStore = defineStore('app', () => {
   const sourceStore = useSourceStore()
   const checkStore = useCheckStore()
   const resultStore = useResultStore()
+  const toast = useToast()
 
-  const isChecking = computed(() => checkStore.isChecking.value)
-  const onlineSources = computed(() => sourceStore.onlineSources.value)
-  const checkResults = computed(() => resultStore.checkResults.value)
+  const isChecking = computed(() => checkStore.isChecking)
+  const onlineSources = computed(() => sourceStore.onlineSources)
+  const checkResults = computed(() => resultStore.checkResults)
+
+  function showToast(message, type = 'error') {
+    const typeMethodMap = {
+      success: toast.success,
+      error: toast.error,
+      warning: toast.warning,
+      info: toast.info,
+    }
+    const method = typeMethodMap[type] || toast.error
+    method(message)
+  }
 
   async function fetchInfo() {
     const { data } = await getInfo()
     appInfo.value = data
     localIsp.value = data.local_isp
-    checkStore.isChecking.value = data.is_checking
+    checkStore.isChecking = data.is_checking
 
     if (data.local_isp === '未知' || data.local_isp === '检测中...') {
       startIspCheckTimeout()
@@ -99,14 +114,6 @@ export const useAppStore = defineStore('app', () => {
     }
   }
 
-  function addLog(message, type = 'info') {
-    checkStore.addLog(message, type)
-  }
-
-  function clearLogs() {
-    checkStore.clearLogs()
-  }
-
   function startReconciliation() {
     checkStore.startReconciliation()
   }
@@ -117,6 +124,7 @@ export const useAppStore = defineStore('app', () => {
 
   function handleSSEMessage(msg) {
     const { event } = msg
+    console.log('[SSE] 收到事件:', event, msg)
 
     if (event === 'init') {
       if (msg.local_isp) localIsp.value = msg.local_isp
@@ -137,7 +145,7 @@ export const useAppStore = defineStore('app', () => {
     if (event === 'isp_updated') {
       localIsp.value = msg.local_isp
       clearIspCheckTimeout()
-      addLog(`运营商检测完成：${msg.local_isp}`, 'info')
+      checkStore.addLog(`运营商检测完成：${msg.local_isp}`, 'info')
       const { toast } = useToast()
       toast.success('运营商检测完成', `当前运营商：${msg.local_isp}`)
       return
@@ -149,10 +157,16 @@ export const useAppStore = defineStore('app', () => {
       checkStore.completeCheckState(
         msg.total || checkStore.checkTotal.value,
         msg.valid || checkStore.validCount.value,
+        msg.likely_valid || checkStore.likelyValidCount.value,
         msg.invalid || checkStore.invalidCount.value
       )
+      loadAllEpg().catch(() => {})
+      autoSaveResults().catch(() => {})
     } else if (event === 'check_started') {
-      checkStore.startCheckState(msg.total || 0)
+      console.log('[SSE] check_started 事件详情:', msg)
+      if (!checkStore.isChecking) {
+        checkStore.startCheckState(msg.total || 0)
+      }
       resultStore.reset()
     } else if (event === 'channels_loaded') {
       checkStore.handleChannelsLoaded(msg.total)
@@ -163,10 +177,29 @@ export const useAppStore = defineStore('app', () => {
     } else if (event === 'stage_changed') {
       checkStore.stage.value = msg.stage || ''
       checkStore.stageMessage.value = msg.message || ''
+    } else if (event === 'fetch_started') {
+      checkStore.stage.value = 'fetching'
+      checkStore.stageMessage.value = `正在拉取 ${msg.total_sources || 0} 个在线源...`
+      syncProgress.value = { ...syncProgress.value, is_syncing: true, stage: 'fetching_channels', total_urls: msg.total_sources || 0, current_url_index: 0, current_url_label: `正在拉取 ${msg.total_sources || 0} 个源的频道...`, started_at: syncProgress.value.started_at || Date.now() / 1000 }
+    } else if (event === 'fetch_completed') {
+      checkStore.stage.value = 'fetch_done'
+      const fetched = msg.fetched_channels || 0
+      const raw = msg.raw_channels || 0
+      const dedup = msg.dedup_channels || 0
+      if (dedup > 0) {
+        checkStore.stageMessage.value = `拉取完成，共 ${fetched} 个唯一频道（去重前 ${raw}，跨源重复 ${dedup} 个）`
+      } else {
+        checkStore.stageMessage.value = `拉取完成，共 ${fetched} 个频道`
+      }
+      syncProgress.value = { ...syncProgress.value, is_syncing: false, stage: 'completed' }
+    } else if (event === 'fetch_progress') {
+      syncProgress.value = { ...syncProgress.value, current_url_index: msg.done_sources || 0, total_urls: msg.total_sources || 0, fetched_channel_count: msg.fetched_channels || 0, current_url_label: `拉取频道 ${msg.done_sources || 0}/${msg.total_sources || 0}，已获取 ${msg.fetched_channels || 0} 个` }
     } else if (event === 'health_alert') {
       const { toast } = useToast()
       const unhealthy = msg.unhealthy_sources || []
       toast.warning('源健康告警', `${unhealthy.length} 个源有效率低于阈值`)
+    } else if (event === 'sync_progress') {
+      syncProgress.value = { ...syncProgress.value, ...msg }
     }
   }
 
@@ -183,12 +216,12 @@ export const useAppStore = defineStore('app', () => {
     if (ispCheckTimeout) return
     ispCheckTimeout = setTimeout(async () => {
       if (localIsp.value === '未知' || localIsp.value === '检测中...') {
-        addLog('运营商检测超时，主动重试...', 'warning')
+        checkStore.addLog('运营商检测超时，主动重试...', 'warning')
         try {
           await doRefreshIsp()
           clearIspCheckTimeout()
         } catch (e) {
-          addLog('主动重试失败：' + (e.message || '未知错误'), 'error')
+          checkStore.addLog('主动重试失败：' + (e.message || '未知错误'), 'error')
         }
       }
     }, ISP_CHECK_TIMEOUT)
@@ -201,14 +234,43 @@ export const useAppStore = defineStore('app', () => {
     }
   }
 
+  async function autoSaveResults() {
+    if (checkStore.checkTotal.value === 0) return
+    try {
+      const { data } = await saveResults()
+      checkStore.markResultsSaved(data.history_id, data.saved)
+      checkStore.addLog(`检测结果已自动保存到数据库 (ID: ${data.history_id}, 共 ${data.saved} 条)`, 'success')
+    } catch (e) {
+      checkStore.addLog('自动保存检测结果失败: ' + (e.response?.data?.detail || e.message), 'warning')
+    }
+  }
+
+  async function manualSaveResults() {
+    if (checkStore.checkTotal.value === 0) {
+      toast.warning('无可保存结果', '请先进行检测')
+      return
+    }
+    try {
+      const { data } = await saveResults()
+      checkStore.markResultsSaved(data.history_id, data.saved)
+      toast.success('保存成功', `已保存 ${data.saved} 条检测结果到数据库`)
+      return data
+    } catch (e) {
+      toast.error('保存失败', e.response?.data?.detail || e.message)
+      throw e
+    }
+  }
+
   return {
     appInfo,
     localIsp,
     m3uState,
     mediaProbeStatus,
+    syncProgress,
     isChecking,
     onlineSources,
     checkResults,
+    showToast,
     fetchInfo,
     fetchIsp,
     doRefreshIsp,
@@ -219,13 +281,13 @@ export const useAppStore = defineStore('app', () => {
     doStartM3u,
     doStopM3u,
     fetchMediaProbeStatus,
-    addLog,
-    clearLogs,
     handleSSEMessage,
     handleWsMessage,
     initSSE,
     startReconciliation,
     stopReconciliation,
     clearIspCheckTimeout,
+    autoSaveResults,
+    manualSaveResults,
   }
 })

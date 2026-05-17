@@ -29,6 +29,24 @@
       </div>
 
       <div class="space-y-2">
+        <label class="text-sm font-medium">导出范围</label>
+        <div class="grid grid-cols-2 gap-2">
+          <label
+            v-for="scope in scopes"
+            :key="scope.value"
+            class="flex items-center gap-2 rounded-lg border p-3 cursor-pointer transition-colors hover:bg-accent"
+            :class="exportScope === scope.value ? 'border-primary bg-primary/5' : 'border-border'"
+          >
+            <input type="radio" :value="scope.value" v-model="exportScope" class="accent-primary" />
+            <div>
+              <div class="text-sm">{{ scope.label }}</div>
+              <div class="text-xs text-muted-foreground">{{ scope.desc }}</div>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <div class="space-y-2">
         <label class="text-sm font-medium">文件名前缀</label>
         <Input v-model="baseName" placeholder="检测结果" />
       </div>
@@ -63,8 +81,10 @@ import { Button } from './ui/button'
 import { Input } from './ui/input'
 import { Select } from './ui/select'
 
-defineProps({
+const props = defineProps({
   open: { type: Boolean, default: false },
+  selectedUrls: { type: Array, default: () => [] },
+  selectedGroups: { type: Array, default: () => [] },
 })
 
 defineEmits(['update:open'])
@@ -72,6 +92,7 @@ defineEmits(['update:open'])
 const selectedFormats = ref(['m3u'])
 const baseName = ref('检测结果')
 const exportMode = ref('merged')
+const exportScope = ref('valid')
 const exporting = ref(false)
 const { toast } = useToast()
 
@@ -82,15 +103,31 @@ const formats = [
   { label: 'CSV 表格', value: 'csv' },
 ]
 
+const scopes = [
+  { label: '仅有效频道', value: 'valid', desc: '过滤掉无效源' },
+  { label: '全部频道', value: 'all', desc: '包含无效源' },
+  { label: '仅选中频道', value: 'selected', desc: '导出勾选的频道' },
+]
+
 async function doExport() {
   exporting.value = true
   try {
+    const payload = {
+      format: '',
+      base_name: baseName.value,
+      export_mode: exportMode.value,
+      only_valid: exportScope.value === 'valid',
+    }
+    if (exportScope.value === 'selected' && props.selectedUrls.length > 0) {
+      payload.channel_urls = props.selectedUrls
+      payload.only_valid = false
+    }
+    if (props.selectedGroups.length > 0) {
+      payload.groups = props.selectedGroups
+    }
     for (const format of selectedFormats.value) {
-      const { data } = await exportResults({
-        format,
-        base_name: baseName.value,
-        export_mode: exportMode.value,
-      })
+      payload.format = format
+      await exportResults(payload)
     }
     toast.success('导出成功')
   } catch (e) {

@@ -25,7 +25,6 @@ describe('useCheckStore', () => {
     expect(store.checkedCount).toBe(0)
     expect(store.phase).toBe('checking')
     expect(store.stage).toBe('parsing')
-    expect(store.logs.length).toBe(1)
   })
 
   it('阶段加权进度 - parsing 阶段', () => {
@@ -93,12 +92,25 @@ describe('useCheckStore', () => {
     expect(store.currentStatus).toBe('正在下载 3 个在线源...')
   })
 
-  it('clearLogs 应清空日志', () => {
+  it('currentStatus 在复检阶段应显示复检信息', () => {
     const store = useCheckStore()
-    store.addLog('测试日志')
-    expect(store.logs.length).toBe(1)
+    store.startCheckState(100)
+    store.checkedCount = 100
+    store.checkTotal = 100
+    store.invalidCount = 20
+    store.likelyValidCount = 5
+    store.stage = 'rechecking'
 
-    store.clearLogs()
-    expect(store.logs.length).toBe(0)
+    expect(store.currentStatus).toBe('正在复检无效频道... (25 个待复检)')
+  })
+
+  it('currentStatus 在收尾阶段应显示生成报告', () => {
+    const store = useCheckStore()
+    store.startCheckState(100)
+    store.checkedCount = 100
+    store.checkTotal = 100
+    store.stage = 'finalizing'
+
+    expect(store.currentStatus).toBe('正在生成报告...')
   })
 })

@@ -1,11 +1,11 @@
 <template>
   <header class="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
     <div class="flex h-14 items-center px-4 gap-4">
-      <div class="flex items-center gap-2 shrink-0">
+      <RouterLink to="/live" class="flex items-center gap-2 shrink-0 hover:opacity-80 transition-opacity">
         <Tv class="h-6 w-6 text-primary" />
         <span class="font-semibold text-lg hidden sm:inline">电视直播源检测工具</span>
         <span class="font-semibold text-lg sm:hidden">IPTV检测</span>
-      </div>
+      </RouterLink>
 
       <nav class="hidden md:flex items-center gap-1 ml-4">
         <RouterLink
@@ -33,6 +33,10 @@
             >
               {{ item.badge }}
             </Badge>
+            <span
+              v-if="item.id === 'checking' && store.isChecking"
+              class="w-2 h-2 rounded-full bg-success animate-ping"
+            />
           </button>
         </RouterLink>
       </nav>
@@ -67,10 +71,10 @@
         <button
           class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground h-8 w-8"
           @click="toggleTheme"
+          :title="mode === 'dark' ? '切换到亮色模式' : '切换到暗色模式'"
         >
           <Sun v-if="mode === 'light'" class="h-4 w-4" />
-          <Moon v-else-if="mode === 'dark'" class="h-4 w-4" />
-          <Monitor v-else class="h-4 w-4" />
+          <Moon v-else class="h-4 w-4" />
         </button>
       </div>
     </div>
@@ -104,7 +108,7 @@
 
 <script setup>
 import { computed, ref, onMounted, onUnmounted } from 'vue'
-import { Tv, Globe, RefreshCw, Sun, Moon, Monitor, Radio, PlayCircle, BarChart3, Wrench, FileText, TrendingUp } from 'lucide-vue-next'
+import { Tv, Globe, RefreshCw, Sun, Moon, Radio, PlayCircle, BarChart3, Wrench, Star, Loader2 } from 'lucide-vue-next'
 import { useAppStore } from '../../stores/app'
 import { useDarkMode } from '../../composables/useDarkMode'
 import { cn } from '../../lib/utils'
@@ -130,8 +134,8 @@ const navItems = computed(() => [
   { id: 'source', to: '/source', label: '源配置', mobileLabel: '源', icon: Radio },
   { id: 'checking', to: '/checking', label: '检测中', mobileLabel: '检测', icon: PlayCircle, badge: store.isChecking ? '进行中' : null },
   { id: 'result', to: '/result', label: '结果', mobileLabel: '结果', icon: BarChart3 },
-  { id: 'report', to: '/report', label: '报告', mobileLabel: '报告', icon: FileText },
-  { id: 'trend', to: '/trend', label: '趋势', mobileLabel: '趋势', icon: TrendingUp },
+  { id: 'live', to: '/live', label: '直播', mobileLabel: '直播', icon: Tv },
   { id: 'toolbox', to: '/toolbox', label: '工具箱', mobileLabel: '工具', icon: Wrench },
+  { id: 'favorites', to: '/favorites', label: '收藏夹', mobileLabel: '收藏', icon: Star },
 ])
 </script>

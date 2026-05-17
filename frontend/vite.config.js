@@ -14,11 +14,11 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      '/api': 'http://localhost:9529',
-      '/ws': { target: 'ws://localhost:9529', ws: true },
-      '/proxy': 'http://localhost:9529',
-      '/player': 'http://localhost:9529',
-      '/hls-static': 'http://localhost:9529',
+      '/api': 'http://localhost:9530',
+      '/ws': { target: 'ws://localhost:9530', ws: true },
+      '/proxy': 'http://localhost:9530',
+      '/player': 'http://localhost:9530',
+      '/hls-static': 'http://localhost:9530',
     },
   },
   build: {

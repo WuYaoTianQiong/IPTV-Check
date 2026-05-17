@@ -10,12 +10,18 @@ export const useCheckStore = defineStore('check', () => {
   const checkTotal = ref(0)
   const checkedCount = ref(0)
   const validCount = ref(0)
+  const likelyValidCount = ref(0)
   const invalidCount = ref(0)
-  const logs = ref([])
   const phase = ref('idle')
   const stage = ref('') // parsing | downloading | checking | finalizing
   const stageMessage = ref('')
   const startTime = ref(null)
+  const lastSavedHistoryId = ref(null)
+  const lastSavedCount = ref(0)
+  const lastSavedAt = ref(null)
+
+  const logs = ref([])
+  const MAX_LOGS = 500
 
   let reconciliationTimer = null
   let _reconciliationInterval = 2000
@@ -25,20 +31,20 @@ export const useCheckStore = defineStore('check', () => {
     parsing: { weight: 10, progress: 0 },
     downloading: { weight: 15, progress: 0 },
     checking: { weight: 70, progress: 0 },
+    rechecking: { weight: 5, progress: 0 },
     finalizing: { weight: 5, progress: 0 },
   }
 
   const progress = computed(() => {
+    if (phase.value === 'completed') return 100
     if (checkTotal.value === 0) {
-      // 没有总数时，按阶段显示固定进度
       if (stage.value === 'parsing') return 5
       if (stage.value === 'downloading') return 15
       return 0
     }
-    // 阶段加权进度
     let baseProgress = 0
-    if (stage.value === 'checking' || stage.value === 'finalizing' || checkedCount.value > 0) {
-      baseProgress = 25 // parsing + downloading 完成
+    if (stage.value === 'checking' || stage.value === 'rechecking' || stage.value === 'finalizing' || checkedCount.value > 0) {
+      baseProgress = 25
       const checkProgress = (checkedCount.value / checkTotal.value) * 70
       baseProgress += checkProgress
     }
@@ -58,6 +64,16 @@ export const useCheckStore = defineStore('check', () => {
     if (stageMessage.value) return stageMessage.value
     if (checkTotal.value === 0) return '正在加载直播源...'
     if (checkedCount.value === 0) return `已加载 ${checkTotal.value} 个频道，正在检测...`
+    if (checkedCount.value >= checkTotal.value && isChecking.value) {
+      if (stage.value === 'rechecking') {
+        const recheckRemaining = invalidCount.value + likelyValidCount.value
+        return `正在复检无效频道... (${recheckRemaining} 个待复检)`
+      }
+      if (stage.value === 'finalizing') {
+        return '正在生成报告...'
+      }
+      return `首轮检测完成，正在处理结果...`
+    }
     return `检测中: ${checkedCount.value}/${checkTotal.value}`
   })
 
@@ -65,36 +81,35 @@ export const useCheckStore = defineStore('check', () => {
     if (!isChecking.value || checkedCount.value === 0 || checkTotal.value === 0) return null
     const elapsed = Date.now() - (startTime.value || Date.now())
     const avgTime = elapsed / checkedCount.value
-    const remaining = checkTotal.value - checkedCount.value
+    let remaining = checkTotal.value - checkedCount.value
+    if (checkedCount.value >= checkTotal.value && isChecking.value) {
+      if (stage.value === 'rechecking') {
+        const recheckRemaining = invalidCount.value
+        remaining = recheckRemaining
+      } else if (stage.value === 'finalizing') {
+        return '即将完成'
+      } else {
+        return '即将完成'
+      }
+    }
+    if (remaining <= 0) return '即将完成'
     const ms = avgTime * remaining
     if (ms < 60000) return `${Math.round(ms / 1000)}秒`
     return `${Math.round(ms / 60000)}分钟`
   })
-
-  function addLog(message, type = 'info') {
-    logs.value.push({
-      id: Date.now() + Math.random(),
-      message,
-      type,
-      time: new Date().toLocaleTimeString(),
-    })
-    if (logs.value.length > 500) {
-      logs.value = logs.value.slice(-300)
-    }
-  }
-
-  function clearLogs() {
-    logs.value = []
-  }
 
   function resetCheckState() {
     isChecking.value = false
     checkTotal.value = 0
     checkedCount.value = 0
     validCount.value = 0
+    likelyValidCount.value = 0
     invalidCount.value = 0
     phase.value = 'idle'
     startTime.value = null
+    lastSavedHistoryId.value = null
+    lastSavedCount.value = 0
+    lastSavedAt.value = null
   }
 
   function startCheckState(total = 0) {
@@ -102,29 +117,25 @@ export const useCheckStore = defineStore('check', () => {
     checkTotal.value = total
     checkedCount.value = 0
     validCount.value = 0
+    likelyValidCount.value = 0
     invalidCount.value = 0
-    logs.value = []
     phase.value = 'checking'
     stage.value = 'parsing'
     stageMessage.value = '正在解析直播源...'
     startTime.value = Date.now()
-    addLog('检测开始', 'info')
     startReconciliation()
   }
 
-  function completeCheckState(total, valid, invalid) {
+  function completeCheckState(total, valid, likelyValid, invalid) {
     isChecking.value = false
     checkTotal.value = total
     checkedCount.value = total
     validCount.value = valid
+    likelyValidCount.value = likelyValid || 0
     invalidCount.value = invalid
     phase.value = 'completed'
     stage.value = ''
     stageMessage.value = ''
-    addLog(`检测完成 | 总计: ${total} | 有效: ${valid} | 无效: ${invalid}`, 'info')
-    const rate = total ? Math.round((valid / total) * 100) : 0
-    const { toast } = useToast()
-    toast.success('检测完成', `共 ${total} 个频道，有效 ${valid}，有效率 ${rate}%`)
     stopReconciliation()
   }
 
@@ -133,7 +144,6 @@ export const useCheckStore = defineStore('check', () => {
     phase.value = 'stopped'
     stage.value = ''
     stageMessage.value = ''
-    addLog('检测已停止', 'warning')
     stopReconciliation()
   }
 
@@ -147,13 +157,13 @@ export const useCheckStore = defineStore('check', () => {
     checkTotal.value = total
     stage.value = 'checking'
     stageMessage.value = `正在检测 ${total} 个频道...`
-    addLog(`共加载 ${total} 个频道，开始检测`, 'info')
   }
 
   function handleProgressUpdate(data) {
     checkTotal.value = data.total || checkTotal.value
     checkedCount.value = data.checked || 0
     validCount.value = data.valid || 0
+    likelyValidCount.value = data.likely_valid || 0
     invalidCount.value = data.invalid || 0
   }
 
@@ -162,16 +172,34 @@ export const useCheckStore = defineStore('check', () => {
     reconciliationTimer = setInterval(async () => {
       try {
         const { data } = await getCheckProgress()
+        if (data.is_running && !isChecking.value) {
+          isChecking.value = true
+          phase.value = 'checking'
+          if (stage.value === '') stage.value = 'checking'
+        }
         if (
           data.total !== checkTotal.value ||
           data.checked !== checkedCount.value ||
-          data.valid !== validCount.value
+          data.valid !== validCount.value ||
+          (data.likely_valid || 0) !== likelyValidCount.value
         ) {
           checkTotal.value = data.total
           checkedCount.value = data.checked
           validCount.value = data.valid
+          likelyValidCount.value = data.likely_valid || 0
           invalidCount.value = data.invalid
           isChecking.value = data.is_running
+        }
+        if (!data.is_running && isChecking.value) {
+          isChecking.value = false
+          phase.value = 'completed'
+        }
+        if (!data.is_running && !isChecking.value && checkedCount.value > 0 && phase.value !== 'completed') {
+          phase.value = 'completed'
+          stopReconciliation()
+        }
+        if (!data.is_running && !isChecking.value && checkedCount.value === 0) {
+          stopReconciliation()
         }
       } catch {}
     }, _reconciliationInterval)
@@ -184,13 +212,30 @@ export const useCheckStore = defineStore('check', () => {
     }
   }
 
+  function markResultsSaved(historyId, count) {
+    lastSavedHistoryId.value = historyId
+    lastSavedCount.value = count
+    lastSavedAt.value = Date.now()
+  }
+
+  function addLog(message, type = 'info') {
+    logs.value.push({ message, type, time: Date.now() })
+    if (logs.value.length > MAX_LOGS) {
+      logs.value = logs.value.slice(-MAX_LOGS)
+    }
+  }
+
+  function clearLogs() {
+    logs.value = []
+  }
+
   return {
     isChecking,
     checkTotal,
     checkedCount,
     validCount,
+    likelyValidCount,
     invalidCount,
-    logs,
     phase,
     stage,
     stageMessage,
@@ -199,6 +244,10 @@ export const useCheckStore = defineStore('check', () => {
     validRate,
     currentStatus,
     eta,
+    lastSavedHistoryId,
+    lastSavedCount,
+    lastSavedAt,
+    logs,
     addLog,
     clearLogs,
     resetCheckState,
@@ -210,5 +259,6 @@ export const useCheckStore = defineStore('check', () => {
     handleProgressUpdate,
     startReconciliation,
     stopReconciliation,
+    markResultsSaved,
   }
 })

@@ -13,17 +13,29 @@
           v-for="toast in toasts"
           :key="toast.id"
           :class="cn(
-            'rounded-lg border px-4 py-3 shadow-lg cursor-pointer',
-            'flex items-start gap-3',
+            'rounded-lg border px-4 py-3 shadow-lg',
+            'flex flex-col gap-3',
             variantStyles[toast.variant] || variantStyles.default
           )"
-          @click="removeToast(toast.id)"
         >
-          <component :is="icons[toast.variant] || icons.default" class="h-5 w-5 shrink-0 mt-0.5" />
-          <div class="flex-1 min-w-0">
-            <div v-if="toast.title" class="text-sm font-semibold leading-tight">{{ toast.title }}</div>
-            <div v-if="toast.description" class="text-sm mt-0.5 opacity-90 leading-tight">{{ toast.description }}</div>
+          <div class="flex items-start gap-3 cursor-pointer" @click="removeToast(toast.id)">
+            <component :is="icons[toast.variant] || icons.default" class="h-5 w-5 shrink-0 mt-0.5" />
+            <div class="flex-1 min-w-0">
+              <div v-if="toast.title" class="text-sm font-semibold leading-tight">{{ toast.title }}</div>
+              <div v-if="toast.description" class="text-sm mt-0.5 opacity-90 leading-tight">{{ toast.description }}</div>
+            </div>
           </div>
+          <button
+            v-if="toast.action"
+            :class="cn(
+              'text-xs font-medium px-2 py-1 rounded transition-colors',
+              'hover:opacity-80 focus:outline-none focus:ring-2 focus:ring-offset-1',
+              actionButtonStyles[toast.variant] || actionButtonStyles.default
+            )"
+            @click.stop="handleToastAction(toast)"
+          >
+            {{ toast.action.label }}
+          </button>
         </div>
       </TransitionGroup>
     </div>
@@ -45,11 +57,26 @@ const variantStyles = {
   info: 'bg-info/10 border-info/20 text-info',
 }
 
+const actionButtonStyles = {
+  default: 'bg-secondary text-secondary-foreground',
+  success: 'bg-success/20 text-success hover:bg-success/30',
+  destructive: 'bg-destructive/20 text-destructive hover:bg-destructive/30',
+  warning: 'bg-warning/20 text-warning hover:bg-warning/30',
+  info: 'bg-info/20 text-info hover:bg-info/30',
+}
+
 const icons = {
   default: Bell,
   success: CircleCheck,
   destructive: CircleX,
   warning: AlertTriangle,
   info: Info,
+}
+
+function handleToastAction(toast) {
+  if (toast.action) {
+    toast.action.handler()
+  }
+  removeToast(toast.id)
 }
 </script>
