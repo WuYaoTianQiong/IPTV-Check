@@ -1,597 +1,729 @@
 <template>
   <div class="space-y-6">
+    <div class="p-6 bg-card rounded-xl border flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <div>
+        <h3 class="font-bold text-base">📊 本次检测大盘总结报告</h3>
+        <p class="text-sm text-muted-foreground mt-1">
+          检测完成：其中<span class="text-success font-bold mx-1">可用 {{ checkStore.validCount }} 个</span>，无效 {{ checkStore.invalidCount }} 个。
+        </p>
+      </div>
+      <Button @click="handleSmartOptimize" class="gap-2">
+        <Wand2 class="w-4 h-4" />
+        🪄 智能一键优选并去重
+      </Button>
+    </div>
+
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
       <div>
         <h1 class="text-2xl font-bold tracking-tight">检测结果</h1>
         <p class="text-muted-foreground mt-1">
           共 {{ resultStore.resultsTotal }} 个频道 · 有效 {{ checkStore.validCount }} · 无效 {{ checkStore.invalidCount }}
-          <span v-if="historyList.length > 0" class="ml-2 text-xs">
-            · 最近 {{ historyList.length }} 次检测
-          </span>
         </p>
       </div>
-      <div class="flex gap-2 flex-wrap">
+      <div class="flex gap-2 flex-wrap items-center">
+        <select
+          v-if="resultStore.history.length > 0"
+          v-model="selectedSessionId"
+          class="rounded border bg-card px-3 py-1.5 text-sm max-w-[220px]"
+          @change="onSessionChange"
+        >
+          <option value="" disabled>📋 选择历史记录</option>
+          <option
+            v-for="h in resultStore.history"
+            :key="h.session_id"
+            :value="h.session_id"
+          >
+            {{ formatHistoryLabel(h) }}
+          </option>
+        </select>
+        <Tabs>
+          <TabButton :active="resultStore.currentTab === 'all'" @click="switchTab('all')">全部</TabButton>
+          <TabButton :active="resultStore.currentTab === 'valid'" @click="switchTab('valid')">有效</TabButton>
+          <TabButton :active="resultStore.currentTab === 'likely_valid'" @click="switchTab('likely_valid')">疑似有效</TabButton>
+          <TabButton :active="resultStore.currentTab === 'invalid'" @click="switchTab('invalid')">无效</TabButton>
+        </Tabs>
         <Button variant="outline" class="gap-2" @click="router.push('/source')">
           <ArrowLeft class="h-4 w-4" /> 返回选源
         </Button>
-        <Button variant="outline" class="gap-2" @click="doOptimize">
-          <Wand2 class="h-4 w-4" /> 智能优选
-        </Button>
-        <Button class="gap-2" @click="showExport = true">
+        <Button variant="outline" class="gap-2" @click="showExport = true">
           <Download class="h-4 w-4" /> 导出
         </Button>
       </div>
     </div>
 
-    <!-- 历史检测列表（可折叠） -->
-    <details class="group" v-if="historyList.length > 0">
-      <summary class="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer hover:text-foreground transition-colors select-none py-1">
-        <ChevronRight class="h-4 w-4 group-open:rotate-90 transition-transform" />
-        历史检测 · 最近 {{ historyList.length }} 次
-        <span class="text-xs text-muted-foreground ml-auto">点击切换</span>
-      </summary>
-      <div class="flex gap-2 overflow-x-auto mt-2 pb-2 scrollbar-thin">
-        <div v-for="h in historyList" :key="h.session_id"
-             class="flex flex-col gap-1 min-w-[160px] p-3 rounded-lg cursor-pointer border transition-all"
-             :class="h.session_id === currentSessionId ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50 hover:bg-accent/50'"
-             @click="loadHistorySession(h.session_id)">
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-medium">{{ formatTime(h.created_at) }}</span>
-            <Badge v-if="h.session_id === currentSessionId" variant="default" class="text-[10px]">当前</Badge>
-          </div>
-          <div class="text-xs text-muted-foreground">{{ h.total }} 频道</div>
-          <div class="flex gap-2 text-[10px]">
-            <span class="text-green-500">✓ {{ h.valid }} 有效</span>
-            <span class="text-red-500">✗ {{ h.invalid }} 无效</span>
-          </div>
-        </div>
-      </div>
-    </details>
-
-    <div class="grid gap-6 lg:grid-cols-[260px_1fr]">
-      <div class="space-y-4">
-        <Card>
-          <CardHeader class="pb-2">
-            <CardTitle class="text-sm font-medium">历史检测</CardTitle>
-          </CardHeader>
-          <CardContent class="p-2 space-y-1.5 max-h-[40vh] overflow-y-auto">
-            <div v-for="h in historyList" :key="h.session_id"
-                 class="flex items-center justify-between text-xs px-2 py-1.5 rounded cursor-pointer"
-                 :class="h.session_id === currentSessionId ? 'bg-primary/10 border border-primary/30' : 'hover:bg-accent/50'"
-                 @click="loadHistorySession(h.session_id)">
-              <div class="flex-1 min-w-0">
-                <div class="font-medium truncate">{{ formatTime(h.created_at) }}</div>
-                <div class="text-muted-foreground">{{ h.total }} 频道 · {{ h.valid }} 有效 · {{ h.invalid }} 无效</div>
-              </div>
-            </div>
-            <div v-if="historyList.length === 0" class="text-xs text-muted-foreground text-center py-2">
-              暂无历史记录
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader class="pb-2">
-            <CardTitle class="text-sm font-medium">分类导航</CardTitle>
-          </CardHeader>
-          <CardContent class="p-2 max-h-[70vh] overflow-y-auto">
-            <div v-for="region in categoryTree" :key="region.name" class="mb-2">
-              <button
-                class="w-full flex items-center justify-between px-2 py-1.5 rounded text-sm font-medium hover:bg-accent/50"
-                :class="selectedRegion === region.name && !selectedGroup ? 'bg-accent text-accent-foreground' : ''"
-                @click="selectRegion(region.name)"
-              >
-                <span>{{ region.name }}</span>
-                <span class="text-xs text-muted-foreground">{{ region.valid }}/{{ region.count }}</span>
-              </button>
-              <div v-if="expandedRegion === region.name" class="ml-3 space-y-0.5">
-                <button
-                  v-for="grp in region.children"
-                  :key="grp.name"
-                  class="w-full flex items-center justify-between px-2 py-1 rounded text-xs hover:bg-accent/50"
-                  :class="selectedGroup === grp.name ? 'bg-accent text-accent-foreground' : ''"
-                  @click="selectGroup(region.name, grp.name)"
-                >
-                  <span class="truncate">
-                    <template v-if="grp.flag">{{ grp.flag }} </template>
-                    <template v-if="grp.country_zh">{{ grp.country_zh }} · </template>
-                    {{ grp.name }}
-                  </span>
-                  <span class="text-muted-foreground ml-1 shrink-0">{{ grp.valid }}/{{ grp.count }}</span>
-                </button>
-              </div>
-            </div>
-            <div v-if="categoryTree.length === 0" class="text-xs text-muted-foreground text-center py-4">
-              暂无分类数据
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader class="pb-2">
-            <CardTitle class="text-sm font-medium">源健康度</CardTitle>
-          </CardHeader>
-          <CardContent class="p-2 space-y-1.5">
-            <div v-for="src in sourceHealth" :key="src.source_name" class="flex items-center justify-between text-xs px-2 py-1 rounded hover:bg-accent/50">
-              <span class="truncate max-w-[120px]">{{ src.source_name }}</span>
-              <Badge :variant="src.success ? 'success' : 'destructive'" class="text-[10px] ml-1">
-                {{ src.channel_count }} {{ src.success ? '成功' : '失败' }}
-              </Badge>
-            </div>
-            <div v-if="sourceHealth.length === 0" class="text-xs text-muted-foreground text-center py-2">
-              暂无数据
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div class="space-y-4">
-        <Card v-if="breadcrumb.length > 0">
-          <CardContent class="p-3">
-            <div class="flex items-center gap-1 text-sm flex-wrap">
-              <button class="text-muted-foreground hover:text-foreground" @click="clearSelection">全部</button>
-              <template v-for="(crumb, i) in breadcrumb" :key="i">
-                <ChevronRight class="h-3 w-3 text-muted-foreground" />
-                <button
-                  :class="i === breadcrumb.length - 1 ? 'font-medium text-foreground' : 'text-muted-foreground hover:text-foreground'"
-                  @click="breadcrumb.length > 1 && i < breadcrumb.length - 1 && clearSelection()"
-                >{{ crumb }}</button>
-              </template>
-            </div>
-          </CardContent>
-        </Card>
-
         <Card>
           <CardContent class="p-4 space-y-4">
-            <div class="flex flex-col sm:flex-row gap-3">
+            <!-- 基础筛选区域 -->
+            <div class="flex items-center gap-3 mb-2">
               <div class="relative flex-1">
                 <Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input v-model="resultStore.searchQuery" placeholder="搜索频道名..." class="pl-9" @input="onSearch" />
+                <Input v-model="resultStore.searchQuery" placeholder="搜索频道..." class="pl-9" @input="onSearch" />
               </div>
-              <div class="flex gap-2 flex-wrap">
-                <select
-                  v-if="availableLanguages.length > 0"
-                  v-model="selectedLanguage"
-                  class="h-9 rounded-md border border-input bg-background px-3 text-sm"
-                  @change="switchLanguage(selectedLanguage)"
-                >
-                  <option value="">全部语言</option>
-                  <option v-for="lang in availableLanguages" :key="lang.language" :value="lang.language">
-                    {{ lang.language }} ({{ lang.count }})
-                  </option>
-                </select>
-                <Button
-                  v-for="tab in tabs" :key="tab.value"
-                  variant="outline" size="sm"
-                  :class="resultStore.currentTab === tab.value ? 'bg-primary text-primary-foreground hover:bg-primary/90' : ''"
-                  @click="switchTab(tab.value)"
-                >
-                  {{ tab.label }}
-                  <Badge variant="secondary" class="ml-1.5">{{ tab.count }}</Badge>
-                </Button>
-              </div>
-              <div class="flex gap-2">
-                <Button
-                  v-for="mt in mediaTypes" :key="mt.value"
-                  variant="outline" size="sm"
-                  :class="mediaType === mt.value ? 'bg-primary text-primary-foreground hover:bg-primary/90' : ''"
-                  @click="switchMediaType(mt.value)"
-                >{{ mt.label }}</Button>
-              </div>
-              <div class="flex gap-2">
-                <Button
-                  variant="outline" size="sm"
-                  :class="viewMode === 'grouped' ? 'bg-primary text-primary-foreground hover:bg-primary/90' : ''"
-                  @click="switchViewMode('grouped')"
-                >聚合</Button>
-                <Button
-                  variant="outline" size="sm"
-                  :class="viewMode === 'flat' ? 'bg-primary text-primary-foreground hover:bg-primary/90' : ''"
-                  @click="switchViewMode('flat')"
-                >平铺</Button>
-              </div>
+              <Select v-model="mediaType" @change="switchMediaType">
+                <option value="all">全部</option>
+                <option value="tv">电视</option>
+                <option value="radio">广播</option>
+              </Select>
+              <Button variant="outline" size="sm" @click="showAdvancedFilter = !showAdvancedFilter">
+                <Filter class="h-4 w-4 mr-1" /> 高级筛选
+              </Button>
             </div>
 
-            <div v-if="viewMode === 'grouped'" class="space-y-2">
-              <div
-                v-for="item in resultStore.checkResults" :key="item.index"
-                class="rounded-lg border p-3 transition-colors hover:border-primary/30"
-                :class="item.has_valid ? 'border-l-2 border-l-success' : 'border-l-2 border-l-destructive'"
-              >
-                <div class="flex items-center gap-3">
-                  <div class="flex-1 min-w-0">
-                    <div class="flex items-center gap-2">
-                      <span class="font-medium">{{ item.name }}</span>
-                      <Badge variant="outline" class="text-[10px] shrink-0">{{ item.group || '未分组' }}</Badge>
-                      <Badge v-if="item.source_count > 1" variant="secondary" class="text-[10px] shrink-0">
-                        {{ item.source_count }}源
-                      </Badge>
-                      <Badge v-if="item.valid_count > 0 && item.source_count > 1" variant="success" class="text-[10px] shrink-0">
-                        推荐
-                      </Badge>
-                    </div>
-                    <div class="text-xs text-muted-foreground mt-0.5">
-                      有效 {{ item.valid_count }}/{{ item.source_count }}
-                      <span v-if="item.best_latency && item.best_latency !== '-'"> · 最优 {{ item.best_latency }}ms</span>
-                    </div>
-                  </div>
-                  <div class="flex items-center gap-1 shrink-0">
-                    <Button variant="ghost" size="icon" class="h-8 w-8" @click="openEpg(item)">
-                      <Calendar class="h-4 w-4" />
-                    </Button>
-                    <Button v-if="item.has_valid" variant="ghost" size="icon" class="h-8 w-8" @click="playRecommended(item)">
-                      <PlayCircle class="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" class="h-8 w-8" @click="toggleExpand(item.name)">
-                      <ChevronDown v-if="expandedChannels.has(item.name)" class="h-4 w-4" />
-                      <ChevronRight v-else class="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-
-                <div v-if="expandedChannels.has(item.name) && item.sources" class="mt-3 space-y-1.5 border-t pt-2">
-                  <div
-                    v-for="(src, si) in item.sources" :key="si"
-                    class="flex items-center gap-2 px-2 py-1.5 rounded text-xs hover:bg-accent/50"
-                    :class="si === item.recommended_source_idx ? 'bg-success/10 border border-success/20' : ''"
-                  >
-                    <Badge :variant="src.is_valid ? 'success' : 'destructive'" class="text-[10px] shrink-0">
-                      {{ src.is_valid ? '有效' : '无效' }}
+            <!-- 高级筛选面板 -->
+            <div v-if="showAdvancedFilter" class="bg-muted/20 rounded-lg p-4 border space-y-3">
+              <!-- 数据覆盖提示 -->
+              <div v-if="dataCoverageHint" class="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 text-sm text-amber-700 dark:text-amber-400">
+                <span class="font-medium">💡 提示：</span>{{ dataCoverageHint }}
+                <Button variant="link" size="sm" class="px-1 text-amber-600 dark:text-amber-300 underline" @click="router.push('/source')">去选源</Button>
+              </div>
+              <div class="space-y-4">
+                <!-- 国家/地区筛选 -->
+                <div class="space-y-2">
+                  <label class="text-sm font-medium">国家/地区</label>
+                  <div class="flex flex-wrap gap-2">
+                    <Badge
+                      v-for="country in availableCountries"
+                      :key="country.code"
+                      :variant="selectedCountries.includes(country.code) ? 'default' : 'outline'"
+                      class="cursor-pointer"
+                      @click="toggleCountry(country.code)"
+                    >
+                      {{ country.emoji }} {{ country.name }}
                     </Badge>
-                    <span class="text-muted-foreground w-12 shrink-0">{{ src.latency }}ms</span>
-                    <span class="text-muted-foreground w-14 shrink-0">{{ src.speed }}</span>
-                    <span class="truncate text-muted-foreground flex-1" :title="src.url">{{ src.url }}</span>
-                    <Badge v-if="si === item.recommended_source_idx" variant="success" class="text-[10px] shrink-0">推荐</Badge>
-                    <span class="text-muted-foreground w-20 shrink-0 truncate">{{ src.source_name }}</span>
-                    <Button v-if="src.is_valid" variant="ghost" size="icon" class="h-6 w-6 shrink-0" @click="openPlayer(item.name, src.url)">
-                      <PlayCircle class="h-3 w-3" />
-                    </Button>
+                    <Input
+                      v-model="countrySearch"
+                      placeholder="搜索国家..."
+                      class="text-xs h-8"
+                      @input="onCountrySearch"
+                    />
+                  </div>
+                  <!-- 中国二级：省级行政区联动 -->
+                  <div v-if="showRegionPanel && dynamicRegions.length > 0" class="ml-4 mt-2 space-y-1">
+                    <label class="text-xs font-medium text-muted-foreground">省级行政单位 / 直辖市</label>
+                    <div class="flex flex-wrap gap-1.5">
+                      <Badge
+                        v-for="region in dynamicRegions"
+                        :key="region.code"
+                        :variant="selectedRegion === region.code ? 'default' : 'outline'"
+                        class="cursor-pointer text-xs"
+                        @click="toggleRegion(region.code)"
+                      >
+                        {{ region.name }}
+                        <span class="ml-1 opacity-60">({{ region.valid }}/{{ region.count }})</span>
+                      </Badge>
+                      <Button variant="ghost" size="sm" class="text-xs h-6 px-2" @click="selectedRegion = ''">清空</Button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 内容分类筛选 -->
+                <div class="space-y-2">
+                  <label class="text-sm font-medium">内容分类</label>
+                  <div class="flex flex-wrap gap-2">
+                    <Badge
+                      v-for="cat in categoryOptions"
+                      :key="cat.value"
+                      :variant="selectedCategory === cat.value ? 'default' : 'outline'"
+                      class="cursor-pointer"
+                      @click="selectCategory(cat.value)"
+                    >
+                      {{ cat.label }}
+                    </Badge>
+                    <Button variant="ghost" size="sm" @click="selectedCategory = ''">清空</Button>
+                  </div>
+                </div>
+
+                <!-- 画质筛选 -->
+                <div class="space-y-2">
+                  <label class="text-sm font-medium">画质</label>
+                  <div class="flex flex-wrap gap-2">
+                    <Badge
+                      v-for="q in qualityOptions"
+                      :key="q.value"
+                      :variant="selectedQuality === q.value ? 'default' : 'outline'"
+                      class="cursor-pointer"
+                      @click="selectQuality(q.value)"
+                    >
+                      {{ q.label }}
+                    </Badge>
+                    <Button variant="ghost" size="sm" @click="selectedQuality = ''">清空</Button>
+                  </div>
+                </div>
+
+                <!-- 协议筛选 -->
+                <div class="space-y-2">
+                  <label class="text-sm font-medium">协议</label>
+                  <div class="flex flex-wrap gap-2">
+                    <Badge
+                      v-for="p in protocolOptions"
+                      :key="p.value"
+                      :variant="selectedProtocol === p.value ? 'default' : 'outline'"
+                      class="cursor-pointer"
+                      @click="selectProtocol(p.value)"
+                    >
+                      {{ p.label }}
+                    </Badge>
+                    <Button variant="ghost" size="sm" @click="selectedProtocol = ''">清空</Button>
                   </div>
                 </div>
               </div>
-              <div v-if="resultStore.checkResults.length === 0" class="text-center text-muted-foreground py-12">暂无数据</div>
-            </div>
 
-            <div v-else class="rounded-lg border overflow-x-auto">
-              <table class="w-full text-sm">
-                <thead>
-                  <tr class="border-b bg-muted/50">
-                    <th class="h-10 px-3 text-left font-medium text-muted-foreground w-16">#</th>
-                    <th class="h-10 px-3 text-left font-medium text-muted-foreground">频道名</th>
-                    <th class="h-10 px-3 text-left font-medium text-muted-foreground hidden md:table-cell">分组</th>
-                    <th class="h-10 px-3 text-center font-medium text-muted-foreground w-20">状态</th>
-                    <th class="h-10 px-3 text-center font-medium text-muted-foreground w-24">延迟</th>
-                    <th class="h-10 px-3 text-center font-medium text-muted-foreground w-24 hidden sm:table-cell">速度</th>
-                    <th class="h-10 px-3 text-center font-medium text-muted-foreground w-16">操作</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="item in resultStore.checkResults" :key="item.index"
-                    class="border-b transition-colors hover:bg-accent/50"
-                    :class="item.is_valid ? 'border-l-2 border-l-success' : 'border-l-2 border-l-destructive'"
-                  >
-                    <td class="px-3 py-2.5 text-muted-foreground">{{ item.index }}</td>
-                    <td class="px-3 py-2.5">
-                      <div class="font-medium">{{ item.name }}</div>
-                      <div class="text-xs text-muted-foreground truncate max-w-[200px] md:max-w-[300px] cursor-pointer hover:underline"
-                        :title="item.url" @click="copyUrl(item.url)">{{ item.url }}</div>
-                    </td>
-                    <td class="px-3 py-2.5 hidden md:table-cell">
-                      <Badge variant="outline" class="text-xs">{{ item.group || '未分组' }}</Badge>
-                    </td>
-                    <td class="px-3 py-2.5 text-center">
-                      <Badge :variant="item.is_valid ? 'success' : 'destructive'" class="text-xs">
-                        {{ item.is_valid ? '有效' : '无效' }}
-                      </Badge>
-                    </td>
-                    <td class="px-3 py-2.5 text-center">{{ item.latency }}</td>
-                    <td class="px-3 py-2.5 text-center hidden sm:table-cell">{{ item.speed || '-' }}</td>
-                    <td class="px-3 py-2.5 text-center">
-                      <div class="flex items-center justify-center gap-1">
-                        <Button variant="ghost" size="icon" class="h-8 w-8" @click="openEpg(item)">
-                          <Calendar class="h-4 w-4" />
-                        </Button>
-                        <Button v-if="item.is_valid" variant="ghost" size="icon" class="h-8 w-8" @click="openPlayer(item.name, item.url)">
-                          <PlayCircle class="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                  <tr v-if="resultStore.checkResults.length === 0">
-                    <td colspan="7" class="px-3 py-12 text-center text-muted-foreground">暂无数据</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- 延迟范围筛选 -->
+                <div class="space-y-2">
+                  <label class="text-sm font-medium">延迟范围 (ms)</label>
+                  <div class="flex items-center gap-2">
+                    <Input
+                      v-model.number="latencyMin"
+                      type="number"
+                      placeholder="最小值"
+                      class="h-8 text-xs"
+                      min="0"
+                      @input="onLatencyChange"
+                    />
+                    <span class="text-muted-foreground">~</span>
+                    <Input
+                      v-model.number="latencyMax"
+                      type="number"
+                      placeholder="最大值"
+                      class="h-8 text-xs"
+                      min="0"
+                      @input="onLatencyChange"
+                    />
+                    <Button variant="ghost" size="sm" @click="clearLatency">清空</Button>
+                  </div>
+                </div>
 
-            <div class="flex items-center justify-between">
-              <div class="text-sm text-muted-foreground">第 {{ resultStore.resultsPage }} 页 · 共 {{ totalPages }} 页</div>
-              <div class="flex gap-1">
-                <Button variant="outline" size="icon" class="h-8 w-8" :disabled="resultStore.resultsPage <= 1" @click="changePage(resultStore.resultsPage - 1)">
-                  <ChevronLeft class="h-4 w-4" />
-                </Button>
-                <Button v-for="p in visiblePages" :key="p" variant="outline" size="sm" class="h-8 min-w-[2rem]"
-                  :class="p === resultStore.resultsPage ? 'bg-primary text-primary-foreground hover:bg-primary/90' : ''"
-                  @click="changePage(p)">{{ p }}</Button>
-                <Button variant="outline" size="icon" class="h-8 w-8" :disabled="resultStore.resultsPage >= totalPages" @click="changePage(resultStore.resultsPage + 1)">
-                  <ChevronRight class="h-4 w-4" />
-                </Button>
+                <!-- 速度范围筛选 -->
+                <div class="space-y-2">
+                  <label class="text-sm font-medium">速度范围 (Kbps)</label>
+                  <div class="flex items-center gap-2">
+                    <Input
+                      v-model.number="speedMin"
+                      type="number"
+                      placeholder="最小值"
+                      class="h-8 text-xs"
+                      min="0"
+                      @input="onSpeedChange"
+                    />
+                    <span class="text-muted-foreground">~</span>
+                    <Input
+                      v-model.number="speedMax"
+                      type="number"
+                      placeholder="最大值"
+                      class="h-8 text-xs"
+                      min="0"
+                      @input="onSpeedChange"
+                    />
+                    <Button variant="ghost" size="sm" @click="clearSpeed">清空</Button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 筛选操作按钮 -->
+              <div class="flex justify-between items-center pt-2 border-t">
+                <div class="text-xs text-muted-foreground">
+                  <template v-if="hasActiveFilters">
+                    已激活 {{ activeFilterCount }} 个筛选条件
+                  </template>
+                  <template v-else>
+                    无激活的筛选条件
+                  </template>
+                </div>
+                <div class="flex gap-2">
+                  <Button variant="outline" size="sm" @click="clearAllFilters">清除所有筛选</Button>
+                  <Button variant="default" size="sm" @click="applyAdvancedFilters">应用筛选</Button>
+                </div>
               </div>
             </div>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
 
-    <ExportDialog v-model:open="showExport" />
-    <Dialog v-model:open="showEpg">
-      <DialogHeader><DialogTitle>节目单</DialogTitle></DialogHeader>
-      <EpgGuide v-if="epgChannel" :channel-name="epgChannel.name" :tvg-id="epgChannel.tvg_id || ''" :tvg-name="epgChannel.tvg_name || ''" @close="showEpg = false" />
+        <div v-if="resultStore.isLoading" class="space-y-3">
+          <div v-for="i in 5" :key="i" class="h-12 rounded-lg bg-muted animate-pulse" />
+        </div>
+
+        <div v-else-if="resultStore.checkResults.length === 0" class="text-center py-12 text-muted-foreground">
+          <BarChart3 class="h-12 w-12 mx-auto mb-3 opacity-50" />
+          <p class="text-sm">暂无检测结果</p>
+          <Button variant="outline" size="sm" class="mt-4" @click="router.push('/source')">去选源检测</Button>
+        </div>
+
+        <div v-else class="rounded-lg border overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="border-b bg-muted/50">
+                <th class="h-10 px-3 text-left font-medium text-muted-foreground">#</th>
+                <th class="h-10 px-3 text-left font-medium text-muted-foreground">频道名</th>
+                <th class="h-10 px-3 text-left font-medium text-muted-foreground hidden md:table-cell">分组</th>
+                <th class="h-10 px-3 text-center font-medium text-muted-foreground">状态</th>
+                <th class="h-10 px-3 text-center font-medium text-muted-foreground hidden sm:table-cell">延迟</th>
+                <th class="h-10 px-3 text-center font-medium text-muted-foreground w-20">操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="(item, idx) in resultStore.checkResults" :key="item.name"
+                class="border-b transition-colors hover:bg-accent/50"
+              >
+                <td class="px-3 py-2.5 text-muted-foreground">{{ idx + 1 }}</td>
+                <td class="px-3 py-2.5">
+                  <div class="flex items-center gap-1.5">
+                    <span class="font-medium">{{ item.name }}</span>
+                    <Badge
+                      v-if="item.resolution"
+                      variant="outline"
+                      class="text-[10px] shrink-0 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800"
+                    >
+                      {{ item.resolution }}
+                    </Badge>
+                  </div>
+                </td>
+                <td class="px-3 py-2.5 text-xs text-muted-foreground hidden md:table-cell">{{ item.group || '-' }}</td>
+                <td class="px-3 py-2.5 text-center">
+                  <Badge
+                    :variant="getItemQualityTier(item) === 'valid' ? 'success' : getItemQualityTier(item) === 'likely_valid' ? 'warning' : 'destructive'"
+                    class="text-[10px]"
+                  >
+                    {{ getItemQualityTier(item) === 'valid' ? '有效' : getItemQualityTier(item) === 'likely_valid' ? '疑似有效' : '无效' }}
+                  </Badge>
+                </td>
+                <td class="px-3 py-2.5 text-center text-xs text-muted-foreground hidden sm:table-cell">
+                  {{ (item.latency && item.latency !== '-') ? item.latency + 'ms' : '-' }}
+                </td>
+                <td class="px-3 py-2.5 text-center">
+                  <Button variant="ghost" size="icon" class="h-7 w-7" @click="openPlayer(item)">
+                    <Play class="h-4 w-4" />
+                  </Button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="flex items-center justify-between pt-2">
+          <span class="text-xs text-muted-foreground">
+            第 {{ resultStore.resultsPage }} 页 / 共 {{ totalPages }} 页
+          </span>
+          <div class="flex gap-1">
+            <Button variant="outline" size="sm" :disabled="resultStore.resultsPage <= 1" @click="changePage(resultStore.resultsPage - 1)">上一页</Button>
+            <Button variant="outline" size="sm" :disabled="resultStore.resultsPage >= totalPages" @click="changePage(resultStore.resultsPage + 1)">下一页</Button>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+
+    <Dialog v-model:open="showExport">
+      <DialogHeader><DialogTitle>导出检测结果</DialogTitle></DialogHeader>
+      <div class="p-6 pt-0 space-y-3">
+        <p class="text-sm text-muted-foreground">选择导出格式</p>
+        <div class="flex gap-2">
+          <Button class="flex-1 gap-2" @click="doExport('m3u')"><Download class="h-4 w-4" /> M3U</Button>
+          <Button variant="outline" class="flex-1 gap-2" @click="doExport('txt')"><Download class="h-4 w-4" /> TXT</Button>
+        </div>
+      </div>
     </Dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import {
-  Search, ArrowLeft, Wand2, Download, PlayCircle,
-  ChevronLeft, ChevronRight, ChevronDown, Calendar,
-  History,
-} from 'lucide-vue-next'
-import { useAppStore } from '../stores/app'
-import { useResultStore } from '../stores/result'
+import { Wand2, ArrowLeft, Download, Search, BarChart3, Play, Filter } from 'lucide-vue-next'
 import { useCheckStore } from '../stores/check'
-import { smartOptimize, getCategoryTree, getSourceHealth, getAvailableLanguages, getCheckHistory } from '../api'
+import { useResultStore } from '../stores/result'
+import { smartOptimize, exportResults, getAvailableCountries, getAvailableRegions, getCategoryTree } from '../api'
 import { useToast } from '../composables/useToast'
-import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card'
+import { cn } from '../lib/utils'
+import { Card, CardContent } from '../components/ui/card'
 import { Button } from '../components/ui/button'
 import { Badge } from '../components/ui/badge'
 import { Input } from '../components/ui/input'
+import { Select } from '../components/ui/select'
+import { Tabs, TabButton } from '../components/ui/tabs'
 import { Dialog, DialogHeader, DialogTitle } from '../components/ui/dialog'
-import ExportDialog from '../components/ExportDialog.vue'
-import EpgGuide from '../components/EpgGuide.vue'
 
-const store = useAppStore()
-const resultStore = useResultStore()
 const checkStore = useCheckStore()
+const resultStore = useResultStore()
 const router = useRouter()
 const { toast } = useToast()
+
 const showExport = ref(false)
-const showEpg = ref(false)
-const epgChannel = ref(null)
+const mediaType = ref('all')
+const viewMode = ref('grouped')
+const showAdvancedFilter = ref(false)
+const countrySearch = ref('')
+const selectedCountries = ref([])
+const selectedCategory = ref('')
+const selectedQuality = ref('')
+const selectedProtocol = ref('')
+const latencyMin = ref('')
+const latencyMax = ref('')
+const speedMin = ref('')
+const speedMax = ref('')
+const dynamicCountries = ref([])
+const dynamicRegions = ref([])
+const showRegionPanel = ref(false)
+const selectedRegion = ref('')
+const categoryTree = ref([])
+const selectedSessionId = ref('')
 let searchTimer = null
 
-const viewMode = ref('grouped')
-const categoryTree = ref([])
-const sourceHealth = ref([])
-const selectedRegion = ref('')
-const selectedGroup = ref('')
-const expandedRegion = ref('')
-const expandedChannels = ref(new Set())
-const mediaType = ref('all')
-const selectedLanguage = ref('')
-const availableLanguages = ref([])
-
-const mediaTypes = [
-  { value: 'all', label: '全部' },
-  { value: 'tv', label: '电视' },
-  { value: 'radio', label: '广播' },
+const staticCountries = [
+  { code: 'CN', name: '中国', emoji: '🇨🇳' },
+  { code: 'US', name: '美国', emoji: '🇺🇸' },
+  { code: 'GB', name: '英国', emoji: '🇬🇧' },
+  { code: 'JP', name: '日本', emoji: '🇯🇵' },
+  { code: 'KR', name: '韩国', emoji: '🇰🇷' },
+  { code: 'FR', name: '法国', emoji: '🇫🇷' },
+  { code: 'DE', name: '德国', emoji: '🇩🇪' },
+  { code: 'IT', name: '意大利', emoji: '🇮🇹' },
+  { code: 'ES', name: '西班牙', emoji: '🇪🇸' },
+  { code: 'AU', name: '澳大利亚', emoji: '🇦🇺' },
+  { code: 'CA', name: '加拿大', emoji: '🇨🇦' },
+  { code: 'IN', name: '印度', emoji: '🇮🇳' },
+  { code: 'BR', name: '巴西', emoji: '🇧🇷' },
+  { code: 'RU', name: '俄罗斯', emoji: '🇷🇺' },
+  { code: 'SG', name: '新加坡', emoji: '🇸🇬' },
+  { code: 'MY', name: '马来西亚', emoji: '🇲🇾' },
+  { code: 'TH', name: '泰国', emoji: '🇹🇭' },
+  { code: 'AE', name: '阿联酋', emoji: '🇦🇪' },
 ]
 
-const breadcrumb = computed(() => {
-  const parts = []
-  if (selectedRegion.value) parts.push(selectedRegion.value)
-  if (selectedGroup.value) parts.push(selectedGroup.value)
-  return parts
-})
+// 内容分类选项
+const categoryOptions = [
+  { value: '', label: '全部' },
+  { value: '央视', label: '央视' },
+  { value: '卫视', label: '卫视' },
+  { value: '地方', label: '地方' },
+  { value: '国际电视', label: '国际电视' },
+  { value: '专题', label: '专题频道' },
+  { value: '未分类', label: '未分类' },
+]
 
-const tabs = computed(() => [
-  { value: 'all', label: '全部', count: checkStore.checkTotal },
-  { value: 'valid', label: '有效', count: checkStore.validCount },
-  { value: 'invalid', label: '无效', count: checkStore.invalidCount },
-])
+// 画质选项
+const qualityOptions = [
+  { value: '', label: '全部' },
+  { value: '4K', label: '4K超清' },
+  { value: 'HD', label: '高清' },
+  { value: 'SD', label: '标清' },
+]
+
+// 协议选项
+const protocolOptions = [
+  { value: '', label: '全部' },
+  { value: 'IPv6', label: 'IPv6' },
+  { value: 'IPv4', label: 'IPv4' },
+]
 
 const totalPages = computed(() => Math.ceil(resultStore.resultsTotal / resultStore.resultsPerPage) || 1)
-const visiblePages = computed(() => {
-  const pages = []
-  const maxVisible = 7
-  let start = Math.max(1, resultStore.resultsPage - Math.floor(maxVisible / 2))
-  let end = Math.min(totalPages.value, start + maxVisible - 1)
-  if (end - start + 1 < maxVisible) start = Math.max(1, end - maxVisible + 1)
-  for (let i = start; i <= end; i++) pages.push(i)
-  return pages
+
+// 计算属性
+const availableCountries = computed(() => {
+  const cnSubCodes = ['HK', 'MO', 'TW']
+  let source = dynamicCountries.value.length > 0 ? dynamicCountries.value : staticCountries
+  source = source.filter(c => !cnSubCodes.includes(c.code))
+  if (!countrySearch.value) return source
+  const search = countrySearch.value.toLowerCase()
+  return source.filter(country => 
+    country.name.toLowerCase().includes(search) || 
+    country.code.toLowerCase().includes(search)
+  )
+})
+
+const dataCoverageHint = computed(() => {
+  if (categoryTree.value.length === 0 && dynamicCountries.value.length === 0) return ''
+  
+  const hasInternationalChannels = 
+    categoryTree.value.some(c => c.name === '国际电视') ||
+    dynamicCountries.value.some(c => c.code && !['CN', 'HK', 'MO', 'TW'].includes(c.code))
+  
+  const hasRadioChannels = 
+    categoryTree.value.some(c => c.name === '广播')
+  
+  const hints = []
+  if (!hasInternationalChannels) {
+    hints.push('当前数据不含国际频道，如需查看国外电视请勾选"国际电视"分类的在线源后重新检测')
+  }
+  if (!hasRadioChannels && !hasInternationalChannels) {
+    hints.push('当前数据不含广播频道，如需听广播请勾选"广播电台"分类的在线源后重新检测')
+  }
+  return hints.join('；')
+})
+
+const hasActiveFilters = computed(() => {
+  return selectedCountries.value.length > 0 || 
+         selectedRegion.value !== '' ||
+         selectedCategory.value !== '' || 
+         selectedQuality.value !== '' || 
+         selectedProtocol.value !== '' || 
+         latencyMin.value !== '' || 
+         latencyMax.value !== '' || 
+         speedMin.value !== '' || 
+         speedMax.value !== ''
+})
+
+const activeFilterCount = computed(() => {
+  let count = 0
+  if (selectedCountries.value.length > 0) count++
+  if (selectedRegion.value !== '') count++
+  if (selectedCategory.value !== '') count++
+  if (selectedQuality.value !== '') count++
+  if (selectedProtocol.value !== '') count++
+  if (latencyMin.value !== '' || latencyMax.value !== '') count++
+  if (speedMin.value !== '' || speedMax.value !== '') count++
+  return count
+})
+
+onMounted(async () => {
+  await resultStore.fetchHistory()
+  if (resultStore.selectedSessionId) {
+    selectedSessionId.value = resultStore.selectedSessionId
+  }
+  const initialFilters = {
+    media_type: mediaType.value,
+    view_mode: viewMode.value,
+  }
+  resultStore.fetchResults(initialFilters)
+  try {
+    const { data } = await getAvailableCountries()
+    if (data && data.length > 0) {
+      dynamicCountries.value = data.map(c => ({
+        code: c.code,
+        name: c.name,
+        emoji: c.flag || '',
+        count: c.count,
+        valid: c.valid,
+      }))
+    }
+  } catch (e) {
+    // 使用静态列表作为后备
+  }
+  try {
+    const { data } = await getAvailableRegions()
+    if (data && data.length > 0) {
+      dynamicRegions.value = data
+    }
+  } catch (e) {
+    // ignore
+  }
+  try {
+    const { data } = await getCategoryTree()
+    if (data) categoryTree.value = data
+  } catch (e) {
+    // ignore
+  }
+})
+
+function formatHistoryLabel(h) {
+  const date = h.created_at ? new Date(h.created_at).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '未知时间'
+  const validRate = h.total > 0 ? Math.round((h.valid / h.total) * 100) : 0
+  return `${date} | ${h.total}频道 | 有效${validRate}%`
+}
+
+function onSessionChange() {
+  resultStore.selectSession(selectedSessionId.value)
+  resultStore.setPage(1)
+  applyAdvancedFilters()
+}
+
+watch(() => resultStore.selectedSessionId, (newVal) => {
+  if (newVal && newVal !== selectedSessionId.value) {
+    selectedSessionId.value = newVal
+  }
 })
 
 function onSearch() {
   clearTimeout(searchTimer)
-  searchTimer = setTimeout(() => { resultStore.setPage(1); doFetch() }, 400)
+  searchTimer = setTimeout(() => {
+    resultStore.setPage(1)
+    applyAdvancedFilters()
+  }, 400)
+}
+
+function toggleCountry(countryCode) {
+  const index = selectedCountries.value.indexOf(countryCode)
+  if (index > -1) {
+    selectedCountries.value.splice(index, 1)
+    if (countryCode === 'CN') {
+      showRegionPanel.value = false
+      selectedRegion.value = ''
+    }
+  } else {
+    selectedCountries.value.push(countryCode)
+    if (countryCode === 'CN') {
+      showRegionPanel.value = true
+    }
+  }
+}
+
+function toggleRegion(regionCode) {
+  if (selectedRegion.value === regionCode) {
+    selectedRegion.value = ''
+  } else {
+    selectedRegion.value = regionCode
+  }
+}
+
+function onCountrySearch() {
+  // 搜索国家时无需立即触发筛选
+}
+
+function selectCategory(cat) {
+  selectedCategory.value = cat
+}
+
+function selectQuality(q) {
+  selectedQuality.value = q
+}
+
+function selectProtocol(p) {
+  selectedProtocol.value = p
+}
+
+function onLatencyChange() {
+  // 延迟变化时无需立即触发筛选
+}
+
+function onSpeedChange() {
+  // 速度变化时无需立即触发筛选
+}
+
+function clearLatency() {
+  latencyMin.value = ''
+  latencyMax.value = ''
+}
+
+function clearSpeed() {
+  speedMin.value = ''
+  speedMax.value = ''
+}
+
+function clearAllFilters() {
+  selectedCountries.value = []
+  selectedRegion.value = ''
+  showRegionPanel.value = false
+  selectedCategory.value = ''
+  selectedQuality.value = ''
+  selectedProtocol.value = ''
+  latencyMin.value = ''
+  latencyMax.value = ''
+  speedMin.value = ''
+  speedMax.value = ''
+  countrySearch.value = ''
+  mediaType.value = 'all'
+  viewMode.value = 'grouped'
+  applyAdvancedFilters()
+}
+
+function applyAdvancedFilters() {
+  const filters = {}
+  
+  // 基础筛选
+  filters.media_type = mediaType.value
+  filters.view_mode = viewMode.value
+  
+  // 国家筛选
+  if (selectedCountries.value.length > 0) {
+    filters.country = selectedCountries.value.join(',')
+  }
+  
+  // 地区筛选（仅中国二级）
+  if (selectedRegion.value !== '') {
+    filters.region = selectedRegion.value
+  }
+  
+  // 内容分类筛选
+  if (selectedCategory.value !== '') {
+    filters.category = selectedCategory.value
+  }
+  
+  // 画质筛选
+  if (selectedQuality.value !== '') {
+    filters.quality = selectedQuality.value
+  }
+  
+  // 协议筛选
+  if (selectedProtocol.value !== '') {
+    filters.protocol = selectedProtocol.value
+  }
+  
+  // 延迟范围筛选
+  if (latencyMin.value !== '' && latencyMin.value !== null && !isNaN(latencyMin.value)) {
+    filters.latency_min = parseFloat(latencyMin.value)
+  }
+  if (latencyMax.value !== '' && latencyMax.value !== null && !isNaN(latencyMax.value)) {
+    filters.latency_max = parseFloat(latencyMax.value)
+  }
+  
+  // 速度范围筛选
+  if (speedMin.value !== '' && speedMin.value !== null && !isNaN(speedMin.value)) {
+    filters.speed_min = parseFloat(speedMin.value)
+  }
+  if (speedMax.value !== '' && speedMax.value !== null && !isNaN(speedMax.value)) {
+    filters.speed_max = parseFloat(speedMax.value)
+  }
+  
+  resultStore.setPage(1)
+  resultStore.fetchResults(filters)
 }
 
 function switchTab(tab) {
   resultStore.setTab(tab)
-  doFetch()
+  resultStore.setPage(1)
+  applyAdvancedFilters()
 }
 
-function switchViewMode(mode) {
-  viewMode.value = mode
+function switchMediaType() {
   resultStore.setPage(1)
-  doFetch()
-}
-
-function switchMediaType(type) {
-  mediaType.value = type
-  resultStore.setPage(1)
-  doFetch()
-  loadCategoryTree()
+  applyAdvancedFilters()
 }
 
 function changePage(page) {
   resultStore.setPage(page)
-  doFetch()
+  applyAdvancedFilters()
 }
 
-function selectRegion(regionName) {
-  if (expandedRegion.value === regionName && selectedRegion.value === regionName && !selectedGroup.value) {
-    expandedRegion.value = ''
-    selectedRegion.value = ''
-    resultStore.setPage(1)
-    doFetch()
-    return
-  }
-  selectedRegion.value = regionName
-  selectedGroup.value = ''
-  expandedRegion.value = regionName
-  resultStore.setPage(1)
-  doFetch()
-}
-
-function selectGroup(regionName, groupName) {
-  selectedRegion.value = regionName
-  selectedGroup.value = groupName
-  resultStore.setPage(1)
-  doFetch()
-}
-
-function clearSelection() {
-  selectedRegion.value = ''
-  selectedGroup.value = ''
-  expandedRegion.value = ''
-  resultStore.setPage(1)
-  doFetch()
-}
-
-function toggleExpand(name) {
-  const s = new Set(expandedChannels.value)
-  if (s.has(name)) s.delete(name)
-  else s.add(name)
-  expandedChannels.value = s
-}
-
-function playRecommended(item) {
-  const idx = item.recommended_source_idx
-  if (idx >= 0 && item.sources && item.sources[idx]) {
-    openPlayer(item.name, item.sources[idx].url, item.sources)
-  }
-}
-
-function openPlayer(name, url, sources) {
-  const encoded = btoa(encodeURIComponent(url))
-  let playerUrl = `/player?url=${encoded}&name=${encodeURIComponent(name)}`
-  if (sources && sources.length > 1) {
-    const srcData = sources.map((s, i) => ({
-      url: s.url,
-      is_valid: s.is_valid,
-      latency: s.latency,
-      recommended: i === (sources.recommended_source_idx ?? 0),
-    }))
-    playerUrl += `&sources=${btoa(JSON.stringify(srcData))}`
-  }
-  window.open(playerUrl, '_blank')
-}
-
-function openEpg(item) {
-  epgChannel.value = item
-  showEpg.value = true
-}
-
-async function copyUrl(url) {
-  try {
-    await navigator.clipboard.writeText(url)
-    toast.success('已复制', 'URL 已复制到剪贴板')
-  } catch { toast.error('复制失败', '无法访问剪贴板') }
-}
-
-async function doOptimize() {
+async function handleSmartOptimize() {
   try {
     const { data } = await smartOptimize()
-    toast.success('优选完成', `移除 ${data.removed} 个重复/无效频道`)
-    doFetch()
-  } catch (e) { console.error(e) }
-}
-
-function doFetch() {
-  if (checkStore.isChecking && resultStore.checkResults.length > 0) {
-    return
-  }
-  resultStore.fetchResults({
-    view_mode: viewMode.value,
-    group_path: selectedGroup.value || '',
-    sort: 'best',
-    media_type: mediaType.value,
-    language: selectedLanguage.value || '',
-  })
-}
-
-async function loadCategoryTree() {
-  try {
-    const { data } = await getCategoryTree({ media_type: mediaType.value })
-    categoryTree.value = data
-  } catch {}
-}
-
-async function loadSourceHealth() {
-  try {
-    const { data } = await getSourceHealth()
-    sourceHealth.value = data
-  } catch {}
-}
-
-async function loadLanguages() {
-  try {
-    const { data } = await getAvailableLanguages()
-    availableLanguages.value = data
-  } catch {}
-}
-
-function switchLanguage(lang) {
-  selectedLanguage.value = lang
-  resultStore.setPage(1)
-  doFetch()
-}
-
-const historyList = ref([])
-const currentSessionId = ref('')
-
-const historyApi = async () => {
-  try {
-    const res = await getCheckHistory()
-    historyList.value = res.data || []
-    if (historyList.value.length > 0 && !currentSessionId.value) {
-      currentSessionId.value = historyList.value[0].session_id
-    }
+    toast.success('智能优选完成', `已帮您去重，移除 ${data.removed} 个重复/无效频道`)
+    resultStore.fetchResults()
   } catch (e) {
-    console.error('加载历史记录失败:', e)
+    toast.error('优选失败', e.response?.data?.detail || e.message)
   }
 }
 
-async function loadHistorySession(sessionId) {
-  currentSessionId.value = sessionId
-  toast.success('已切换', '加载历史检测结果')
-  resultStore.fetchResults({
-    session_id: sessionId,
-    view_mode: viewMode.value,
-    group_path: selectedGroup.value || '',
-    sort: 'best',
-    media_type: mediaType.value,
-    language: selectedLanguage.value || '',
-  })
+function openPlayer(item) {
+  const url = item.url || (item.sources && item.sources[item.recommended_source_idx ?? 0]?.url) || ''
+  if (!url) return
+  const encoded = btoa(encodeURIComponent(url))
+  window.open(`/player?url=${encoded}&name=${encodeURIComponent(item.name)}`, '_blank')
 }
 
-function formatTime(timeStr) {
-  if (!timeStr) return ''
-  const d = new Date(timeStr)
-  return d.toLocaleString('zh-CN', {
-    month: '2-digit', day: '2-digit',
-    hour: '2-digit', minute: '2-digit',
-  })
+async function doExport(format) {
+  showExport.value = false
+  try {
+    const { data } = await exportResults({ format })
+    const filename = format === 'm3u' ? 'results.m3u' : 'results.txt'
+    downloadBlob(data, filename, format === 'm3u' ? 'audio/x-mpegurl' : 'text/plain')
+    toast.success('导出成功')
+  } catch (e) {
+    toast.error('导出失败')
+  }
 }
 
-watch(() => resultStore.resultsPerPage, () => { resultStore.setPage(1); doFetch() })
+function downloadBlob(data, filename, mimeType) {
+  const blob = data instanceof Blob ? data : new Blob([data], { type: mimeType })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  a.click()
+  URL.revokeObjectURL(url)
+}
 
-watch([selectedRegion, selectedGroup, viewMode], () => { doFetch() }, { deep: true })
-
-onMounted(async () => {
-  await Promise.all([doFetch(), loadCategoryTree(), loadSourceHealth(), loadLanguages(), historyApi()])
-})
+function getItemQualityTier(item) {
+  if (item.quality_tier) return item.quality_tier
+  if (item.is_valid || item.has_valid) return 'valid'
+  return 'invalid'
+}
 </script>
