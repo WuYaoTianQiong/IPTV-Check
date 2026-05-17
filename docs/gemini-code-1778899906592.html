@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IPTV-Check 完整高保真原型系统</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        border: "hsl(214.3, 31.8%, 91.4%)",
+                        background: "hsl(0, 0%, 100%)",
+                        foreground: "hsl(222.2, 84%, 4.9%)",
+                        primary: {
+                            DEFAULT: "hsl(221.2, 83.2%, 53.3%)",
+                            foreground: "hsl(210, 40%, 98%)",
+                        },
+                        muted: {
+                            DEFAULT: "hsl(210, 40%, 96.1%)",
+                            foreground: "hsl(215.4, 16.3%, 46.9%)",
+                        },
+                        destructive: {
+                            DEFAULT: "hsl(0, 84.2%, 60.2%)",
+                            foreground: "hsl(210, 40%, 98%)",
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900 font-sans antialiased">
+
+    <header class="sticky top-0 z-50 w-full border-b border-slate-200 bg-white/95 backdrop-blur">
+        <div class="flex h-16 items-center px-6 gap-6">
+            <div class="flex items-center gap-2 font-bold text-lg text-slate-900 flex-shrink-0">
+                <i data-lucide="tv" class="text-blue-600 w-6 h-6"></i>
+                <span>IPTV-Check</span>
+            </div>
+            <nav class="flex items-center space-x-1 text-sm font-medium flex-1 overflow-x-auto no-scrollbar">
+                <button onclick="switchPage('source-page')" id="nav-source-page" class="nav-btn px-3 py-2 rounded-md bg-slate-100 text-slate-900 font-semibold whitespace-nowrap">源配置 (Source)</button>
+                <button onclick="switchPage('checking-page')" id="nav-checking-page" class="nav-btn px-3 py-2 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-50 relative flex items-center gap-2 whitespace-nowrap">
+                    检测中 (Checking)
+                    <span id="mini-progress-badge" class="hidden w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+                </button>
+                <button onclick="switchPage('result-page')" id="nav-result-page" class="nav-btn px-3 py-2 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-50 whitespace-nowrap">结果页 (Result)</button>
+                <button onclick="switchPage('live-page')" id="nav-live-page" class="nav-btn px-3 py-2 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-50 whitespace-nowrap">播放页 (Live)</button>
+                <button onclick="switchPage('toolbox-page')" id="nav-toolbox-page" class="nav-btn px-3 py-2 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-50 whitespace-nowrap">工具箱 (Toolbox)</button>
+                <button onclick="switchPage('favorites-page')" id="nav-favorites-page" class="nav-btn px-3 py-2 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-50 whitespace-nowrap">收藏夹 (Favorites)</button>
+            </nav>
+            <div class="flex items-center gap-4 text-slate-600 flex-shrink-0">
+                <i data-lucide="settings" class="w-5 h-5 cursor-pointer hover:text-slate-900"></i>
+                <div class="flex items-center gap-2 border-l pl-4 border-slate-200">
+                    <div class="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold text-slate-700">AD</div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="container mx-auto p-6 max-w-6xl">
+        
+        <section id="source-page" class="page-content space-y-6">
+            <div class="p-6 rounded-xl border border-blue-100 bg-blue-50/50 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shadow-sm">
+                <div class="flex items-start gap-4">
+                    <div class="p-3 bg-blue-600 rounded-lg text-white"><i data-lucide="sparkles" class="w-6 h-6 animate-pulse"></i></div>
+                    <div>
+                        <h3 class="font-bold text-lg text-slate-900">✨ 智能推荐 (已匹配电信宽带)</h3>
+                        <p class="text-sm text-slate-600 mt-1">系统已为您智能同步 5 个最适配的专属极速线路，包含 142 个高清源。</p>
+                    </div>
+                </div>
+                <button onclick="simulateStartCheck()" class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow-sm transition flex items-center gap-2"><i data-lucide="rocket" class="w-4 h-4"></i> 一键开始检测</button>
+            </div>
+            <div class="p-12 text-center text-sm text-slate-400 bg-white border rounded-xl border-dashed">
+                （此处省略第一批次已确定的其他输入配置表单... 可点击顶部“播放页”直接预览最新高保真）
+            </div>
+        </section>
+
+        <section id="checking-page" class="page-content space-y-8 hidden py-8">
+            <div class="flex flex-col items-center text-center space-y-4">
+                <div class="relative w-32 h-32 flex items-center justify-center">
+                    <svg class="absolute w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                        <circle cx="50" cy="50" r="40" stroke="#f1f5f9" stroke-width="6" fill="transparent"/>
+                        <circle cx="50" cy="50" r="40" stroke="#2563eb" stroke-width="6" stroke-linecap="round" fill="transparent" style="stroke-dasharray: 251.2; stroke-dashoffset: 125.6;"/>
+                    </svg>
+                    <span class="text-3xl font-extrabold text-slate-900">50%</span>
+                </div>
+                <p class="font-semibold text-slate-800 text-sm">正在执行：第 3 阶段 - 通道连通性多线程探测中...</p>
+            </div>
+            <div class="flex justify-center gap-4"><button onclick="minimizeToBackground()" class="px-4 py-2 border rounded-lg bg-white text-xs font-medium shadow-sm">📥 最小化到后台运行</button></div>
+        </section>
+
+        <section id="result-page" class="page-content space-y-6 hidden">
+            <div class="p-6 bg-white rounded-xl border border-slate-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                    <h3 class="font-bold text-base text-slate-900">📊 本次检测大盘总结报告</h3>
+                    <p class="text-sm text-slate-600 mt-1">检测完成：其中<span class="text-emerald-600 font-bold mx-1">可用 198 个</span>，无效 58 个。</p>
+                </div>
+                <button onclick="alert('🪄 智能优选完成！已帮您去重，仅保留最低延迟的唯一极速源。')" class="px-5 py-2.5 bg-slate-950 hover:bg-slate-900 text-white rounded-lg text-sm font-medium flex items-center gap-2"><i data-lucide="wand2" class="w-4 h-4 text-blue-400"></i> 🪄 智能一键优选并去重</button>
+            </div>
+        </section>
+
+
+        <section id="live-page" class="page-content hidden">
+            <div class="flex flex-col lg:flex-row gap-6 items-stretch h-[calc(100vh-12rem)] min-h-[480px]">
+                
+                <div id="live-sidebar" class="w-full lg:w-72 bg-white border border-slate-200 rounded-xl p-4 flex flex-col shadow-sm transition-all duration-300">
+                    <div class="relative mb-3 flex-shrink-0">
+                        <i data-lucide="search" class="absolute left-3 top-2.5 w-4 h-4 text-slate-400"></i>
+                        <input type="text" placeholder="快速过滤频道..." class="w-full pl-9 pr-4 py-1.5 rounded-lg border border-slate-200 text-xs focus:outline-none focus:border-blue-500">
+                    </div>
+                    <div class="flex items-center justify-between pb-3 mb-2 border-b border-slate-100 flex-shrink-0">
+                        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">频道分组列表</span>
+                        <label class="flex items-center gap-1.5 text-xs text-slate-600 cursor-pointer">
+                            <input type="checkbox" class="rounded border-slate-300 text-blue-600 w-3.5 h-3.5"> 仅看收藏
+                        </label>
+                    </div>
+                    <div class="flex-1 overflow-y-auto space-y-1.5 pr-1 text-sm no-scrollbar">
+                        <div>
+                            <div class="px-2 py-1 text-xs font-bold text-slate-400 flex items-center gap-1"><i data-lucide="chevron-down" class="w-3 h-3"></i> 📺 央视频道</div>
+                            <div class="mt-1 space-y-0.5 pl-2">
+                                <button onclick="changeChannel('CCTV-1 综合频道', '线路 1 (广东电信)', '45ms')" class="w-full text-left px-3 py-2 rounded-lg bg-blue-50 text-blue-700 font-semibold flex items-center justify-between group transition">
+                                    <span class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> CCTV-1 综合</span>
+                                    <i data-lucide="play" class="w-3 h-3 opacity-100"></i>
+                                </button>
+                                <button onclick="changeChannel('CCTV-2 财经频道', '线路 2 (北京联通)', '62ms')" class="w-full text-left px-3 py-2 rounded-lg text-slate-700 hover:bg-slate-50 flex items-center justify-between group transition">
+                                    <span class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> CCTV-2 财经</span>
+                                    <i data-lucide="play" class="w-3 h-3 opacity-0 group-hover:opacity-40 transition-opacity"></i>
+                                </button>
+                                <button onclick="changeChannel('CCTV-5 体育频道', '线路 1 (上海移动)', '32ms')" class="w-full text-left px-3 py-2 rounded-lg text-slate-700 hover:bg-slate-50 flex items-center justify-between group transition">
+                                    <span class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> CCTV-5 体育</span>
+                                    <i data-lucide="play" class="w-3 h-3 opacity-0 group-hover:opacity-40 transition-opacity"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="pt-2">
+                            <div class="px-2 py-1 text-xs font-bold text-slate-400 flex items-center gap-1"><i data-lucide="chevron-right" class="w-3 h-3"></i> 📡 卫视频道 (8)</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex-1 bg-slate-950 rounded-xl relative overflow-hidden flex flex-col shadow-lg border border-slate-800">
+                    <div class="h-14 bg-slate-900/80 backdrop-blur-md px-4 flex justify-between items-center text-white border-b border-white/5 z-10 flex-shrink-0">
+                        <div class="flex items-center gap-3">
+                            <h4 id="current-channel-title" class="font-bold text-sm tracking-wide">CCTV-1 综合频道</h4>
+                            <span id="current-channel-tag" class="text-[10px] px-2 py-0.5 rounded bg-white/10 text-slate-300 font-mono">线路 1 (广东电信) · 45ms</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button onclick="toggleEpgDrawer()" class="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded-lg text-xs font-medium flex items-center gap-1.5 transition">
+                                <i data-lucide="list-video" class="w-3.5 h-3.5"></i> 查看节目单 (EPG)
+                            </button>
+                            <button onclick="toggleImmersiveMode()" id="immersive-btn" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-medium flex items-center gap-1.5 transition shadow-sm">
+                                <i data-lucide="maximize-2" class="w-3.5 h-3.5"></i> <span>沉浸模式</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="flex-1 relative flex items-center justify-center bg-black group">
+                        
+                        <div id="player-skeleton" class="absolute inset-0 bg-slate-950/90 z-20 flex flex-col items-center justify-center space-y-6 hidden">
+                            <div class="flex flex-col items-center space-y-2">
+                                <div class="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                                <span class="text-xs text-slate-400 font-medium">正在秒级建立切台信道连接...</span>
+                            </div>
+                            <div class="w-full max-w-md px-6 py-4 border border-white/5 bg-white/[0.02] rounded-xl space-y-2.5 animate-pulse">
+                                <div class="h-4 bg-white/10 rounded w-1/3"></div>
+                                <div class="h-3 bg-white/5 rounded w-3/4"></div>
+                                <div class="h-3 bg-white/5 rounded w-1/2"></div>
+                            </div>
+                        </div>
+
+                        <div class="text-center space-y-2 select-none">
+                            <div class="w-16 h-16 rounded-full bg-white/10 text-white flex items-center justify-center mx-auto shadow-2xl backdrop-blur border border-white/10 cursor-pointer hover:scale-105 transition-transform">
+                                <i data-lucide="play-circle" class="w-8 h-8 fill-white/10"></i>
+                            </div>
+                            <span class="text-xs text-slate-500 font-mono block">M3U8 HLS 直播流拉取成功 · 1080P 60FPS</span>
+                        </div>
+
+                        <div id="immersive-tip" class="absolute bottom-4 left-4 text-[11px] text-white/30 pointer-events-none hidden transition-opacity">
+                            💡 沉浸模式已开启，鼠标移动至最左侧可临时拉出频道树。
+                        </div>
+                    </div>
+
+                    <div id="epg-drawer" class="absolute right-0 top-14 bottom-0 w-80 bg-slate-900 border-l border-white/10 z-30 shadow-2xl p-4 flex flex-col translate-x-full transition-transform duration-300">
+                        <div class="flex items-center justify-between pb-3 mb-4 border-b border-white/10 text-white flex-shrink-0">
+                            <h5 class="font-bold text-sm flex items-center gap-1.5"><i data-lucide="calendar" class="w-4 h-4 text-blue-400"></i> 今日全天节目单 (EPG)</h5>
+                            <i data-lucide="x" onclick="toggleEpgDrawer()" class="w-4 h-4 text-slate-400 cursor-pointer hover:text-white"></i>
+                        </div>
+                        <div class="flex-1 overflow-y-auto space-y-3 pr-1 text-xs text-slate-300 no-scrollbar">
+                            <div class="p-2.5 rounded-lg bg-white/5 border border-white/5 text-white relative">
+                                <div class="absolute right-2 top-2.5 w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+                                <span class="text-blue-400 font-mono font-bold block">19:00 - 19:30</span>
+                                <span class="font-semibold block mt-1 text-sm">新闻联播</span>
+                                <span class="text-slate-400 block mt-0.5">国内重大时政及要闻聚合播报</span>
+                            </div>
+                            <div class="p-2.5 rounded-lg hover:bg-white/[0.02] transition">
+                                <span class="text-slate-400 font-mono block">19:30 - 19:55</span>
+                                <span class="font-medium block mt-0.5">焦点访谈</span>
+                            </div>
+                            <div class="p-2.5 rounded-lg hover:bg-white/[0.02] transition">
+                                <span class="text-slate-400 font-mono block">19:55 - 22:00</span>
+                                <span class="font-medium block mt-0.5">晚间黄金剧场：《大江大河》精选</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+        <section id="toolbox-page" class="page-content hidden space-y-8">
+            <div class="p-4 bg-amber-50 border border-amber-100 rounded-xl flex items-center gap-3 text-sm text-amber-800 shadow-sm">
+                <i data-lucide="help-circle" class="w-5 h-5 text-amber-600 flex-shrink-0"></i>
+                <span>不知道从哪开始？点击 <a href="#" onclick="alert('即将启动小白专属工具箱交互向导，3步轻松学会格式转换与定时自动更新！')" class="underline font-bold hover:text-amber-900">新手引导向导 🎯</a>，由智能管家带您玩转硬核自动化。</span>
+            </div>
+
+            <div class="space-y-4">
+                <div class="flex items-center gap-2 border-b border-slate-200 pb-2">
+                    <h3 class="font-extrabold text-base text-slate-900">🔥 小白必备 (初次使用/最常用功能)</h3>
+                    <span class="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-medium">推荐</span>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    
+                    <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm hover:-translate-y-1 hover:shadow-md transition-all duration-300 group cursor-pointer flex flex-col justify-between">
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-start">
+                                <div class="p-3 bg-blue-50 text-blue-600 rounded-xl"><i data-lucide="refresh-cw" class="w-5 h-5"></i></div>
+                                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 uppercase tracking-wide animate-pulse">零门槛</span>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-base text-slate-900">直播源格式一键转换</h4>
+                                <p class="text-xs text-slate-500 mt-1 leading-relaxed">傻瓜化互转。将网络上下载的 TXT 纯文本源自动生成通用的标准化 M3U 播放文件，或进行反向无损提取。</p>
+                            </div>
+                        </div>
+                        <div class="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between text-xs font-semibold text-blue-600">
+                            <span>立即转换格式</span>
+                            <i data-lucide="arrow-right" class="w-4 h-4 transform group-hover:translate-x-1 transition-transform"></i>
+                        </div>
+                    </div>
+
+                    <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm hover:-translate-y-1 hover:shadow-md transition-all duration-300 group cursor-pointer flex flex-col justify-between">
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-start">
+                                <div class="p-3 bg-indigo-50 text-indigo-600 rounded-xl"><i data-lucide="rss" class="w-5 h-5"></i></div>
+                                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 uppercase tracking-wide">常驻</span>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-base text-slate-900">在线订阅链接管理</h4>
+                                <p class="text-xs text-slate-500 mt-1 leading-relaxed">一键粘贴网络第三方直播订阅池。系统会在启动时全自动同步拉取最新变动，不需要一次次手动下载文件。</p>
+                            </div>
+                        </div>
+                        <div class="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between text-xs font-semibold text-blue-600">
+                            <span>管理第三方订阅</span>
+                            <i data-lucide="arrow-right" class="w-4 h-4 transform group-hover:translate-x-1 transition-transform"></i>
+                        </div>
+                    </div>
+
+                    <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm hover:-translate-y-1 hover:shadow-md transition-all duration-300 group cursor-pointer flex flex-col justify-between">
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-start">
+                                <div class="p-3 bg-amber-50 text-amber-600 rounded-xl"><i data-lucide="zap" class="w-5 h-5"></i></div>
+                                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 uppercase tracking-wide">智能</span>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-base text-slate-900">老司机最优黄金组合源</h4>
+                                <p class="text-xs text-slate-500 mt-1 leading-relaxed">利用历史多次体检大盘指标，AI 全自动帮您整合出一套综合延迟最低、4K成功率最高的“黄金极速收藏夹”。</p>
+                            </div>
+                        </div>
+                        <div class="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between text-xs font-semibold text-blue-600">
+                            <span>一键生成最优源</span>
+                            <i data-lucide="arrow-right" class="w-4 h-4 transform group-hover:translate-x-1 transition-transform"></i>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="space-y-4">
+                <div class="flex items-center gap-2 border-b border-slate-200 pb-2">
+                    <h3 class="font-extrabold text-base text-slate-900">⚙️ 极客进阶 (自动化维护与系统深度管理)</h3>
+                    <span class="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-medium">高阶</span>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    
+                    <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm opacity-85 hover:opacity-100 transition-opacity group cursor-pointer flex flex-col justify-between">
+                        <div class="space-y-2">
+                            <span class="text-slate-400 block"><i data-lucide="clock" class="w-5 h-5"></i></span>
+                            <h4 class="font-bold text-sm text-slate-900">定时全自动静默检测</h4>
+                            <p class="text-xs text-slate-400 leading-relaxed">配置自动化 Cron 表达式，让服务器/系统在每日凌晨半夜自动帮您巡检所有源，睡醒即享最净化的列表。</p>
+                        </div>
+                        <div class="mt-4 text-xs font-medium text-slate-500 group-hover:text-slate-900 flex items-center justify-between">
+                            <span>配置自动化 Cron</span>
+                            <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+                        </div>
+                    </div>
+
+                    <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm opacity-85 hover:opacity-100 transition-opacity group cursor-pointer flex flex-col justify-between">
+                        <div class="space-y-2">
+                            <span class="text-slate-400 block"><i data-lucide="server" class="w-5 h-5"></i></span>
+                            <h4 class="font-bold text-sm text-slate-900">M3U 本地在线局域网托管</h4>
+                            <p class="text-xs text-slate-400 leading-relaxed">将您清洗后的完美列表一键托管为局域网内的在线 URL，电视盒子、手机端可直接填入此链接实现云同步更新。</p>
+                        </div>
+                        <div class="mt-4 text-xs font-medium text-slate-500 group-hover:text-slate-900 flex items-center justify-between">
+                            <span>获取托管订阅源</span>
+                            <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+                        </div>
+                    </div>
+
+                    <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm opacity-85 hover:opacity-100 transition-opacity group cursor-pointer flex flex-col justify-between">
+                        <div class="space-y-2">
+                            <span class="text-slate-400 block"><i data-lucide="trash-2" class="w-5 h-5"></i></span>
+                            <h4 class="font-bold text-sm text-slate-900">全站历史缓存一键释放</h4>
+                            <p class="text-xs text-slate-400 leading-relaxed">一键深度清理历史检测沉淀的各种临时视频分片残余及过期日志，迅速释放系统常驻内存与空间。</p>
+                        </div>
+                        <div class="mt-4 text-xs font-medium text-slate-500 group-hover:text-slate-900 flex items-center justify-between">
+                            <span>一键释放空间</span>
+                            <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+
+        <section id="favorites-page" class="page-content hidden space-y-6">
+            <div class="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-4 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                <div class="flex space-x-1 text-xs font-medium bg-slate-100 p-1 rounded-lg">
+                    <button class="bg-white text-slate-900 px-3 py-1.5 rounded-md shadow-sm font-semibold">全部收藏 (12)</button>
+                    <button class="text-slate-600 hover:text-slate-900 px-3 py-1.5">央视频道 (5)</button>
+                    <button class="text-slate-600 hover:text-slate-900 px-3 py-1.5">长辈最爱 (4)</button>
+                </div>
+                <button onclick="startFavoritesCheck()" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs rounded-lg transition shadow-sm flex items-center justify-center gap-1.5 whitespace-nowrap">
+                    <i data-lucide="zap" class="w-3.5 h-3.5"></i> ⚡ 一键闪电检查收藏夹状态
+                </button>
+            </div>
+
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+                
+                <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:scale-[1.03] hover:shadow-md transition-all duration-300 relative group cursor-pointer flex flex-col items-center justify-center text-center h-44">
+                    <div class="absolute top-3 left-3 flex items-center gap-1">
+                        <span class="fav-dot w-2 h-2 rounded-full bg-emerald-500"></span>
+                        <span class="fav-status-text text-[9px] text-slate-400 font-mono">在线</span>
+                    </div>
+                    <div class="w-14 h-14 rounded-xl bg-slate-900 text-white font-black text-xs flex items-center justify-center shadow-inner tracking-tighter mb-3 border border-slate-800">
+                        CCTV 1
+                    </div>
+                    <span class="font-bold text-sm text-slate-800">CCTV-1 综合频道</span>
+                    <div class="absolute inset-0 bg-slate-950/80 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 z-10">
+                        <button onclick="switchPage('live-page')" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs rounded-lg shadow transition flex items-center gap-1"><i data-lucide="play" class="w-3 h-3 fill-white"></i> 立即播放</button>
+                        <button onclick="alert('已安全取消收藏该频道！')" class="text-[10px] text-slate-400 hover:text-rose-400 transition">取消收藏⭐</button>
+                    </div>
+                </div>
+
+                <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:scale-[1.03] hover:shadow-md transition-all duration-300 relative group cursor-pointer flex flex-col items-center justify-center text-center h-44">
+                    <div class="absolute top-3 left-3 flex items-center gap-1">
+                        <span class="fav-dot w-2 h-2 rounded-full bg-emerald-500"></span>
+                        <span class="fav-status-text text-[9px] text-slate-400 font-mono">在线</span>
+                    </div>
+                    <div class="w-14 h-14 rounded-xl bg-slate-900 text-white font-black text-xs flex items-center justify-center shadow-inner tracking-tighter mb-3 border border-slate-800">
+                        CCTV 5
+                    </div>
+                    <span class="font-bold text-sm text-slate-800">CCTV-5 体育频道</span>
+                    <div class="absolute inset-0 bg-slate-950/80 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 z-10">
+                        <button onclick="switchPage('live-page')" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs rounded-lg shadow transition flex items-center gap-1"><i data-lucide="play" class="w-3 h-3 fill-white"></i> 立即播放</button>
+                        <button onclick="alert('已安全取消收藏该频道！')" class="text-[10px] text-slate-400 hover:text-rose-400 transition">取消收藏⭐</button>
+                    </div>
+                </div>
+
+                <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:scale-[1.03] hover:shadow-md transition-all duration-300 relative group cursor-pointer flex flex-col items-center justify-center text-center h-44">
+                    <div class="absolute top-3 left-3 flex items-center gap-1">
+                        <span class="fav-dot w-2 h-2 rounded-full bg-emerald-500"></span>
+                        <span class="fav-status-text text-[9px] text-slate-400 font-mono">在线</span>
+                    </div>
+                    <div class="w-14 h-14 rounded-xl bg-orange-600 text-white font-black text-xs flex items-center justify-center shadow-inner tracking-tighter mb-3 border border-orange-700">
+                        HNTV
+                    </div>
+                    <span class="font-bold text-sm text-slate-800">湖南卫视 高清</span>
+                    <div class="absolute inset-0 bg-slate-950/80 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 z-10">
+                        <button onclick="switchPage('live-page')" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs rounded-lg shadow transition flex items-center gap-1"><i data-lucide="play" class="w-3 h-3 fill-white"></i> 立即播放</button>
+                        <button onclick="alert('已安全取消收藏该频道！')" class="text-[10px] text-slate-400 hover:text-rose-400 transition">取消收藏⭐</button>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+    </main>
+
+    <div id="stop-dialog" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 hidden opacity-0 transition-opacity duration-200">
+        <div class="bg-white rounded-xl p-6 shadow-2xl max-w-md w-full mx-4 transform scale-95 transition-transform duration-200 space-y-4">
+            <h3 class="font-bold text-lg text-slate-900 flex items-center gap-2 text-rose-600"><i data-lucide="alert-triangle" class="w-5 h-5"></i> 确定要停止当前检测吗？</h3>
+            <p class="text-sm text-slate-500">停止将强行丢失当前已检测过半的 128 个频道进度。</p>
+            <div class="flex justify-end gap-2">
+                <button onclick="closeStopModal()" id="dialog-cancel-btn" class="px-4 py-2 border rounded-lg text-sm">我再等会儿 (取消)</button>
+                <button onclick="confirmStopCheck()" class="px-4 py-2 bg-rose-600 text-white rounded-lg text-sm">确定强行停止</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        // 6 页面标签切换中央调度机制
+        function switchPage(pageId) {
+            document.querySelectorAll('.page-content').forEach(p => p.classList.add('hidden'));
+            document.getElementById(pageId).classList.remove('hidden');
+            
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('bg-slate-100', 'text-slate-900', 'font-semibold');
+                btn.classList.add('text-slate-600', 'hover:text-slate-900', 'hover:bg-slate-50');
+            });
+            const activeBtn = document.getElementById(`nav-${pageId}`);
+            if (activeBtn) {
+                activeBtn.classList.remove('text-slate-600', 'hover:text-slate-900', 'hover:bg-slate-50');
+                activeBtn.classList.add('bg-slate-100', 'text-slate-900', 'font-semibold');
+            }
+        }
+
+        // ==================== 4. 播放页交互逻辑 ====================
+        function changeChannel(title, tag, latency) {
+            const skeleton = document.getElementById('player-skeleton');
+            skeleton.classList.remove('hidden'); // 呼出双层骨架屏
+            
+            setTimeout(() => {
+                document.getElementById('current-channel-title').innerText = title;
+                document.getElementById('current-channel-tag').innerText = `${tag} · ${latency}`;
+                skeleton.classList.add('hidden'); // 300ms 后骨架屏自然淡出，模拟极致极速切台
+            }, 400);
+        }
+
+        function toggleEpgDrawer() {
+            document.getElementById('epg-drawer').classList.toggle('translate-x-full');
+        }
+
+        function toggleImmersiveMode() {
+            const sidebar = document.getElementById('live-sidebar');
+            const btn = document.getElementById('immersive-btn');
+            const tip = document.getElementById('immersive-tip');
+            
+            sidebar.classList.toggle('lg:w-72');
+            sidebar.classList.toggle('lg:w-0');
+            sidebar.classList.toggle('lg:p-4');
+            sidebar.classList.toggle('lg:p-0');
+            sidebar.classList.toggle('overflow-hidden');
+            
+            if (sidebar.classList.contains('lg:w-0')) {
+                btn.querySelector('span').innerText = "常规模式";
+                btn.classList.replace('bg-blue-600', 'bg-slate-800');
+                tip.classList.remove('hidden');
+            } else {
+                btn.querySelector('span').innerText = "沉浸模式";
+                btn.classList.replace('bg-slate-800', 'bg-blue-600');
+                tip.classList.add('hidden');
+            }
+        }
+
+        // ==================== 6. 收藏页闪电扫描雷达特效 ====================
+        function startFavoritesCheck() {
+            const dots = document.querySelectorAll('.fav-dot');
+            const texts = document.querySelectorAll('.fav-status-text');
+            
+            dots.forEach(d => {
+                d.classList.replace('bg-emerald-500', 'bg-blue-500');
+                d.classList.add('animate-ping'); // 注入雷达呼吸闪烁动画
+            });
+            texts.forEach(t => t.innerText = "扫描中...");
+
+            setTimeout(() => {
+                dots.forEach((d, idx) => {
+                    d.classList.remove('animate-ping');
+                    if (idx === 1) {
+                        d.classList.replace('bg-blue-500', 'bg-rose-500'); // 模拟体检发现 CCTV-5 已断流超时
+                        texts[idx].innerText = "超时 ❌";
+                        texts[idx].classList.replace('text-slate-400', 'text-rose-500');
+                    } else {
+                        d.classList.replace('bg-blue-500', 'bg-emerald-500');
+                        texts[idx].innerText = "极速 32ms";
+                        texts[idx].classList.replace('text-slate-400', 'text-emerald-600');
+                    }
+                });
+            }, 1200);
+        }
+
+        // ==================== 前批次基础函数封装 ====================
+        function simulateStartCheck() { switchPage('checking-page'); document.getElementById('mini-progress-badge').classList.remove('hidden'); }
+        function minimizeToBackground() { switchPage('source-page'); }
+        function openStopModal() { const m = document.getElementById('stop-dialog'); m.classList.remove('hidden'); setTimeout(() => m.classList.remove('opacity-0'), 10); }
+        function closeStopModal() { const m = document.getElementById('stop-dialog'); m.classList.add('opacity-0'); setTimeout(() => m.classList.add('hidden'), 200); }
+        function confirmStopCheck() { closeStopModal(); switchPage('source-page'); }
+    </script>
+</body>
+</html>
