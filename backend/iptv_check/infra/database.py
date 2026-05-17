@@ -8,6 +8,7 @@ from contextlib import asynccontextmanager
 
 from sqlmodel import SQLModel, Field, create_engine, Session, select, col
 from sqlalchemy import Index, func, text
+from iptv_check.infra.cn_time import cn_now
 
 logger = logging.getLogger(__name__)
 
@@ -18,23 +19,25 @@ class ChannelBase(SQLModel):
     group: Optional[str] = Field(default=None, index=True)
     sources: str = Field(default="[]")
     url_key: str = Field(default="", index=True)
+    resolution: str = Field(default="")
 
 
 class ChannelModel(ChannelBase, table=True):
     __tablename__ = "channels"
     
     id: Optional[int] = Field(default=None, primary_key=True)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=cn_now)
 
 
 class CheckResultBase(SQLModel):
     channel_id: int = Field(foreign_key="channels.id", index=True)
     is_valid: bool = Field(index=True)
+    quality_tier: str = Field(default="", index=True)
     latency: float = Field(default=0)
     speed: str = Field(default="-")
     details: str = Field(default="")
     tag: str = Field(default="", index=True)
-    checked_at: datetime = Field(default_factory=datetime.utcnow, index=True)
+    checked_at: datetime = Field(default_factory=cn_now, index=True)
 
 
 class CheckResultModel(CheckResultBase, table=True):
@@ -47,30 +50,62 @@ class CheckResultModel(CheckResultBase, table=True):
 
 
 class CheckHistoryBase(SQLModel):
+    session_id: str = Field(default="", index=True)
     name: str = Field(default="")
     total_count: int = Field(default=0)
     valid_count: int = Field(default=0)
     invalid_count: int = Field(default=0)
     elapsed_seconds: float = Field(default=0)
-    created_at: datetime = Field(default_factory=datetime.utcnow, index=True)
+    created_at: datetime = Field(default_factory=cn_now, index=True)
 
 
 class CheckHistoryModel(CheckHistoryBase, table=True):
     __tablename__ = "check_history"
-    
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+
+
+class FavoriteFolderBase(SQLModel):
+    name: str = Field(default="")
+    icon: str = Field(default="")
+    sort_order: int = Field(default=0)
+    created_at: datetime = Field(default_factory=cn_now)
+
+
+class FavoriteFolderModel(FavoriteFolderBase, table=True):
+    __tablename__ = "favorite_folders"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+
+
+class CustomChannelBase(SQLModel):
+    name: str = Field(default="")
+    url: str = Field(default="", unique=True)
+    group: str = Field(default="")
+    folder_id: Optional[int] = Field(default=None, foreign_key="favorite_folders.id", index=True)
+    sort_order: int = Field(default=0)
+    created_at: datetime = Field(default_factory=cn_now)
+
+
+class CustomChannelModel(CustomChannelBase, table=True):
+    __tablename__ = "custom_channels"
+
     id: Optional[int] = Field(default=None, primary_key=True)
 
 
 class FavoriteBase(SQLModel):
-    channel_id: int = Field(foreign_key="channels.id", index=True)
+    channel_id: int = Field(default=0, index=True)
     name: str = Field(default="")
     url: str = Field(default="")
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    folder_id: Optional[int] = Field(default=None, foreign_key="favorite_folders.id", index=True)
+    channel_group: str = Field(default="")
+    sort_order: int = Field(default=0)
+    created_at: datetime = Field(default_factory=cn_now)
 
 
 class FavoriteModel(FavoriteBase, table=True):
     __tablename__ = "favorites"
-    
+
     id: Optional[int] = Field(default=None, primary_key=True)
 
 
@@ -88,10 +123,77 @@ class DatabaseManager:
                 f"sqlite:///{self._db_path}",
                 echo=False,
                 pool_pre_ping=True,
+                connect_args={"timeout": 30},
             )
+            self._configure_pragma(self._engine)
             SQLModel.metadata.create_all(self._engine)
+            self._migrate_schema()
             logger.info("数据库初始化: %s", self._db_path)
         return self._engine
+
+    @staticmethod
+    def _configure_pragma(engine):
+        from sqlalchemy import event as sa_event, text as sa_text
+
+        @sa_event.listens_for(engine, "connect")
+        def _set_sqlite_pragma(dbapi_conn, _connection_record):
+            cursor = dbapi_conn.cursor()
+            cursor.execute("PRAGMA synchronous=NORMAL")
+            cursor.execute("PRAGMA cache_size=-64000")
+            cursor.execute("PRAGMA busy_timeout=30000")
+            cursor.execute("PRAGMA temp_store=MEMORY")
+            cursor.execute("PRAGMA foreign_keys=ON")
+            cursor.close()
+
+        with engine.connect() as conn:
+            conn.execute(sa_text("PRAGMA journal_mode=WAL"))
+            conn.execute(sa_text("PRAGMA synchronous=NORMAL"))
+            conn.execute(sa_text("PRAGMA busy_timeout=30000"))
+            conn.commit()
+
+    def _migrate_schema(self):
+        """增量迁移：为已有表添加新列"""
+        with self._engine.connect() as conn:
+            from sqlalchemy import text as sa_text
+            try:
+                cols = [row[1] for row in conn.execute(sa_text("PRAGMA table_info(favorites)")).fetchall()]
+                if "folder_id" not in cols:
+                    conn.execute(sa_text("ALTER TABLE favorites ADD COLUMN folder_id INTEGER"))
+                    conn.commit()
+                    logger.info("迁移: favorites 增加 folder_id 列")
+                if "channel_group" not in cols:
+                    conn.execute(sa_text("ALTER TABLE favorites ADD COLUMN channel_group VARCHAR DEFAULT ''"))
+                    conn.commit()
+                    logger.info("迁移: favorites 增加 channel_group 列")
+                if "sort_order" not in cols:
+                    conn.execute(sa_text("ALTER TABLE favorites ADD COLUMN sort_order INTEGER DEFAULT 0"))
+                    conn.commit()
+                    logger.info("迁移: favorites 增加 sort_order 列")
+                cols_fav = [row[1] for row in conn.execute(sa_text("PRAGMA table_info(favorites)")).fetchall()]
+                if "channel_id" in cols_fav:
+                    fk_cols = conn.execute(sa_text("PRAGMA foreign_key_list(favorites)")).fetchall()
+                    if len(fk_cols) > 0:
+                        try:
+                            conn.execute(sa_text("CREATE TABLE IF NOT EXISTS favorites_new (id INTEGER PRIMARY KEY, channel_id INTEGER DEFAULT 0, name VARCHAR DEFAULT '', url VARCHAR DEFAULT '', folder_id INTEGER, channel_group VARCHAR DEFAULT '', sort_order INTEGER DEFAULT 0, created_at DATETIME)"))
+                            conn.execute(sa_text("INSERT INTO favorites_new (id, channel_id, name, url, folder_id, channel_group, sort_order, created_at) SELECT id, channel_id, name, url, folder_id, channel_group, sort_order, created_at FROM favorites"))
+                            conn.execute(sa_text("DROP TABLE favorites"))
+                            conn.execute(sa_text("ALTER TABLE favorites_new RENAME TO favorites"))
+                            conn.commit()
+                            logger.info("迁移: favorites 移除 FK 约束")
+                        except Exception as e:
+                            logger.warning("favorites FK 迁移跳过: %s", e)
+                hist_cols = [row[1] for row in conn.execute(sa_text("PRAGMA table_info(check_history)")).fetchall()]
+                if "session_id" not in hist_cols:
+                    conn.execute(sa_text("ALTER TABLE check_history ADD COLUMN session_id VARCHAR DEFAULT ''"))
+                    conn.commit()
+                    logger.info("迁移: check_history 增加 session_id 列")
+                ch_cols = [row[1] for row in conn.execute(sa_text("PRAGMA table_info(channels)")).fetchall()]
+                if "resolution" not in ch_cols:
+                    conn.execute(sa_text("ALTER TABLE channels ADD COLUMN resolution VARCHAR DEFAULT ''"))
+                    conn.commit()
+                    logger.info("迁移: channels 增加 resolution 列")
+            except Exception as e:
+                logger.warning("迁移检查失败: %s", e)
 
     def get_session(self) -> Session:
         return Session(self.engine)
@@ -101,18 +203,18 @@ class DatabaseManager:
         with self.get_session() as session:
             yield session
 
-    def save_check_result(self, results: List[dict], history_name: str = "") -> int:
+    def save_check_result(self, results: List[dict], history_name: str = "", session_id: str = "") -> int:
         """保存检测结果并返回历史记录ID"""
         with self.get_session() as session:
             channel_ids = []
             history_id = None
-            
+
             for r in results:
                 channel_data = r.get("channel", {})
                 channel = session.exec(
                     select(ChannelModel).where(ChannelModel.url == channel_data.get("url", ""))
                 ).first()
-                
+
                 if not channel:
                     channel = ChannelModel(
                         name=channel_data.get("name", "未知"),
@@ -120,26 +222,29 @@ class DatabaseManager:
                         group=channel_data.get("group"),
                         sources=json.dumps(channel_data.get("sources", []), ensure_ascii=False),
                         url_key=channel_data.get("url_key", ""),
+                        resolution=channel_data.get("resolution", ""),
                     )
                     session.add(channel)
                     session.flush()
-                
+
                 check_result = CheckResultModel(
                     channel_id=channel.id,
                     is_valid=r.get("is_valid", False),
+                    quality_tier=r.get("quality_tier", ""),
                     latency=r.get("latency", 0),
                     speed=r.get("speed", "-"),
                     details=r.get("details", ""),
                     tag=r.get("tag", ""),
-                    checked_at=datetime.utcnow(),
+                    checked_at=cn_now(),
                 )
                 session.add(check_result)
                 channel_ids.append(channel.id)
-            
+
             valid_count = sum(1 for r in results if r.get("is_valid"))
             invalid_count = len(results) - valid_count
-            
+
             history = CheckHistoryModel(
+                session_id=session_id,
                 name=history_name,
                 total_count=len(results),
                 valid_count=valid_count,
@@ -149,7 +254,7 @@ class DatabaseManager:
             session.add(history)
             session.flush()
             history_id = history.id
-            
+
             session.commit()
             logger.info("保存检测结果: 总数=%d, 有效=%d, history_id=%d", len(results), valid_count, history_id)
             return history_id
@@ -183,8 +288,10 @@ class DatabaseManager:
                         "group": ch.group,
                         "sources": json.loads(ch.sources) if ch.sources else [],
                         "url_key": ch.url_key,
+                        "resolution": ch.resolution,
                     },
                     "is_valid": cr.is_valid,
+                    "quality_tier": cr.quality_tier or "",
                     "latency": cr.latency,
                     "speed": cr.speed,
                     "details": cr.details,
@@ -229,7 +336,7 @@ class DatabaseManager:
     def get_channel_trend(self, channel_id: int, days: int = 7) -> List[dict]:
         """获取频道历史检测趋势"""
         with self.get_session() as session:
-            cutoff = datetime.utcnow() - __import__('datetime', fromlist=['timedelta']).timedelta(days=days)
+            cutoff = cn_now() - __import__('datetime', fromlist=['timedelta']).timedelta(days=days)
             results = session.exec(
                 select(CheckResultModel)
                 .where(CheckResultModel.channel_id == channel_id)
@@ -248,9 +355,8 @@ class DatabaseManager:
             ]
 
     def get_channel_stability_stats(self, channel_id: int, days: int = 7) -> dict:
-        """获取频道稳定性统计"""
         with self.get_session() as session:
-            cutoff = datetime.utcnow() - __import__('datetime', fromlist=['timedelta']).timedelta(days=days)
+            cutoff = cn_now() - __import__('datetime', fromlist=['timedelta']).timedelta(days=days)
             results = session.exec(
                 select(CheckResultModel)
                 .where(CheckResultModel.channel_id == channel_id)
@@ -297,7 +403,7 @@ class DatabaseManager:
     def get_top_stable_channels(self, days: int = 7, limit: int = 50) -> List[dict]:
         """获取最稳定的频道列表"""
         with self.get_session() as session:
-            cutoff = datetime.utcnow() - __import__('datetime', fromlist=['timedelta']).timedelta(days=days)
+            cutoff = cn_now() - __import__('datetime', fromlist=['timedelta']).timedelta(days=days)
             
             # 获取所有频道在该时间段内的检测结果
             query = text("""
@@ -361,9 +467,11 @@ class DatabaseManager:
                     )
 
             if tab == "valid":
-                base_query = base_query.where(CheckResultModel.is_valid == True)
+                base_query = base_query.where(CheckResultModel.is_valid == True, CheckResultModel.quality_tier == "valid")
             elif tab == "invalid":
-                base_query = base_query.where(CheckResultModel.is_valid == False)
+                base_query = base_query.where(CheckResultModel.quality_tier == "invalid")
+            elif tab == "likely_valid":
+                base_query = base_query.where(CheckResultModel.quality_tier == "likely_valid")
 
             if search:
                 search_lower = f"%{search.lower()}%"
@@ -383,14 +491,17 @@ class DatabaseManager:
             items = []
             for idx, (cr, ch) in enumerate(results):
                 sources_list = json.loads(ch.sources) if ch.sources else []
+                is_valid = cr.is_valid
+                quality_tier = cr.quality_tier or ("valid" if is_valid else "invalid")
                 items.append({
                     "index": offset + idx + 1,
                     "name": ch.name,
                     "url": ch.url,
                     "group": ch.group or "",
                     "sources": ", ".join(sources_list),
-                    "is_valid": cr.is_valid,
-                    "status": "有效" if cr.is_valid else "无效",
+                    "is_valid": is_valid,
+                    "quality_tier": quality_tier,
+                    "status": "有效" if quality_tier == "valid" else ("疑似有效" if quality_tier == "likely_valid" else "无效"),
                     "latency": str(int(cr.latency)) if cr.latency >= 0 else "-",
                     "speed": cr.speed,
                     "details": cr.details,

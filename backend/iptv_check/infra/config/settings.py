@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Optional
 
 from pydantic_settings import BaseSettings
-from pydantic import Field, model_validator
+from pydantic import Field, field_validator, model_validator
 
 # ============================================================
 # Path Settings
@@ -87,13 +87,13 @@ class AppSettings(BaseSettings):
     pages_per_view: int = Field(default=50, ge=10, le=200)
     
     # Thread pool settings
-    max_threads: int = Field(default=80, ge=1, le=500)
+    max_threads: int = Field(default=120, ge=1, le=500)
     min_threads: int = Field(default=5, ge=1, le=50)
     
     # Download settings
-    download_timeout: int = Field(default=30, ge=5, le=300)
-    download_retries: int = Field(default=3, ge=0, le=10)
-    download_concurrency: int = Field(default=5, ge=1, le=50)
+    download_timeout: int = Field(default=15, ge=5, le=300)
+    download_retries: int = Field(default=1, ge=0, le=10)
+    download_concurrency: int = Field(default=30, ge=1, le=50)
     
     # Circuit breaker settings
     breaker_fail_max: int = Field(default=5, ge=1, le=100)
@@ -108,19 +108,44 @@ class AppSettings(BaseSettings):
     http_max_retries: int = Field(default=3, ge=0, le=10)
     
     # Check settings
-    check_timeout_connect: int = Field(default=3, ge=1, le=30)
+    check_timeout_connect: int = Field(default=5, ge=1, le=30)
     check_timeout_read: int = Field(default=8, ge=1, le=60)
+    check_max_threads: int = Field(default=120, ge=1, le=500)
     
     # Stream proxy settings
     stream_proxy_max_connections: int = Field(default=100, ge=1, le=1000)
     stream_proxy_timeout_connect: int = Field(default=10, ge=1, le=60)
     stream_proxy_timeout_read: int = Field(default=30, ge=1, le=120)
+    stream_proxy_base: str = Field(default="http://127.0.0.1:9528/proxy")
     
     # Database
     db_path: Optional[str] = Field(default=None)
     
     # CORS
     cors_origins: list[str] = Field(default_factory=lambda: ["*"])
+    
+    # Remote config URLs (from env IPTV_REMOTE_CONFIG_URLS, comma-separated)
+    remote_config_urls: list[str] = Field(
+        default_factory=list,
+        description="远程源配置URL列表，从环境变量 IPTV_REMOTE_CONFIG_URLS 读取（逗号分隔）",
+    )
+    
+    @field_validator("remote_config_urls", mode="before")
+    @classmethod
+    def parse_remote_config_urls(cls, v):
+        if v is None or v == "":
+            return []
+        if isinstance(v, str):
+            if v.startswith("["):
+                import json
+                try:
+                    return json.loads(v)
+                except json.JSONDecodeError:
+                    pass
+            return [u.strip() for u in v.split(",") if u.strip()]
+        if isinstance(v, list):
+            return v
+        return []
     
     model_config = {
         "env_file": ".env",
@@ -134,7 +159,7 @@ class AppSettings(BaseSettings):
 # App metadata
 # ============================================================
 
-APP_VERSION = "4.1.0"
+APP_VERSION = "4.2.0"
 APP_TITLE = f"电视直播源检测工具 V{APP_VERSION}"
 
 

@@ -17,17 +17,21 @@ class CheckProgress:
     total: int = 0
     checked: int = 0
     valid: int = 0
+    likely_valid: int = 0
     invalid: int = 0
 
     @property
     def progress_percent(self) -> float:
-        return (self.checked / self.total * 100) if self.total > 0 else 0.0
+        if self.total <= 0:
+            return 0.0
+        return min(self.checked / self.total * 100, 100.0)
 
     def to_dict(self) -> dict:
         return {
             "total": self.total,
             "checked": self.checked,
             "valid": self.valid,
+            "likely_valid": self.likely_valid,
             "invalid": self.invalid,
             "progress_percent": round(self.progress_percent, 1),
         }
@@ -56,15 +60,18 @@ class BatchResultCollector:
         batch_size: int = 100,
         flush_interval: float = 3.0,
         session_id: str = "",
+        event_type: str = "channel_checked",
     ):
         self._event_store = event_store
         self._broadcast_fn = broadcast_fn
         self._batch_size = batch_size
         self._flush_interval = flush_interval
         self._session_id = session_id
+        self._event_type = event_type
 
         self._result_queue: asyncio.Queue = asyncio.Queue(maxsize=5000)
         self._progress = CheckProgress()
+        self._invalid_channels: list = []
 
         self._flush_task: Optional[asyncio.Task] = None
         self._running = False
@@ -151,11 +158,30 @@ class BatchResultCollector:
             "is_radio": result.channel.is_radio,
             "language": result.channel.language,
             "content_type": self._classify_content_type(result),
+            "quality_tier": result.quality_tier,
+            "resolution": getattr(result.channel, "resolution", "") or "",
         }
+        if not result.is_valid:
+            self._invalid_channels.append(result.channel)
         try:
             loop.call_soon_threadsafe(self._result_queue.put_nowait, ("result", result_data))
         except asyncio.QueueFull:
             logger.warning("[BatchCollector] 队列满，丢弃结果: %s", result.channel.name)
+
+    def submit_cached_result_sync(self, result: CheckResult):
+        """缓存命中结果：只更新内存进度计数器，不走队列不写数据库"""
+        self._progress.checked += 1
+        tier = result.quality_tier
+        if not tier:
+            tier = "valid" if result.is_valid else "invalid"
+        if tier == "valid":
+            self._progress.valid += 1
+        elif tier == "likely_valid":
+            self._progress.likely_valid += 1
+        else:
+            self._progress.invalid += 1
+        if not result.is_valid:
+            self._invalid_channels.append(result.channel)
 
     def submit_complete_sync(self):
         """同步提交检测完成信号（由线程池线程调用）"""
@@ -165,14 +191,17 @@ class BatchResultCollector:
             logger.info("[BatchCollector] 获取到运行中的事件循环")
         except RuntimeError as e:
             logger.error("[BatchCollector] 获取事件循环失败: %s", e)
+            self._complete_event.set()
             return
         try:
             loop.call_soon_threadsafe(self._result_queue.put_nowait, ("complete", None))
             logger.info("[BatchCollector] 完成信号已提交到队列")
         except asyncio.QueueFull:
-            logger.error("[BatchCollector] 队列满，无法提交完成信号")
+            logger.warning("[BatchCollector] 队列满，直接设置完成事件")
+            loop.call_soon_threadsafe(self._complete_event.set)
         except Exception as e:
             logger.error("[BatchCollector] 提交完成信号异常: %s", e)
+            loop.call_soon_threadsafe(self._complete_event.set)
 
     async def _flush_loop(self):
         """后台刷新循环：定时或达到 batch_size 时批量写入"""
@@ -189,8 +218,13 @@ class BatchResultCollector:
                 if msg_type == "result":
                     batch.append(data)
                     self._progress.checked += 1
-                    if data.get("is_valid"):
+                    tier = data.get("quality_tier")
+                    if not tier:
+                        tier = "valid" if data.get("is_valid") else "invalid"
+                    if tier == "valid":
                         self._progress.valid += 1
+                    elif tier == "likely_valid":
+                        self._progress.likely_valid += 1
                     else:
                         self._progress.invalid += 1
 
@@ -235,7 +269,7 @@ class BatchResultCollector:
 
         events = []
         for data in batch:
-            events.append(("channel_checked", data))
+            events.append((self._event_type, data))
 
         try:
             await self._event_store.append_batch(events, self._session_id)
@@ -253,8 +287,13 @@ class BatchResultCollector:
                 if msg_type == "result":
                     batch.append(data)
                     self._progress.checked += 1
-                    if data.get("is_valid"):
+                    tier = data.get("quality_tier")
+                    if not tier:
+                        tier = "valid" if data.get("is_valid") else "invalid"
+                    if tier == "valid":
                         self._progress.valid += 1
+                    elif tier == "likely_valid":
+                        self._progress.likely_valid += 1
                     else:
                         self._progress.invalid += 1
                 elif msg_type == "complete":
@@ -274,14 +313,25 @@ class BatchResultCollector:
         progress = self._progress.to_dict()
         await self._broadcast_fn("progress_update", progress)
 
+    def get_invalid_channels(self) -> list:
+        """获取首轮invalid的频道列表，用于复检"""
+        return self._invalid_channels
+
+    def update_result(self, result: CheckResult):
+        """复检结果覆盖：更新进度计数"""
+        self._progress.checked += 1
+        if result.quality_tier in ("valid", "likely_valid"):
+            self._progress.invalid -= 1
+            if result.quality_tier == "likely_valid":
+                self._progress.likely_valid += 1
+            else:
+                self._progress.valid += 1
+        else:
+            self._progress.invalid += 1
+
     async def _on_complete(self):
         """检测完成后的最终处理"""
         progress = self._progress.to_dict()
-        await self._broadcast_fn("check_completed", {
-            "total": progress["total"],
-            "valid": progress["valid"],
-            "invalid": progress["invalid"],
-        })
         logger.info("[BatchCollector] 检测完成, %s", progress)
 
     @staticmethod

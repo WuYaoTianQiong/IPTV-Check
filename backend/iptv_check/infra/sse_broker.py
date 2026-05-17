@@ -150,11 +150,21 @@ class SSEBroker:
         dead_subscribers = []
         
         async with self._lock:
-            for sub_id, subscriber in list(self._subscribers.items()):
+            subs = list(self._subscribers.items())
+        
+        logger.info("[SSE-BROKER] 广播事件 %s，订阅者数=%d", event, len(subs))
+        
+        for sub_id, subscriber in subs:
+            try:
                 success = await subscriber.put(sse_message)
-                if not success:
+                if success:
+                    logger.debug("[SSE-BROKER] 消息已投递到 %s", sub_id)
+                else:
+                    logger.warning("[SSE-BROKER] 消息投递失败 %s (队列满)", sub_id)
                     if subscriber.is_stale(self.stale_timeout):
                         dead_subscribers.append(sub_id)
+            except Exception as e:
+                logger.error("[SSE-BROKER] 投递异常 %s: %s", sub_id, e)
         
         for sub_id in dead_subscribers:
             await self._remove_subscriber(sub_id)
@@ -164,11 +174,16 @@ class SSEBroker:
         dead_subscribers = []
         
         async with self._lock:
-            for sub_id, subscriber in list(self._subscribers.items()):
+            subs = list(self._subscribers.items())
+        
+        for sub_id, subscriber in subs:
+            try:
                 success = await subscriber.put(raw_message)
                 if not success:
                     if subscriber.is_stale(self.stale_timeout):
                         dead_subscribers.append(sub_id)
+            except Exception as e:
+                logger.error("[SSE-BROKER] broadcast_raw 投递异常 %s: %s", sub_id, e)
         
         for sub_id in dead_subscribers:
             await self._remove_subscriber(sub_id)

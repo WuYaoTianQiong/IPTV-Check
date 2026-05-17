@@ -9,6 +9,8 @@ from typing import Optional, Callable, Dict, Any
 from datetime import datetime, timedelta
 from enum import Enum
 
+from iptv_check.infra.cn_time import cn_now
+
 logger = logging.getLogger(__name__)
 
 
@@ -35,7 +37,7 @@ class ScheduledTask:
 
     def start(self):
         self.status = ScheduleStatus.PENDING
-        self.next_run = datetime.utcnow()
+        self.next_run = cn_now()
         self._task = asyncio.create_task(self._run_loop())
         logger.info("定时任务 [%s] 已启动, 间隔: %ds", self.name, self.interval_seconds)
 
@@ -48,18 +50,18 @@ class ScheduledTask:
             if self.status == ScheduleStatus.COMPLETED or self.status == ScheduleStatus.FAILED:
                 break
 
-            if self.next_run and datetime.utcnow() < self.next_run:
+            if self.next_run and cn_now() < self.next_run:
                 await asyncio.sleep(1)
                 continue
 
             self.status = ScheduleStatus.RUNNING
-            self.last_run = datetime.utcnow()
+            self.last_run = cn_now()
             self.run_count += 1
             
             try:
                 await self.callback()
                 self.status = ScheduleStatus.PENDING
-                self.next_run = datetime.utcnow() + timedelta(seconds=self.interval_seconds)
+                self.next_run = cn_now() + timedelta(seconds=self.interval_seconds)
                 logger.info("定时任务 [%s] 执行成功, 运行次数: %d", self.name, self.run_count)
             except asyncio.CancelledError:
                 break
@@ -70,7 +72,7 @@ class ScheduledTask:
                 await asyncio.sleep(min(self.interval_seconds / 2, 60))
                 if self.status == ScheduleStatus.FAILED:
                     self.status = ScheduleStatus.PENDING
-                    self.next_run = datetime.utcnow() + timedelta(seconds=self.interval_seconds)
+                    self.next_run = cn_now() + timedelta(seconds=self.interval_seconds)
 
     def pause(self):
         if self.status == ScheduleStatus.RUNNING:
@@ -82,7 +84,7 @@ class ScheduledTask:
     def resume(self):
         if self.status == ScheduleStatus.PAUSED:
             self.status = ScheduleStatus.PENDING
-            self.next_run = datetime.utcnow()
+            self.next_run = cn_now()
         logger.info("定时任务 [%s] 已恢复", self.name)
 
     def stop(self):

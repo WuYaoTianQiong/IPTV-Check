@@ -78,6 +78,8 @@ class Events:
     SOURCE_DOWNLOADED = "source:downloaded"
     SOURCE_DOWNLOAD_ERROR = "source:download_error"
     SOURCE_UPDATED = "source:updated"
+    SOURCE_SYNC_COMPLETED = "source:sync_completed"
+    SOURCE_SYNC_ERROR = "source:sync_error"
 
     # EPG events
     EPG_UPDATED = "epg:updated"
