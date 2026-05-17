@@ -30,27 +30,29 @@ class SourceRecommender:
             prefer_low_latency: 是否优先低延迟
 
         Returns:
-            按分组组织的推荐频道列表
+            按分组组织的推荐频道列表，分组键格式：频道名@分辨率
         """
         if not results:
             return {}
 
-        # 1. 按频道名称分组
+        # 1. 按频道名称+分辨率分组
         groups: Dict[str, List[CheckResult]] = {}
         for r in results:
             if not r.is_valid:
                 continue
             name = r.channel.name
-            if name not in groups:
-                groups[name] = []
-            groups[name].append(r)
+            resolution = getattr(r.channel, "resolution", "") or ""
+            group_key = f"{name}@{resolution}" if resolution else name
+            if group_key not in groups:
+                groups[group_key] = []
+            groups[group_key].append(r)
 
-        # 2. 为每个频道选择最优源
+        # 2. 为每个分组选择最优源
         recommendations: Dict[str, List[Dict]] = {}
-        for name, variants in groups.items():
+        for group_key, variants in groups.items():
             scored = [SourceRecommender._score_result(r, local_isp, prefer_low_latency) for r in variants]
             scored.sort(key=lambda x: x["score"], reverse=True)
-            recommendations[name] = scored[:max_channels_per_group]
+            recommendations[group_key] = scored[:max_channels_per_group]
 
         return recommendations
 
@@ -135,16 +137,19 @@ class SourceRecommender:
     def generate_m3u(recommendations: Dict[str, List[Dict]], local_isp: str = "未知") -> str:
         """生成推荐结果的 M3U 内容"""
         lines = ["#EXTM3U"]
-        for name, variants in recommendations.items():
+        for group_key, variants in recommendations.items():
+            name = group_key.split("@")[0] if "@" in group_key else group_key
+            resolution = group_key.split("@")[1] if "@" in group_key else ""
             for v in variants:
                 ch = v["channel"]
                 r = v["result"]
                 group = ch.group or "推荐"
                 reason_str = ",".join(v["reasons"])
+                display_name = f"{name} [{resolution}]" if resolution else name
                 lines.append(
                     f'#EXTINF:-1 group-title="{group}" tvg-name="{name}" '
                     f'tvg-logo="" comment="推荐得分:{v["score"]} ({reason_str})",'
-                    f"{name}"
+                    f"{display_name}"
                 )
                 lines.append(r.channel.url)
         return "\n".join(lines)

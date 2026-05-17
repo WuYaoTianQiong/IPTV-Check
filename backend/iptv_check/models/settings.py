@@ -3,13 +3,14 @@ from dataclasses import dataclass
 
 @dataclass
 class CheckConfig:
-    timeout_connect: int = 3
+    timeout_connect: int = 5
     timeout_read: int = 8
-    max_threads: int = 30
+    max_threads: int = 120
     min_threads: int = 5
-    run_speed_test: bool = True
+    run_speed_test: bool = False
     use_cache: bool = True
-    max_latency_ms: int = 5000
+    max_latency_ms: int = 10000
+    enable_recheck: bool = False
 
     @property
     def timeout_tuple(self) -> tuple:

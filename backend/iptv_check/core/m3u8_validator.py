@@ -96,20 +96,20 @@ class M3U8Validator:
         if http_session is None:
             raise ValueError("http_session is required for async validation")
 
-        segment_url = self._maybe_proxy_url(segment_url, proxy_base)
+        proxy_segment_url = self._maybe_proxy_url(segment_url, proxy_base)
 
         timeout = aiohttp.ClientTimeout(
             total=timeout_connect + timeout_read,
             connect=timeout_connect,
             sock_read=timeout_read,
         )
-        async with http_session.get(segment_url, headers=headers, timeout=timeout, ssl=False) as resp:
+        async with http_session.get(proxy_segment_url, headers=headers, timeout=timeout, ssl=False) as resp:
             resp.raise_for_status()
             content_type = resp.headers.get("Content-Type", "").lower()
             if "mpegurl" in content_type or segment_url.lower().endswith(".m3u8"):
                 nested_playlist = await resp.text()
                 if nested_playlist.strip().startswith("#EXTM3U"):
-                    await self.validate_recursive_async(segment_url, nested_playlist, headers, timeout_connect, timeout_read, depth + 1, max_depth, http_session)
+                    await self.validate_recursive_async(segment_url, nested_playlist, headers, timeout_connect, timeout_read, depth + 1, max_depth, http_session, proxy_base=proxy_base)
             else:
                 chunk = await resp.content.read(1024)
                 if not chunk:
@@ -133,7 +133,7 @@ class M3U8Validator:
         if http_session is None:
             raise ValueError("http_session is required for async speed test")
 
-        segment_url = self._maybe_proxy_url(segment_url, proxy_base)
+        proxy_segment_url = self._maybe_proxy_url(segment_url, proxy_base)
 
         timeout = aiohttp.ClientTimeout(
             total=timeout_connect + timeout_read,
@@ -141,7 +141,7 @@ class M3U8Validator:
             sock_read=timeout_read,
         )
         try:
-            async with http_session.get(segment_url, headers=headers, timeout=timeout, ssl=False) as seg_resp:
+            async with http_session.get(proxy_segment_url, headers=headers, timeout=timeout, ssl=False) as seg_resp:
                 seg_resp.raise_for_status()
                 seg_content_type = seg_resp.headers.get("Content-Type", "").lower()
                 if "mpegurl" in seg_content_type or segment_url.lower().endswith(".m3u8"):
@@ -149,7 +149,8 @@ class M3U8Validator:
                     if nested_playlist.strip().startswith("#EXTM3U"):
                         nested_segment = self._find_segment_url(segment_url, nested_playlist)
                         if nested_segment:
-                            async with http_session.get(nested_segment, headers=headers, timeout=timeout, ssl=False) as nested_resp:
+                            proxy_nested = self._maybe_proxy_url(nested_segment, proxy_base)
+                            async with http_session.get(proxy_nested, headers=headers, timeout=timeout, ssl=False) as nested_resp:
                                 nested_resp.raise_for_status()
                                 return await self._test_speed_async(nested_resp.content.iter_any(), timeout_read)
                 return await self._test_speed_async(seg_resp.content.iter_any(), timeout_read)

@@ -2,12 +2,14 @@ from dataclasses import dataclass, field
 from typing import Any, Optional
 from datetime import datetime
 
+from iptv_check.infra.cn_time import cn_now
+
 
 @dataclass(frozen=True)
 class DomainEvent:
     event_type: str
     payload: dict = field(default_factory=dict)
-    timestamp: float = field(default_factory=lambda: datetime.utcnow().timestamp())
+    timestamp: float = field(default_factory=lambda: cn_now().timestamp())
     session_id: str = ""
 
 
@@ -19,6 +21,7 @@ class DomainEvents:
 
     CHANNEL_SUBMITTED = "channel_submitted"
     CHANNEL_CHECKED = "channel_checked"
+    CHANNEL_RECHECKED = "channel_rechecked"
 
     SOURCE_DOWNLOADED = "source_downloaded"
     SOURCE_DOWNLOAD_FAILED = "source_download_failed"
