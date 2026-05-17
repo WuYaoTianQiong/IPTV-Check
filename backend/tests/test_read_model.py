@@ -12,6 +12,10 @@ from unittest.mock import MagicMock, patch
 from sqlmodel import SQLModel, create_engine, Session
 from iptv_check.infra.persistence.read_model import ReadModel
 from iptv_check.infra.persistence.event_store import EventStore
+from iptv_check.infra.persistence.read_model import (
+    _infer_region_from_group,
+    _INTERNATIONAL_GROUP_KEYWORDS,
+)
 
 
 class TestReadModelParameterizedQueries:
@@ -178,3 +182,23 @@ class TestReadModelParameterizedQueries:
 
                 result = read_model.get_checked_channels(page=-1, per_page=50)
                 assert result["page"] == -1
+
+
+class TestInferRegionCgtnDomestic:
+    def test_infer_region_cgtn_returns_cctv(self):
+        assert _infer_region_from_group("CGTN", "CN", False, "") == "央视"
+
+    def test_infer_region_cgtn_lower_returns_cctv(self):
+        assert _infer_region_from_group("cgtn documentary", "CN", False, "") == "央视"
+
+    def test_infer_region_cctv1_returns_cctv(self):
+        assert _infer_region_from_group("CCTV-1 综合", "CN", False, "") == "央视"
+
+    def test_infer_region_nhk_world_returns_international(self):
+        assert _infer_region_from_group("NHK World", "JP", False, "") == "国际电视"
+
+    def test_infer_region_cna_returns_international(self):
+        assert _infer_region_from_group("CNA", "SG", False, "") == "国际电视"
+
+    def test_international_keywords_no_cgtn(self):
+        assert "CGTN" not in _INTERNATIONAL_GROUP_KEYWORDS

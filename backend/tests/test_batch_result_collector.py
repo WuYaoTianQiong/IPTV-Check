@@ -69,10 +69,11 @@ class TestBatchResultCollector:
         events = tmp_event_store.get_events(session_id="test_001", event_type="channel_checked")
         assert len(events) == 2
 
-        complete_msgs = [m for m in messages if m[0] == "check_completed"]
-        assert len(complete_msgs) == 1
-        assert complete_msgs[0][1]["valid"] == 1
-        assert complete_msgs[0][1]["invalid"] == 1
+        # BatchResultCollector 不再广播 check_completed，该职责已移至 CheckService
+        # 验证 collector 完成后的进度数据正确
+        assert progress["checked"] == 2
+        assert progress["valid"] == 1
+        assert progress["invalid"] == 1
 
     async def test_progress_snapshot(self, tmp_event_store, broadcast_collector):
         broadcast_fn, messages = broadcast_collector
@@ -127,5 +128,6 @@ class TestBatchResultCollector:
         events = tmp_event_store.get_events(session_id="test_003", event_type="channel_checked")
         assert len(events) == 10
 
-        complete_msgs = [m for m in messages if m[0] == "check_completed"]
-        assert len(complete_msgs) == 1
+        # BatchResultCollector 不再广播 check_completed，该职责已移至 CheckService
+        # 验证 stop 后的进度数据正确
+        assert progress["checked"] == 10
