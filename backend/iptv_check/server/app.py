@@ -8,6 +8,8 @@ import urllib.parse
 import base64
 from typing import List, Optional
 from pathlib import Path
+
+from iptv_check.infra.cn_time import cn_now
 from contextlib import asynccontextmanager
 
 import aiohttp
@@ -23,15 +25,15 @@ from iptv_check.models.settings import CheckConfig, ExportConfig
 from iptv_check.infra.network import ResilientHttpClient
 from iptv_check.infra.disk_cache import DiskCacheManager
 from iptv_check.infra.persistence_settings import SettingsManager
-from iptv_check.infra.persistence.event_store import EventStore
+from iptv_check.infra.persistence.event_store import EventStore, SourceStore
 from iptv_check.infra.persistence.read_model import ReadModel
+from iptv_check.infra.persistence.materialization import MaterializationService
 from iptv_check.infra.check_engine import AsyncCheckEngine
 from iptv_check.core.m3u8_validator import M3U8Validator
 from iptv_check.infra.exporter import ExportEngine
 from iptv_check.infra.stream_proxy import StreamProxy
 from iptv_check.infra.database import DatabaseManager
 from iptv_check.infra.media_probe import MediaProbe
-from iptv_check.infra.di import DIContainer
 from iptv_check.infra.exceptions import CheckAlreadyRunningError, CheckNotRunningError, StreamProxyError
 from iptv_check.core.isp_detector import ISPDetector
 from iptv_check.core.parser import PlaylistParser
@@ -47,6 +49,7 @@ from iptv_check.infra.config.settings import settings, path_settings
 from iptv_check.infra.config.settings import APP_TITLE, APP_VERSION
 from iptv_check.infra.task_scheduler import TaskScheduler
 from iptv_check.infra.event_bus import event_bus, Events
+from iptv_check.application.services.source_sync_service import SourceSyncService
 from iptv_check.infra.metrics import metrics
 from iptv_check.infra.sse_broker import SSEBroker
 from iptv_check.server.middleware import register_exception_handlers, register_middleware
@@ -57,6 +60,8 @@ from iptv_check.server.routers.export import router as export_router
 from iptv_check.server.routers.epg import router as epg_router
 from iptv_check.server.routers.logos import router as logos_router
 from iptv_check.server.routers.cache import router as cache_router
+from iptv_check.server.routers.source_sync import router as source_sync_router
+from iptv_check.server.routers.fetch import router as fetch_router
 from iptv_check.infra.logging_config import setup_logging
 
 # 配置日志系统
@@ -113,13 +118,14 @@ class AppState:
         )
         self.cache = DiskCacheManager(base_dir=DATA_DIR)
         self.settings = SettingsManager(base_dir=DATA_DIR)
-        self.database = DatabaseManager(db_path=os.path.join(DATA_DIR, "iptv_check.db"))
         self.isp_detector = ISPDetector(self.http_client)
         self.export_engine = ExportEngine()
 
         db_path = settings.db_path or os.path.join(DATA_DIR, "events.db")
         self.event_store = EventStore(db_path=db_path)
+        self.source_store = SourceStore(self.event_store)
         self.read_model = ReadModel(self.event_store)
+        self.materialization = MaterializationService(self.event_store)
 
         self.online_sources: List[OnlineSource] = []
         self.local_isp: str = "未知"
@@ -141,6 +147,8 @@ class AppState:
 
         self._sse_broker = SSEBroker(max_subscribers=50, max_queue_size=100)
         self._check_service: Optional[CheckService] = None
+        self._source_sync_service: Optional[SourceSyncService] = None
+        self._fetch_service = None
 
         self._load_online_sources()
 
@@ -150,14 +158,38 @@ class AppState:
 
     def _load_online_sources(self):
         try:
-            sources_file = os.path.join(DATA_DIR, "local_sources.json")
-            if os.path.exists(sources_file):
-                with open(sources_file, "r", encoding="utf-8") as f:
-                    data = json.load(f)
-                self.online_sources = [OnlineSource.from_dict(s) for s in data.get("sources", [])]
-                logger.info("加载了 %d 个在线直播源", len(self.online_sources))
+            if self.source_store:
+                migrated = self.source_store.migrate_from_json(os.path.join(DATA_DIR, "local_sources.json"))
+                if migrated > 0:
+                    logger.info("从 JSON 迁移 %d 个源到数据库", migrated)
+            self.online_sources = self.source_store.load_all() if self.source_store else self._load_online_sources_from_json()
+            logger.info("加载了 %d 个在线直播源", len(self.online_sources))
         except Exception as e:
             logger.warning("加载在线源失败: %s", e)
+            self.online_sources = []
+
+    async def _load_online_sources_async(self):
+        try:
+            if self.source_store:
+                migrated = await asyncio.to_thread(self.source_store.migrate_from_json, os.path.join(DATA_DIR, "local_sources.json"))
+                if migrated > 0:
+                    logger.info("从 JSON 迁移 %d 个源到数据库", migrated)
+            if self.source_store:
+                self.online_sources = await asyncio.to_thread(self.source_store.load_all)
+            else:
+                self.online_sources = self._load_online_sources_from_json()
+            logger.info("加载了 %d 个在线直播源", len(self.online_sources))
+        except Exception as e:
+            logger.warning("加载在线源失败: %s", e)
+            self.online_sources = []
+
+    def _load_online_sources_from_json(self) -> List[OnlineSource]:
+        sources_file = os.path.join(DATA_DIR, "local_sources.json")
+        if os.path.exists(sources_file):
+            with open(sources_file, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            return [OnlineSource.from_dict(s) for s in data.get("sources", [])]
+        return []
 
     async def start(self):
         # 订阅 ISP 检测完成事件，实现实时推送
@@ -169,8 +201,9 @@ class AppState:
         await self.stream_proxy.initialize()
 
         connector = aiohttp.TCPConnector(
-            limit=100, limit_per_host=30, ttl_dns_cache=300,
+            limit=settings.check_max_threads or 80, limit_per_host=30, ttl_dns_cache=300,
             use_dns_cache=True, enable_cleanup_closed=True, force_close=False,
+            keepalive_timeout=30,
         )
         self._async_session = aiohttp.ClientSession(connector=connector)
         self._ffmpeg_available = MediaProbe.is_ffmpeg_available()
@@ -179,7 +212,7 @@ class AppState:
             http_session=self._async_session,
             cache=self.cache,
             m3u8_validator=M3U8Validator(self.http_client),
-            proxy_base="http://127.0.0.1:9529/proxy",
+            proxy_base=settings.stream_proxy_base,
         )
         self._check_service = CheckService(
             event_store=self.event_store,
@@ -187,6 +220,14 @@ class AppState:
             check_engine=check_engine,
             broadcast_fn=self.broadcast,
         )
+
+        from iptv_check.application.services.fetch_service import FetchService
+        self._fetch_service = FetchService(
+            event_store=self.event_store,
+            broadcast_fn=self.broadcast,
+            session_factory=lambda: self.event_store.get_session(),
+        )
+
         logger.info("检测服务初始化完成，FFmpeg: %s", "可用" if self._ffmpeg_available else "不可用")
 
         epg_cache = EpgCacheManager(DATA_DIR)
@@ -196,12 +237,44 @@ class AppState:
         self._logo_service.register_logo_sources(self.online_sources)
         logger.info("EPG和台标服务初始化完成")
 
+        self._source_sync_service = SourceSyncService(
+            DATA_DIR,
+            http_session=self._async_session,
+            env_remote_config_urls=settings.remote_config_urls,
+            source_store=self.source_store,
+            broadcast_fn=self.broadcast,
+        )
+        try:
+            sync_result = await self._source_sync_service.sync()
+            if sync_result.success and (sync_result.added > 0 or sync_result.updated > 0):
+                await self._load_online_sources_async()
+        except Exception as e:
+            logger.warning("首次源同步失败: %s", e)
+
+        try:
+            if self._fetch_service and not self._fetch_service.is_fetching and not self._fetch_service.has_fetched_channels():
+                all_source_ids = [s.id for s in self.online_sources]
+                if all_source_ids:
+                    asyncio.create_task(self._bg_startup_fetch(all_source_ids))
+        except Exception as e:
+            logger.warning("启动时自动拉取频道失败: %s", e)
+
         m3u_path = os.path.join(DATA_DIR, "exports", "iptv_live.m3u")
         if os.path.isfile(m3u_path):
             self._m3u_service_running = True
             self._m3u_service_file = m3u_path
-            self._m3u_service_started_at = datetime.datetime.utcnow()
+            self._m3u_service_started_at = cn_now()
             logger.info("检测到上次遗留的 M3U 文件: %s", m3u_path)
+
+        logger.info("服务启动完成: 在线源=%d, 本地ISP=%s, FFmpeg=%s",
+                     len(self.online_sources), self.local_isp, "可用" if self._ffmpeg_available else "不可用")
+
+    async def _bg_startup_fetch(self, source_ids):
+        try:
+            await self._fetch_service.start_fetch(source_ids, use_cache=True)
+            logger.info("启动时自动拉取频道完成")
+        except Exception as e:
+            logger.warning("启动时自动拉取频道失败: %s", e)
 
     async def stop(self):
         await self._task_scheduler.shutdown()
@@ -223,12 +296,16 @@ class AppState:
         await self.broadcast("isp_updated", {"local_isp": isp})
 
     async def broadcast(self, event: str, data: dict):
+        logger.info("[SSE-BROKER] 广播事件: %s, 数据: %s", event, data)
         await self._sse_broker.broadcast(event, data)
 
     async def subscribe_sse(self):
-        return await self._sse_broker.subscribe()
+        subscriber = await self._sse_broker.subscribe()
+        logger.info("[SSE-BROKER] 新订阅者已创建: %s", subscriber.subscriber_id)
+        return subscriber
 
     async def unsubscribe_sse(self, subscriber):
+        logger.info("[SSE-BROKER] 订阅者取消订阅: %s", subscriber.subscriber_id)
         await self._sse_broker.unsubscribe(subscriber)
 
 
@@ -248,6 +325,21 @@ def create_app() -> FastAPI:
         await app_state.stop()
 
     app = FastAPI(title=APP_TITLE, version=APP_VERSION, lifespan=lifespan)
+
+    # Rate limiting
+    try:
+        from slowapi import Limiter, _rate_limit_exceeded_handler
+        from slowapi.util import get_remote_address
+        from slowapi.errors import RateLimitExceeded
+        from slowapi.middleware import SlowAPIMiddleware
+
+        limiter = Limiter(key_func=get_remote_address, default_limits=["60/minute"])
+        app.state.limiter = limiter
+        app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+        app.add_middleware(SlowAPIMiddleware)
+        logger.info("API限流已启用: 60次/分钟/IP")
+    except ImportError:
+        logger.warning("slowapi未安装，API限流未启用")
 
     # Register middleware (correlation ID, request logging)
     register_middleware(app)
@@ -271,6 +363,8 @@ def create_app() -> FastAPI:
     app.include_router(epg_router)
     app.include_router(logos_router)
     app.include_router(cache_router)
+    app.include_router(source_sync_router)
+    app.include_router(fetch_router)
 
     static_dir = path_settings.static_dir
     lib_dir = static_dir / "lib"
@@ -401,7 +495,10 @@ def create_app() -> FastAPI:
         subscriber = await app_state.subscribe_sse()
 
         async def generate():
-            progress = app_state.read_model.get_check_progress()
+            if app_state._check_service:
+                progress = app_state._check_service.get_progress()
+            else:
+                progress = app_state.read_model.get_check_progress()
             init_data = json.dumps({
                 "event": "init",
                 "local_isp": app_state.local_isp,
@@ -440,7 +537,8 @@ def create_app() -> FastAPI:
             return {
                 "app_state": "OK",
                 "is_checking": app_state.is_checking,
-                "database": app_state.database is not None,
+                "event_store": app_state.event_store is not None,
+                "source_store": app_state.source_store is not None,
                 "_check_service": app_state._check_service is not None,
                 "session_id": app_state._check_service.session_id if app_state._check_service else None,
                 "read_model": app_state.read_model is not None,
@@ -467,6 +565,3 @@ def create_app() -> FastAPI:
         raise HTTPException(404, "Frontend not built")
 
     return app
-
-
-app = create_app()

@@ -11,11 +11,13 @@ router = APIRouter(prefix="/api", tags=["check"])
 class CheckRequest(BaseModel):
     file_paths: List[str] = []
     online_source_ids: List[str] = []
-    timeout_connect: int = 3
+    timeout_connect: int = 5
     timeout_read: int = 8
-    max_threads: int = 80
-    run_speed_test: bool = True
+    max_threads: int = 120
+    run_speed_test: bool = False
     use_cache: bool = True
+    max_latency_ms: int = 10000
+    enable_recheck: bool = False
 
 
 def _get_state():
@@ -77,6 +79,7 @@ async def get_results_stats():
             "total": progress["total"],
             "checked": progress["checked"],
             "valid": progress["valid"],
+            "likely_valid": progress.get("likely_valid", 0),
             "invalid": progress["invalid"],
             "is_running": progress["is_running"],
         }
@@ -84,6 +87,7 @@ async def get_results_stats():
         "total": 0,
         "checked": 0,
         "valid": 0,
+        "likely_valid": 0,
         "invalid": 0,
         "is_running": False,
     }

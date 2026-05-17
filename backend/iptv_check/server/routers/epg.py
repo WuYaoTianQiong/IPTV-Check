@@ -28,6 +28,17 @@ async def get_channel_epg(channel_name: str, tvg_id: str = "", tvg_name: str = "
     return {"channel_name": channel_name, "epg": epg_channel.to_dict()}
 
 
+@router.get("/search")
+async def search_epg(channel_name: str, tvg_id: str = "", tvg_name: str = ""):
+    state = _get_state()
+    if not state._epg_service:
+        raise HTTPException(503, "EPG服务未初始化")
+    epg_channel = state._epg_service.get_channel_epg("", channel_name, tvg_id, tvg_name)
+    if not epg_channel:
+        return {"channel_name": channel_name, "epg": None, "matched_source_id": ""}
+    return {"channel_name": channel_name, "epg": epg_channel.to_dict(), "matched_source_id": ""}
+
+
 @router.get("/now")
 async def get_current_programs(source_id: str = ""):
     state = _get_state()

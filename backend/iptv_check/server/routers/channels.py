@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from typing import List, Optional
 
@@ -12,6 +13,38 @@ router = APIRouter(prefix="/api", tags=["channels"])
 class UploadRequest(BaseModel):
     filename: str = "upload.m3u"
     content_base64: str = ""
+
+
+class AddFavoriteRequest(BaseModel):
+    url: str = ""
+    name: str = ""
+    folder_id: Optional[int] = None
+    channel_group: str = ""
+
+
+class UpdateFavoriteRequest(BaseModel):
+    folder_id: Optional[int] = None
+    sort_order: Optional[int] = None
+    name: Optional[str] = None
+
+
+class CreateFavoriteFolderRequest(BaseModel):
+    name: str = "新收藏夹"
+    icon: str = ""
+    sort_order: int = 0
+
+
+class UpdateFavoriteFolderRequest(BaseModel):
+    name: Optional[str] = None
+    icon: Optional[str] = None
+    sort_order: Optional[int] = None
+
+
+class AddCustomChannelRequest(BaseModel):
+    name: str = "自定义频道"
+    url: str = ""
+    group: str = "自定义"
+    folder_id: Optional[int] = None
 
 
 def _get_state():
@@ -42,11 +75,19 @@ async def get_results(
     sort: str = "best",
     media_type: str = "all",
     language: str = "",
+    country: str = "",
+    region: str = "",
+    category: str = "",
+    quality: str = "",
+    protocol: str = "",
+    latency_min: float = -1,
+    latency_max: float = -1,
+    speed_min: float = -1,
+    speed_max: float = -1,
     session_id: str = "",
 ):
     """获取检测结果，支持通过 session_id 查看历史会话"""
     import traceback
-    import sys
     try:
         state = _get_state()
         service = _get_check_service()
@@ -57,15 +98,23 @@ async def get_results(
         if effective_session_id:
             try:
                 if view_mode == "grouped":
-                    return state.read_model.get_grouped_channels(
+                    return await asyncio.to_thread(
+                        state.read_model.get_grouped_channels,
                         session_id=effective_session_id,
                         tab=tab, group_path=group_path, page=page, per_page=per_page,
                         search=search, sort=sort, media_type=media_type, language=language,
+                        country=country, region=region, category=category, quality=quality, protocol=protocol,
+                        latency_min=latency_min, latency_max=latency_max,
+                        speed_min=speed_min, speed_max=speed_max,
                     )
-                return state.read_model.get_checked_channels(
+                return await asyncio.to_thread(
+                    state.read_model.get_checked_channels,
                     session_id=effective_session_id,
                     tab=tab, page=page, per_page=per_page, search=search,
                     media_type=media_type, language=language,
+                    country=country, region=region, category=category, quality=quality, protocol=protocol,
+                    latency_min=latency_min, latency_max=latency_max,
+                    speed_min=speed_min, speed_max=speed_max,
                 )
             except Exception as e:
                 logger.error("获取检测结果失败: %s\n%s", e, traceback.format_exc())
@@ -73,14 +122,13 @@ async def get_results(
 
         if state and not state.is_checking and state.database:
             try:
-                return state.database.query_results_paginated(tab=tab, page=page, per_page=per_page, search=search)
+                return await asyncio.to_thread(state.database.query_results_paginated, tab=tab, page=page, per_page=per_page, search=search)
             except Exception as e:
                 logger.error("查询历史结果失败: %s\n%s", e, traceback.format_exc())
 
         return {"total": 0, "page": page, "per_page": per_page, "items": []}
     except Exception as e:
-        print(f"[CRITICAL ERROR in /api/results] {type(e).__name__}: {e}", file=sys.stderr)
-        traceback.print_exc(file=sys.stderr)
+        logger.critical("[CRITICAL ERROR in /api/results] %s: %s", type(e).__name__, e, exc_info=True)
         raise
 
 
@@ -88,10 +136,15 @@ async def get_results(
 async def get_category_tree(media_type: str = "all"):
     state = _get_state()
     service = _get_check_service()
-    if not state or not service or not service.session_id:
+    session_id = ""
+    if service and service.session_id:
+        session_id = service.session_id
+    elif state and state.event_store:
+        session_id = state.event_store.current_session_id
+    if not session_id:
         return []
     try:
-        return state.read_model.get_category_tree(session_id=service.session_id, media_type=media_type)
+        return await asyncio.to_thread(state.read_model.get_category_tree, session_id=session_id, media_type=media_type)
     except Exception as e:
         logger.error("获取分类树失败: %s", e, exc_info=True)
         return []
@@ -101,12 +154,55 @@ async def get_category_tree(media_type: str = "all"):
 async def get_available_languages():
     state = _get_state()
     service = _get_check_service()
-    if not state or not service or not service.session_id:
+    session_id = ""
+    if service and service.session_id:
+        session_id = service.session_id
+    elif state and state.event_store:
+        session_id = state.event_store.current_session_id
+    if not session_id:
         return []
     try:
-        return state.read_model.get_available_languages(service.session_id)
+        return await asyncio.to_thread(state.read_model.get_available_languages, session_id)
     except Exception as e:
         logger.error("获取语言列表失败: %s", e, exc_info=True)
+        return []
+
+
+@router.get("/results/countries")
+async def get_available_countries():
+    """获取当前数据中可用的国家/地区列表（基于实际数据推断）"""
+    state = _get_state()
+    service = _get_check_service()
+    session_id = ""
+    if service and service.session_id:
+        session_id = service.session_id
+    elif state and state.event_store:
+        session_id = state.event_store.current_session_id
+    if not session_id:
+        return []
+    try:
+        return await asyncio.to_thread(state.read_model.get_available_countries, session_id)
+    except Exception as e:
+        logger.error("获取国家列表失败: %s", e, exc_info=True)
+        return []
+
+
+@router.get("/results/regions")
+async def get_available_regions():
+    """获取中国各省级行政区的频道统计（用于二级筛选联动）"""
+    state = _get_state()
+    service = _get_check_service()
+    session_id = ""
+    if service and service.session_id:
+        session_id = service.session_id
+    elif state and state.event_store:
+        session_id = state.event_store.current_session_id
+    if not session_id:
+        return []
+    try:
+        return await asyncio.to_thread(state.read_model.get_available_regions, session_id)
+    except Exception as e:
+        logger.error("获取地区列表失败: %s", e, exc_info=True)
         return []
 
 
@@ -114,10 +210,15 @@ async def get_available_languages():
 async def get_source_health():
     state = _get_state()
     service = _get_check_service()
-    if not state or not service or not service.session_id:
+    session_id = ""
+    if service and service.session_id:
+        session_id = service.session_id
+    elif state and state.event_store:
+        session_id = state.event_store.current_session_id
+    if not session_id:
         return []
     try:
-        return state.read_model.get_source_download_stats(service.session_id)
+        return await asyncio.to_thread(state.read_model.get_source_download_stats, session_id)
     except Exception as e:
         logger.error("获取源健康状态失败: %s", e, exc_info=True)
         return []
@@ -133,12 +234,13 @@ async def get_results_stats():
             "total": progress["total"],
             "checked": progress["checked"],
             "valid": progress["valid"],
+            "likely_valid": progress.get("likely_valid", 0),
             "invalid": progress["invalid"],
             "is_running": progress["is_running"],
         }
-    db_stats = state.database.get_stats()
+    db_stats = await asyncio.to_thread(state.database.get_stats)
     return {
-        "total": 0, "checked": 0, "valid": 0, "invalid": 0,
+        "total": 0, "checked": 0, "valid": 0, "likely_valid": 0, "invalid": 0,
         "is_running": False, "db_stats": db_stats,
     }
 
@@ -150,7 +252,7 @@ async def get_check_history():
     if not state:
         return []
     try:
-        return state.event_store.get_history(limit=50)
+        return await asyncio.to_thread(state.event_store.get_history, 50)
     except Exception as e:
         logger.warning("获取历史记录失败: %s", e)
         return []
@@ -162,55 +264,238 @@ async def save_results_to_db():
     service = _get_check_service()
     if not service or not service.session_id:
         raise HTTPException(400, "没有检测结果可保存")
-    results_data = state.read_model.get_checked_results_raw(service.session_id)
+    results_data = await asyncio.to_thread(state.read_model.get_checked_results_raw, service.session_id)
     if not results_data:
         raise HTTPException(400, "没有检测结果可保存")
-    history_id = state.database.save_check_result(results_data)
+    history_id = await asyncio.to_thread(state.database.save_check_result, results_data, "", service.session_id)
     return {"history_id": history_id, "saved": len(results_data)}
 
 
 @router.get("/favorites")
-async def get_favorites():
+async def get_favorites(folder_id: int = None):
     state = _get_state()
     from iptv_check.infra.database import FavoriteModel
-    with state.database.get_session() as session:
-        items = session.exec(select(FavoriteModel).order_by(FavoriteModel.created_at.desc())).all()
-        return {
-            "favorites": [
-                {"id": f.id, "channel_id": f.channel_id, "name": f.name, "url": f.url, "created_at": f.created_at.isoformat()}
+    def _query():
+        with state.database.get_session() as session:
+            query = select(FavoriteModel).order_by(FavoriteModel.created_at.desc())
+            if folder_id is not None:
+                query = query.where(FavoriteModel.folder_id == folder_id)
+            items = session.exec(query).all()
+            return [
+                {"id": f.id, "channel_id": f.channel_id, "name": f.name, "url": f.url,
+                 "folder_id": f.folder_id, "channel_group": f.channel_group,
+                 "created_at": f.created_at.isoformat()}
                 for f in items
             ]
-        }
+    favorites = await asyncio.to_thread(_query)
+    return {"favorites": favorites}
 
 
 @router.post("/favorites")
-async def add_favorite(req: dict):
+async def add_favorite(req: AddFavoriteRequest):
     state = _get_state()
     from iptv_check.infra.database import FavoriteModel, ChannelModel
-    with state.database.get_session() as session:
-        channel = session.exec(select(ChannelModel).where(ChannelModel.url == req.get("url", ""))).first()
-        if not channel:
-            raise HTTPException(404, "频道不存在")
-        existing = session.exec(select(FavoriteModel).where(FavoriteModel.channel_id == channel.id)).first()
-        if existing:
-            return {"message": "已在收藏夹中"}
-        fav = FavoriteModel(channel_id=channel.id, name=channel.name, url=channel.url)
-        session.add(fav)
-        session.commit()
-        return {"id": fav.id}
+    def _query():
+        with state.database.get_session() as session:
+            url = req.url
+            existing = session.exec(select(FavoriteModel).where(FavoriteModel.url == url)).first()
+            if existing:
+                return {"id": existing.id, "name": existing.name, "url": existing.url, "folder_id": existing.folder_id, "created_at": existing.created_at.isoformat()}
+            channel = session.exec(select(ChannelModel).where(ChannelModel.url == url)).first()
+            channel_id = channel.id if channel else 0
+            name = req.name or (channel.name if channel else "")
+            folder_id = req.folder_id
+            channel_group = req.channel_group or (channel.group if channel else "")
+            fav = FavoriteModel(channel_id=channel_id, name=name, url=url, folder_id=folder_id, channel_group=channel_group)
+            session.add(fav)
+            session.commit()
+            session.refresh(fav)
+            return {"id": fav.id, "name": fav.name, "url": fav.url, "folder_id": fav.folder_id, "channel_group": fav.channel_group, "created_at": fav.created_at.isoformat()}
+    return await asyncio.to_thread(_query)
 
 
 @router.delete("/favorites/{fav_id}")
 async def remove_favorite(fav_id: int):
     state = _get_state()
     from iptv_check.infra.database import FavoriteModel
-    with state.database.get_session() as session:
-        fav = session.get(FavoriteModel, fav_id)
-        if fav:
-            session.delete(fav)
+    def _query():
+        with state.database.get_session() as session:
+            fav = session.get(FavoriteModel, fav_id)
+            if fav:
+                session.delete(fav)
+                session.commit()
+                return {"deleted": True}
+            raise HTTPException(404, "收藏不存在")
+    return await asyncio.to_thread(_query)
+
+
+@router.put("/favorites/{fav_id}")
+async def update_favorite(fav_id: int, req: UpdateFavoriteRequest):
+    state = _get_state()
+    from iptv_check.infra.database import FavoriteModel
+    def _query():
+        with state.database.get_session() as session:
+            fav = session.get(FavoriteModel, fav_id)
+            if not fav:
+                raise HTTPException(404, "收藏不存在")
+            if req.folder_id is not None:
+                fav.folder_id = req.folder_id
+            if req.sort_order is not None:
+                fav.sort_order = req.sort_order
+            if req.name is not None:
+                fav.name = req.name
+            session.commit()
+            return {"id": fav.id, "name": fav.name, "folder_id": fav.folder_id}
+    return await asyncio.to_thread(_query)
+
+
+@router.get("/favorites/m3u")
+async def export_favorites_m3u():
+    state = _get_state()
+    from iptv_check.infra.database import FavoriteModel
+    from fastapi.responses import Response
+    def _query():
+        with state.database.get_session() as session:
+            items = session.exec(select(FavoriteModel).order_by(FavoriteModel.created_at.desc())).all()
+            return [(f.name, f.url) for f in items]
+    items = await asyncio.to_thread(_query)
+    lines = ["#EXTM3U"]
+    for name, url in items:
+        lines.append(f'#EXTINF:-1,{name}')
+        lines.append(url)
+    content = "\n".join(lines) + "\n"
+    return Response(content=content, media_type="audio/mpegurl", headers={"Content-Disposition": "attachment; filename=favorites.m3u"})
+
+
+@router.get("/favorite-folders")
+async def get_favorite_folders():
+    state = _get_state()
+    from iptv_check.infra.database import FavoriteFolderModel, FavoriteModel
+    def _query():
+        with state.database.get_session() as session:
+            folders = session.exec(select(FavoriteFolderModel).order_by(FavoriteFolderModel.sort_order)).all()
+            result = []
+            for folder in folders:
+                count = len(session.exec(select(FavoriteModel).where(FavoriteModel.folder_id == folder.id)).all())
+                result.append({
+                    "id": folder.id, "name": folder.name, "icon": folder.icon,
+                    "sort_order": folder.sort_order, "count": count,
+                })
+            unfiled = len(session.exec(select(FavoriteModel).where(FavoriteModel.folder_id == None)).all())
+            result.append({"id": None, "name": "未分类", "icon": "", "sort_order": 999, "count": unfiled})
+            return result
+    folders = await asyncio.to_thread(_query)
+    return {"folders": folders}
+
+
+@router.post("/favorite-folders")
+async def create_favorite_folder(req: CreateFavoriteFolderRequest):
+    state = _get_state()
+    from iptv_check.infra.database import FavoriteFolderModel
+    def _query():
+        with state.database.get_session() as session:
+            folder = FavoriteFolderModel(
+                name=req.name,
+                icon=req.icon,
+                sort_order=req.sort_order,
+            )
+            session.add(folder)
+            session.commit()
+            session.refresh(folder)
+            return {"id": folder.id, "name": folder.name, "icon": folder.icon, "sort_order": folder.sort_order}
+    return await asyncio.to_thread(_query)
+
+
+@router.put("/favorite-folders/{folder_id}")
+async def update_favorite_folder(folder_id: int, req: UpdateFavoriteFolderRequest):
+    state = _get_state()
+    from iptv_check.infra.database import FavoriteFolderModel
+    def _query():
+        with state.database.get_session() as session:
+            folder = session.get(FavoriteFolderModel, folder_id)
+            if not folder:
+                raise HTTPException(404, "收藏夹不存在")
+            if req.name is not None:
+                folder.name = req.name
+            if req.icon is not None:
+                folder.icon = req.icon
+            if req.sort_order is not None:
+                folder.sort_order = req.sort_order
+            session.commit()
+            return {"id": folder.id, "name": folder.name}
+    return await asyncio.to_thread(_query)
+
+
+@router.delete("/favorite-folders/{folder_id}")
+async def delete_favorite_folder(folder_id: int):
+    state = _get_state()
+    from iptv_check.infra.database import FavoriteFolderModel, FavoriteModel
+    def _query():
+        with state.database.get_session() as session:
+            folder = session.get(FavoriteFolderModel, folder_id)
+            if not folder:
+                raise HTTPException(404, "收藏夹不存在")
+            favs = session.exec(select(FavoriteModel).where(FavoriteModel.folder_id == folder_id)).all()
+            for f in favs:
+                f.folder_id = None
+            session.delete(folder)
+            session.commit()
+            return {"deleted": True, "moved_to_unfiled": len(favs)}
+    return await asyncio.to_thread(_query)
+
+
+@router.get("/custom-channels")
+async def get_custom_channels():
+    state = _get_state()
+    from iptv_check.infra.database import CustomChannelModel
+    def _query():
+        with state.database.get_session() as session:
+            items = session.exec(select(CustomChannelModel).order_by(CustomChannelModel.sort_order)).all()
+            return [
+                {"id": c.id, "name": c.name, "url": c.url, "group": c.group,
+                 "folder_id": c.folder_id, "sort_order": c.sort_order}
+                for c in items
+            ]
+    channels = await asyncio.to_thread(_query)
+    return {"channels": channels}
+
+
+@router.post("/custom-channels")
+async def add_custom_channel(req: AddCustomChannelRequest):
+    state = _get_state()
+    from iptv_check.infra.database import CustomChannelModel
+    def _query():
+        with state.database.get_session() as session:
+            url = req.url
+            existing = session.exec(select(CustomChannelModel).where(CustomChannelModel.url == url)).first()
+            if existing:
+                return {"id": existing.id, "name": existing.name, "url": existing.url}
+            ch = CustomChannelModel(
+                name=req.name,
+                url=url,
+                group=req.group,
+                folder_id=req.folder_id,
+            )
+            session.add(ch)
+            session.commit()
+            session.refresh(ch)
+            return {"id": ch.id, "name": ch.name, "url": ch.url, "group": ch.group}
+    return await asyncio.to_thread(_query)
+
+
+@router.delete("/custom-channels/{channel_id}")
+async def delete_custom_channel(channel_id: int):
+    state = _get_state()
+    from iptv_check.infra.database import CustomChannelModel
+    def _query():
+        with state.database.get_session() as session:
+            ch = session.get(CustomChannelModel, channel_id)
+            if not ch:
+                raise HTTPException(404, "自定义频道不存在")
+            session.delete(ch)
             session.commit()
             return {"deleted": True}
-        raise HTTPException(404, "收藏不存在")
+    return await asyncio.to_thread(_query)
 
 
 @router.get("/report")
@@ -225,7 +510,7 @@ async def get_quality_report():
         results_data = []
         if service and service.session_id:
             try:
-                results_data = state.read_model.get_checked_results_raw(service.session_id)
+                results_data = await asyncio.to_thread(state.read_model.get_checked_results_raw, service.session_id)
             except Exception as e:
                 logger.error("读取检测结果失败: %s\n%s", e, traceback.format_exc())
                 return {"error": f"读取检测结果失败: {str(e)}"}
@@ -247,6 +532,7 @@ async def get_quality_report():
                 r = CheckResult(
                     channel=ch,
                     is_valid=rd.get("is_valid", False),
+                    quality_tier=rd.get("quality_tier", ""),
                     latency=rd.get("latency", -1),
                     speed=rd.get("speed", "-"),
                     details=rd.get("details", ""),
@@ -259,8 +545,9 @@ async def get_quality_report():
         if not results:
             return {"error": "没有有效的检测结果"}
 
-        valid = [r for r in results if r.is_valid]
-        invalid = [r for r in results if not r.is_valid]
+        valid = [r for r in results if r.quality_tier == "valid" or (not r.quality_tier and r.is_valid)]
+        likely_valid = [r for r in results if r.quality_tier == "likely_valid"]
+        invalid = [r for r in results if r.quality_tier == "invalid" or (not r.quality_tier and not r.is_valid)]
         latencies = []
         for r in valid:
             try:
@@ -308,7 +595,7 @@ async def get_quality_report():
 
         from iptv_check.server.app import _compute_group_stats
         return {
-            "total": len(results), "valid": len(valid), "invalid": len(invalid),
+            "total": len(results), "valid": len(valid), "likely_valid": len(likely_valid), "invalid": len(invalid),
             "valid_rate": round(len(valid) / len(results) * 100, 1) if results else 0,
             "avg_latency": round(sum(latencies) / len(latencies), 0) if latencies else 0,
             "min_latency": min(latencies) if latencies else 0,
@@ -325,21 +612,58 @@ async def get_quality_report():
 @router.get("/trends/channel/{channel_id}")
 async def get_channel_trend(channel_id: int, days: int = 7):
     state = _get_state()
-    trend = state.database.get_channel_trend(channel_id, days)
-    stability = state.database.get_channel_stability_stats(channel_id, days)
+    trend = await asyncio.to_thread(state.database.get_channel_trend, channel_id, days)
+    stability = await asyncio.to_thread(state.database.get_channel_stability_stats, channel_id, days)
     return {"trend": trend, "stability": stability, "days": days}
 
 
 @router.get("/trends/stable-channels")
 async def get_top_stable_channels(days: int = 7, limit: int = 50):
     state = _get_state()
-    return {"channels": state.database.get_top_stable_channels(days, limit)}
+    return {"channels": await asyncio.to_thread(state.database.get_top_stable_channels, days, limit)}
 
 
 @router.get("/trends/history-compare")
-async def compare_history(h1: int, h2: int):
+async def compare_history(h1: int = 0, h2: int = 0):
     state = _get_state()
-    return state.database.get_history_comparison(h1, h2)
+    history = await asyncio.to_thread(state.event_store.get_history, 20)
+    if len(history) < 2:
+        return {"error": "至少需要2次检测历史", "sessions": []}
+
+    sessions = []
+    for h in history[:10]:
+        sid = h.get("session_id", "")
+        total = h.get("total", 0)
+        valid = h.get("valid", 0)
+        invalid = h.get("invalid", 0)
+        elapsed = h.get("elapsed", 0)
+        created = h.get("created_at", "")
+        valid_rate = round(valid / total * 100, 1) if total > 0 else 0
+        sessions.append({
+            "session_id": sid, "total": total, "valid": valid,
+            "invalid": invalid, "valid_rate": valid_rate,
+            "elapsed": round(elapsed, 1), "created_at": created,
+        })
+
+    if len(sessions) >= 2:
+        s1, s2 = sessions[0], sessions[1]
+        delta_valid_rate = round(s1["valid_rate"] - s2["valid_rate"], 1)
+        delta_valid = s1["valid"] - s2["valid"]
+        delta_total = s1["total"] - s2["total"]
+        comparison = {
+            "latest": s1,
+            "previous": s2,
+            "delta": {
+                "valid_rate": delta_valid_rate,
+                "valid": delta_valid,
+                "total": delta_total,
+                "trend": "up" if delta_valid_rate > 0 else ("down" if delta_valid_rate < 0 else "stable"),
+            }
+        }
+    else:
+        comparison = None
+
+    return {"sessions": sessions, "comparison": comparison}
 
 
 @router.get("/recommend")
@@ -352,7 +676,7 @@ async def get_recommendations(max_per_group: int = 3, prefer_low_latency: bool =
             return {"error": "没有检测结果"}
 
         try:
-            results_data = state.read_model.get_checked_results_raw(service.session_id)
+            results_data = await asyncio.to_thread(state.read_model.get_checked_results_raw, service.session_id)
         except Exception as e:
             logger.error("读取检测结果失败: %s\n%s", e, traceback.format_exc())
             return {"error": f"读取检测结果失败: {str(e)}"}
@@ -374,6 +698,7 @@ async def get_recommendations(max_per_group: int = 3, prefer_low_latency: bool =
                 r = CheckResult(
                     channel=ch,
                     is_valid=rd.get("is_valid", False),
+                    quality_tier=rd.get("quality_tier", ""),
                     latency=rd.get("latency", -1),
                     speed=rd.get("speed", "-"),
                     details=rd.get("details", ""),
@@ -422,7 +747,7 @@ async def get_recommend_m3u(max_per_group: int = 3):
             raise HTTPException(400, "没有检测结果")
 
         try:
-            results_data = state.read_model.get_checked_results_raw(service.session_id)
+            results_data = await asyncio.to_thread(state.read_model.get_checked_results_raw, service.session_id)
         except Exception as e:
             logger.error("读取检测结果失败: %s\n%s", e, traceback.format_exc())
             raise HTTPException(500, f"读取检测结果失败: {e}")
@@ -444,6 +769,7 @@ async def get_recommend_m3u(max_per_group: int = 3):
                 r = CheckResult(
                     channel=ch,
                     is_valid=rd.get("is_valid", False),
+                    quality_tier=rd.get("quality_tier", ""),
                     latency=rd.get("latency", -1),
                     speed=rd.get("speed", "-"),
                     details=rd.get("details", ""),
@@ -478,7 +804,7 @@ async def get_isp_recommendations(target_isp: str = None):
             return {"error": "没有检测结果"}
 
         try:
-            results_data = state.read_model.get_checked_results_raw(service.session_id)
+            results_data = await asyncio.to_thread(state.read_model.get_checked_results_raw, service.session_id)
         except Exception as e:
             logger.error("读取检测结果失败: %s\n%s", e, traceback.format_exc())
             return {"error": f"读取检测结果失败: {str(e)}"}
@@ -500,6 +826,7 @@ async def get_isp_recommendations(target_isp: str = None):
                 r = CheckResult(
                     channel=ch,
                     is_valid=rd.get("is_valid", False),
+                    quality_tier=rd.get("quality_tier", ""),
                     latency=rd.get("latency", -1),
                     speed=rd.get("speed", "-"),
                     details=rd.get("details", ""),
@@ -541,3 +868,24 @@ async def upload_file(req: UploadRequest):
         f.write(content)
     channels = PlaylistParser.parse_file(file_path)
     return {"filename": req.filename, "path": file_path, "channel_count": len(channels)}
+
+
+@router.get("/live-channels")
+async def get_live_channels(media_type: str = "all", session_id: str = ""):
+    """电视模式：获取有效频道列表（按分组聚合，每频道取最优源）"""
+    state = _get_state()
+    service = _get_check_service()
+    effective_session_id = session_id
+    if not effective_session_id:
+        if service and service.session_id:
+            effective_session_id = service.session_id
+        elif state and state.event_store:
+            effective_session_id = state.event_store.current_session_id
+
+    if not effective_session_id:
+        return {"groups": [], "total": 0}
+
+    try:
+        return await asyncio.to_thread(state.read_model.get_live_channels, effective_session_id, media_type)
+    except Exception:
+        return {"groups": [], "total": 0}
