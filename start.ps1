@@ -1,7 +1,7 @@
 param(
     [ValidateSet("prod", "dev")]
     [string]$Mode = "prod",
-    [int]$Port = 9529,
+    [int]$Port = 9528,
     [switch]$NoBrowser
 )
 

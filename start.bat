@@ -20,7 +20,7 @@ goto :eof
 
 :prod
 set "PORT=%~2"
-if not defined PORT set "PORT=9529"
+if not defined PORT set "PORT=9528"
 
 echo [%TIME%] Stopping old process on port %PORT%...
 for /f "tokens=5" %%a in ('netstat -ano 2^>nul ^| findstr ":%PORT% " ^| findstr "LISTENING"') do (
@@ -62,7 +62,7 @@ echo [%TIME%] Frontend build OK
 
 echo [%TIME%] Starting server: http://127.0.0.1:%PORT%
 cd backend
-start "IPTV-Check" cmd /c "python -m iptv_check --port %PORT%"
+start "IPTV-Check" cmd /k "python -m iptv_check --port %PORT% --no-browser && echo [%TIME%] Server started successfully. Press Ctrl+C to stop. || (echo [%TIME%] ERROR: Server failed to start! Press any key to exit... && pause)"
 cd ..
 
 echo [%TIME%] Waiting for server to be ready...
@@ -97,7 +97,7 @@ goto :eof
 
 :dev
 set "PORT=%~2"
-if not defined PORT set "PORT=9529"
+if not defined PORT set "PORT=9528"
 
 echo [%TIME%] Stopping old process on port %PORT%...
 for /f "tokens=5" %%a in ('netstat -ano 2^>nul ^| findstr ":%PORT% " ^| findstr "LISTENING"') do (
