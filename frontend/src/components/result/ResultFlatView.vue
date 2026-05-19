@@ -4,12 +4,35 @@
       <thead>
         <tr class="border-b bg-muted/50">
           <th class="h-10 px-3 text-left font-medium text-muted-foreground w-16">#</th>
-          <th class="h-10 px-3 text-left font-medium text-muted-foreground w-48">频道名</th>
+          <th class="h-10 px-3 text-left font-medium text-muted-foreground w-48 cursor-pointer select-none hover:bg-accent/50 transition-colors" @click="toggleSort('name_asc', 'name_desc')">
+            <span class="inline-flex items-center gap-1">
+              频道名
+              <span v-if="sortOrder === 'name_asc'" class="text-primary">↑</span>
+              <span v-else-if="sortOrder === 'name_desc'" class="text-primary">↓</span>
+            </span>
+          </th>
           <th class="h-10 px-3 text-left font-medium text-muted-foreground hidden md:table-cell">分组</th>
           <th class="h-10 px-3 text-left font-medium text-muted-foreground w-20">类型</th>
-          <th class="h-10 px-3 text-center font-medium text-muted-foreground w-20">状态</th>
-          <th class="h-10 px-3 text-center font-medium text-muted-foreground w-24">延迟</th>
-          <th class="h-10 px-3 text-center font-medium text-muted-foreground w-24 hidden sm:table-cell">速度</th>
+          <th class="h-10 px-3 text-center font-medium text-muted-foreground w-20 cursor-pointer select-none hover:bg-accent/50 transition-colors" @click="toggleSort('best', 'best')">
+            <span class="inline-flex items-center gap-1">
+              状态
+              <span v-if="sortOrder === 'best'" class="text-primary">↑</span>
+            </span>
+          </th>
+          <th class="h-10 px-3 text-center font-medium text-muted-foreground w-24 cursor-pointer select-none hover:bg-accent/50 transition-colors" @click="toggleSort('latency_asc', 'latency_desc')">
+            <span class="inline-flex items-center gap-1">
+              延迟
+              <span v-if="sortOrder === 'latency_asc'" class="text-primary">↑</span>
+              <span v-else-if="sortOrder === 'latency_desc'" class="text-primary">↓</span>
+            </span>
+          </th>
+          <th class="h-10 px-3 text-center font-medium text-muted-foreground w-24 hidden sm:table-cell cursor-pointer select-none hover:bg-accent/50 transition-colors" @click="toggleSort('speed_asc', 'speed_desc')">
+            <span class="inline-flex items-center gap-1">
+              速度
+              <span v-if="sortOrder === 'speed_asc'" class="text-primary">↑</span>
+              <span v-else-if="sortOrder === 'speed_desc'" class="text-primary">↓</span>
+            </span>
+          </th>
           <th class="h-10 px-3 text-center font-medium text-muted-foreground w-16">操作</th>
         </tr>
       </thead>
@@ -81,16 +104,25 @@
 </template>
 
 <script setup>
-import { Calendar, PlayCircle, SearchX, Star, Loader2 } from 'lucide-vue-next'
+import { SearchX, Star, Loader2, Calendar, PlayCircle } from 'lucide-vue-next'
 import { Button } from '../ui/button'
 import { Badge } from '../ui/badge'
 import { useFavoriteStore } from '../../stores/favorite'
 
 const favoriteStore = useFavoriteStore()
 
-defineProps({
+const props = defineProps({
   items: { type: Array, default: () => [] },
+  sortOrder: { type: String, default: 'best' },
 })
 
-defineEmits(['open-epg', 'open-player', 'copy-url', 'toggle-favorite'])
+const emit = defineEmits(['open-epg', 'open-player', 'copy-url', 'toggle-favorite', 'update:sortOrder'])
+
+function toggleSort(ascVal, descVal) {
+  if (props.sortOrder === ascVal) {
+    emit('update:sortOrder', descVal)
+  } else {
+    emit('update:sortOrder', ascVal)
+  }
+}
 </script>
