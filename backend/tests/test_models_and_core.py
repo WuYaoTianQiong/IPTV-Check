@@ -96,7 +96,7 @@ class TestSmartOptimizer:
             CheckResult(channel=Channel(name="CCTV-2", url="http://example3.com"), is_valid=True, latency=80),
             CheckResult(channel=Channel(name="CCTV-3", url="http://example4.com"), is_valid=False, details="超时"),
         ]
-        optimized = SmartOptimizer.optimize(results)
+        optimized = SmartOptimizer.optimize(results, max_per_group=1)
         valid = [r for r in optimized if r.is_valid]
         assert len(valid) == 2
         cctv1_results = [r for r in valid if "CCTV-1" in r.channel.name]

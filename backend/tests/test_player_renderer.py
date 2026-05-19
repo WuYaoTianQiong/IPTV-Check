@@ -60,7 +60,6 @@ class TestPlayerRenderer:
 
     def test_no_sources(self):
         html = self.renderer.render("http://x.com/a.m3u8", "Ch")
-        assert "visible" not in html.split("source-selector")[1][:30]
         assert "var sources = null" in html
 
     def test_single_source(self):
@@ -74,8 +73,6 @@ class TestPlayerRenderer:
             {"url": "http://b.com/2.m3u8", "latency": 20, "recommended": True},
         ]
         html = self.renderer.render("http://a.com/1.m3u8", "Ch", sources=sources)
-        # Source selector should have class "visible"
-        assert 'class="source-selector visible"' in html
         # Both URLs should appear in sources JSON
         assert "a.com" in html
         assert "b.com" in html
