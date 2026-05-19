@@ -1020,7 +1020,7 @@ function clearAllFilters() {
   applyAdvancedFilters()
 }
 
-function applyAdvancedFilters() {
+function applyAdvancedFilters(resetPage = true) {
   const filters = {}
   
   // 基础筛选
@@ -1068,7 +1068,7 @@ function applyAdvancedFilters() {
     filters.speed_max = parseFloat(speedMax.value)
   }
   
-  resultStore.setPage(1)
+  if (resetPage) resultStore.setPage(1)
   resultStore.fetchResults(filters)
 }
 
@@ -1080,7 +1080,7 @@ function switchTab(tab) {
 
 function changePage(page) {
   resultStore.setPage(page)
-  applyAdvancedFilters()
+  applyAdvancedFilters(false)
 }
 
 function changePerPage(n) {
