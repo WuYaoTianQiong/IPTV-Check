@@ -1,13 +1,13 @@
 <template>
   <div class="space-y-6">
-    <div class="p-6 rounded-xl border border-blue-100 bg-blue-50/50 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shadow-sm">
+    <div class="p-6 rounded-xl border border-primary/20 bg-primary/5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shadow-sm">
       <div class="flex items-start gap-4">
-        <div class="p-3 bg-blue-600 rounded-lg text-white">
+        <div class="p-3 bg-primary rounded-lg text-primary-foreground">
           <Sparkles class="w-6 h-6 animate-pulse" />
         </div>
         <div>
-          <h3 class="font-bold text-lg text-slate-900">✨ 智能推荐 (已匹配{{ ispLabel }})</h3>
-          <p class="text-sm text-slate-600 mt-1">系统已为您智能同步 {{ matchedSourceCount }} 个最适配的专属极速线路，包含 {{ matchedChannelCount }} 个高清源。</p>
+          <h3 class="font-bold text-lg text-foreground">✨ 智能推荐 (已匹配{{ ispLabel }})</h3>
+          <p class="text-sm text-muted-foreground mt-1">系统已为您智能同步 {{ matchedSourceCount }} 个最适配的专属极速线路，包含 {{ matchedChannelCount }} 个高清源。</p>
         </div>
       </div>
       <Button
@@ -43,9 +43,9 @@
           </div>
         </CardHeader>
         <CardContent>
-          <div v-if="syncing || backgroundFetching" class="mb-3 p-3 rounded-lg border border-blue-300 bg-blue-50 dark:border-blue-700 dark:bg-blue-950/50">
+          <div v-if="syncing || backgroundFetching" class="mb-3 p-3 rounded-lg border border-primary/30 bg-primary/5">
             <div class="flex items-center justify-between gap-2">
-              <div class="flex items-center gap-2 text-blue-700 dark:text-blue-300">
+              <div class="flex items-center gap-2 text-primary">
                 <RefreshCw class="h-4 w-4 animate-spin" />
                 <span class="text-sm font-medium">
                   <template v-if="store.syncProgress.stage === 'fetching_channels'">
@@ -58,10 +58,10 @@
                   </template>
                 </span>
               </div>
-              <span v-if="syncPercent > 0" class="text-sm font-bold text-blue-700 dark:text-blue-300">{{ syncPercent }}%</span>
+              <span v-if="syncPercent > 0" class="text-sm font-bold text-primary">{{ syncPercent }}%</span>
             </div>
             <Progress v-if="syncPercent > 0" :model-value="syncPercent" class="mt-2 h-1.5" />
-            <div class="mt-1.5 flex items-center justify-between text-xs text-blue-600 dark:text-blue-400">
+            <div class="mt-1.5 flex items-center justify-between text-xs text-muted-foreground">
               <span>当前显示的是上次同步的源，同步完成后将自动刷新</span>
               <span v-if="syncEtaText">{{ syncEtaText }}</span>
             </div>
@@ -90,24 +90,27 @@
                   全部{{ allCollapsed ? '展开' : '折叠' }}
                 </Button>
               </div>
-              <div v-for="cat in categorizedSources" :key="cat.category" class="space-y-1">
-                <h4 class="text-xs font-semibold tracking-wider px-2 flex items-center gap-1.5 cursor-pointer hover:text-primary transition-colors" :class="getCategoryStyle(cat.category)" @click="toggleCategory(cat.category)">
-                  <ChevronDown v-if="!isCategoryCollapsed(cat.category)" class="h-3 w-3" />
-                  <ChevronRight v-else class="h-3 w-3" />
-                  <span>{{ getCategoryIcon(cat.category) }}</span>
-                  {{ cat.category }}
-                  <span class="text-muted-foreground font-normal">({{ cat.sources.length }}个源)</span>
-                </h4>
-                <div v-if="!isCategoryCollapsed(cat.category)">
-                  <VirtualList
-                    :items="cat.sources"
-                    :item-height="36"
-                    :visible-count="14"
-                    :selected-ids="selectedOnlineIds"
-                    :expanded-id="expandedSourceId"
-                    @toggle-online="toggleOnline"
-                    @toggle-expand="toggleExpand"
-                  />
+              <div class="category-columns">
+                <div v-for="cat in categorizedSources" :key="cat.category" class="category-column-item space-y-1">
+                  <h4 class="text-xs font-semibold tracking-wider px-2 flex items-center gap-1.5 cursor-pointer hover:text-primary transition-colors" :class="getCategoryStyle(cat.category)" @click="toggleCategory(cat.category)">
+                    <ChevronDown v-if="!isCategoryCollapsed(cat.category)" class="h-3 w-3" />
+                    <ChevronRight v-else class="h-3 w-3" />
+                    <span>{{ getCategoryIcon(cat.category) }}</span>
+                    {{ cat.category }}
+                    <span class="text-muted-foreground font-normal">({{ cat.sources.length }}个源)</span>
+                  </h4>
+                  <div v-if="!isCategoryCollapsed(cat.category)">
+                    <VirtualList
+                      :key="cat.category"
+                      :items="cat.sources"
+                      :item-height="36"
+                      :visible-count="14"
+                      :selected-ids="selectedOnlineIds"
+                      :expanded-id="expandedSourceId"
+                      @toggle-online="toggleOnline"
+                      @toggle-expand="toggleExpand"
+                    />
+                  </div>
                 </div>
               </div>
             </template>
@@ -762,3 +765,21 @@ async function doStart() {
   }
 }
 </script>
+
+<style scoped>
+.category-columns {
+  column-count: 2;
+  column-gap: 0.75rem;
+}
+
+.category-column-item {
+  break-inside: avoid;
+  margin-bottom: 0.5rem;
+}
+
+@media (max-width: 900px) {
+  .category-columns {
+    column-count: 1;
+  }
+}
+</style>

@@ -64,7 +64,7 @@
                 @click="$emit('select-group', region.name, grp.name)"
               >
                 <span class="truncate">
-                  <template v-if="grp.flag">{{ grp.flag }} </template>
+
                   <template v-if="grp.country_zh">{{ grp.country_zh }} · </template>
                   {{ grp.name }}
                 </span>
@@ -114,6 +114,7 @@
 import { History, Clock, FolderTree, FolderOpen, HeartPulse, Activity, ChevronRight } from 'lucide-vue-next'
 import { Card, CardHeader, CardTitle, CardContent } from '../ui/card'
 import { Badge } from '../ui/badge'
+
 
 defineProps({
   historyList: { type: Array, default: () => [] },

@@ -80,7 +80,7 @@
         确定要停止当前检测吗？
       </AlertDialogHeader>
       <AlertDialogDescription>
-        停止将强行丢失当前已检测过半的 {{ checkStore.checkedCount }} 个频道进度。
+        已检测的 {{ checkStore.checkedCount }} 个频道结果会保留，仅跳过剩余 {{ checkStore.checkTotal - checkStore.checkedCount }} 个未检测频道。
       </AlertDialogDescription>
       <AlertDialogFooter>
         <Button variant="outline" @click="showStopDialog = false">我再等会儿 (取消)</Button>
@@ -152,7 +152,11 @@ onMounted(async () => {
         if (data.total) checkStore.checkTotal = data.total
         if (data.checked) checkStore.checkedCount = data.checked
         if (data.valid) checkStore.validCount = data.valid
+        if (data.likely_valid) checkStore.likelyValidCount = data.likely_valid
         if (data.invalid) checkStore.invalidCount = data.invalid
+        if (data.stage) checkStore.stage = data.stage
+        if (data.stage_message) checkStore.stageMessage = data.stage_message
+        if (!checkStore.startTime) checkStore.startTime = Date.now() - ((data.checked || 0) * 200)
         checkStore.addLog('已恢复检测状态', 'info')
       }
     } catch {}
