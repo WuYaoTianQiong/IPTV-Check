@@ -126,11 +126,34 @@
                       @update:model-value="selectAllItems"
                     />
                   </th>
-                  <th class="h-10 px-3 text-left font-medium text-muted-foreground whitespace-nowrap" style="width: 40%;">频道名</th>
+                  <th class="h-10 px-3 text-left font-medium text-muted-foreground whitespace-nowrap cursor-pointer select-none hover:bg-accent/50 transition-colors" style="width: 40%;" @click="toggleTableSort('name_asc', 'name_desc')">
+                    <span class="inline-flex items-center gap-1">
+                      频道名
+                      <span v-if="resultStore.sortOrder === 'name_asc'" class="text-primary text-xs">▲</span>
+                      <span v-else-if="resultStore.sortOrder === 'name_desc'" class="text-primary text-xs">▼</span>
+                    </span>
+                  </th>
                   <th v-if="isWideScreen" class="h-10 px-3 text-left font-medium text-muted-foreground whitespace-nowrap" style="width: 15%;">分组</th>
-                  <th class="h-10 px-3 text-center font-medium text-muted-foreground whitespace-nowrap" style="width: 60px">状态</th>
-                  <th v-if="isMediumScreen" class="h-10 px-3 text-center font-medium text-muted-foreground whitespace-nowrap" style="width: 72px">延迟</th>
-                  <th v-if="isMediumScreen" class="h-10 px-3 text-center font-medium text-muted-foreground whitespace-nowrap" style="width: 72px">速度</th>
+                  <th class="h-10 px-3 text-center font-medium text-muted-foreground whitespace-nowrap cursor-pointer select-none hover:bg-accent/50 transition-colors" style="width: 60px" @click="toggleTableSort('best', 'best')">
+                    <span class="inline-flex items-center gap-1">
+                      状态
+                      <span v-if="resultStore.sortOrder === 'best'" class="text-primary text-xs">▲</span>
+                    </span>
+                  </th>
+                  <th v-if="isMediumScreen" class="h-10 px-3 text-center font-medium text-muted-foreground whitespace-nowrap cursor-pointer select-none hover:bg-accent/50 transition-colors" style="width: 72px" @click="toggleTableSort('latency_asc', 'latency_desc')">
+                    <span class="inline-flex items-center gap-1">
+                      延迟
+                      <span v-if="resultStore.sortOrder === 'latency_asc'" class="text-primary text-xs">▲</span>
+                      <span v-else-if="resultStore.sortOrder === 'latency_desc'" class="text-primary text-xs">▼</span>
+                    </span>
+                  </th>
+                  <th v-if="isMediumScreen" class="h-10 px-3 text-center font-medium text-muted-foreground whitespace-nowrap cursor-pointer select-none hover:bg-accent/50 transition-colors" style="width: 72px" @click="toggleTableSort('speed_asc', 'speed_desc')">
+                    <span class="inline-flex items-center gap-1">
+                      速度
+                      <span v-if="resultStore.sortOrder === 'speed_asc'" class="text-primary text-xs">▲</span>
+                      <span v-else-if="resultStore.sortOrder === 'speed_desc'" class="text-primary text-xs">▼</span>
+                    </span>
+                  </th>
                   <th class="h-10 px-3 text-center font-medium text-muted-foreground whitespace-nowrap" style="width: 96px">操作</th>
                 </tr>
               </thead>
@@ -969,6 +992,13 @@ function onCountrySearch() {
 
 function selectMediaType(type) {
   mediaType.value = type
+  resultStore.setPage(1)
+  applyAdvancedFilters()
+}
+
+function toggleTableSort(ascVal, descVal) {
+  const newSort = resultStore.sortOrder === ascVal ? descVal : ascVal
+  resultStore.setSort(newSort)
   resultStore.setPage(1)
   applyAdvancedFilters()
 }

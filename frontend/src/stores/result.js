@@ -23,6 +23,12 @@ export const useResultStore = defineStore('result', () => {
     if (saved) searchQuery.value = saved
   } catch {}
 
+  const sortOrder = ref('best')
+  try {
+    const saved = localStorage.getItem('iptv_result_sort_order')
+    if (saved) sortOrder.value = saved
+  } catch {}
+
   const isLoading = ref(false)
   const error = ref(null)
   const history = ref([])
@@ -55,6 +61,7 @@ export const useResultStore = defineStore('result', () => {
         page: resultsPage.value,
         per_page: resultsPerPage.value,
         search: searchQuery.value,
+        sort: sortOrder.value,
         ...params,
       }
       if (selectedSessionId.value) {
@@ -107,6 +114,11 @@ export const useResultStore = defineStore('result', () => {
     resultsPage.value = page
   }
 
+  function setSort(sort) {
+    sortOrder.value = sort
+    try { localStorage.setItem('iptv_result_sort_order', sort) } catch {}
+  }
+
   function reset() {
     checkResults.value = []
     resultsPage.value = 1
@@ -127,6 +139,7 @@ export const useResultStore = defineStore('result', () => {
     resultsPerPage,
     currentTab,
     searchQuery,
+    sortOrder,
     isLoading,
     error,
     history,
@@ -138,6 +151,7 @@ export const useResultStore = defineStore('result', () => {
     setTab,
     setSearch,
     setPage,
+    setSort,
     reset,
   }
 })

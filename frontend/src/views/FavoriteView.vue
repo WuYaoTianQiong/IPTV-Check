@@ -27,6 +27,22 @@
         </div>
       </div>
 
+      <!-- 排序栏 -->
+      <div class="shrink-0 px-3 py-1.5 border-b border-border/40 flex items-center gap-2">
+        <span class="text-xs text-muted-foreground whitespace-nowrap">排序</span>
+        <select
+          :value="favoriteStore.sortOrder"
+          class="h-7 rounded-md border border-input bg-background px-2 text-[11px] flex-1 min-w-0"
+          @change="onFavSortChange($event.target.value)"
+        >
+          <option value="default">默认顺序</option>
+          <option value="name_asc">名称 A-Z</option>
+          <option value="name_desc">名称 Z-A</option>
+          <option value="latency_asc">延迟低→高</option>
+          <option value="latency_desc">延迟高→低</option>
+        </select>
+      </div>
+
       <div class="flex-1 overflow-y-auto space-y-0.5 px-2 py-2">
         <div v-if="favoriteStore.isLoading" class="space-y-2 py-4">
           <div v-for="i in 6" :key="i" class="h-8 rounded-lg bg-muted animate-pulse" />
@@ -129,6 +145,18 @@
             </div>
           </div>
         </template>
+
+        <!-- 分页 -->
+        <div v-if="!favoriteStore.isLoading && favoriteStore.favoritesTotal > 0" class="px-2 py-2 border-t border-border/40">
+          <ResultPagination
+            :current-page="favoriteStore.favoritesPage"
+            :total-pages="favoriteStore.totalPages"
+            :total="favoriteStore.favoritesTotal"
+            :per-page="favoriteStore.favoritesPerPage"
+            @update:current-page="changeFavPage"
+            @update:per-page="changeFavPerPage"
+          />
+        </div>
 
         <div v-else class="text-center py-12 text-muted-foreground">
           <div class="w-14 h-14 mx-auto mb-3 rounded-xl bg-primary/5 flex items-center justify-center">
@@ -428,6 +456,7 @@ import { useFavoriteStore } from '../stores/favorite'
 import { removeFavorite as removeFavoriteApi, updateFavorite, refreshFavoritesLatency } from '../api'
 import { useToast } from '../composables/useToast'
 import LatencyBadge from '../components/LatencyBadge.vue'
+import ResultPagination from '../components/result/ResultPagination.vue'
 import { cn, countryCodeToName } from '../lib/utils'
 import { Button } from '../components/ui/button'
 import { Badge } from '../components/ui/badge'
@@ -708,6 +737,24 @@ async function handleRefreshLatency() {
   } finally {
     isRefreshingLatency.value = false
   }
+}
+
+// ---------- 收藏分页 ----------
+function changeFavPage(page) {
+  favoriteStore.setFavoritesPage(page)
+  favoriteStore.fetchFavorites()
+}
+
+function changeFavPerPage(n) {
+  favoriteStore.setFavoritesPerPage(n)
+  favoriteStore.setFavoritesPage(1)
+  favoriteStore.fetchFavorites()
+}
+
+function onFavSortChange(sort) {
+  favoriteStore.setFavoritesSort(sort)
+  favoriteStore.setFavoritesPage(1)
+  favoriteStore.fetchFavorites()
 }
 
 // ---------- 批量移动 ----------

@@ -8,21 +8,56 @@ export const useFavoriteStore = defineStore('favorite', () => {
   const isLoading = ref(false)
   const activeFolderId = ref(null)
 
+  const favoritesPage = ref(1)
+  const favoritesTotal = ref(0)
+  const favoritesPerPage = ref(50)
+  try {
+    const saved = localStorage.getItem('iptv_fav_per_page')
+    if (saved) favoritesPerPage.value = parseInt(saved, 10)
+  } catch {}
+
+  const sortOrder = ref('default')
+  try {
+    const saved = localStorage.getItem('iptv_fav_sort_order')
+    if (saved) sortOrder.value = saved
+  } catch {}
+
+  const totalPages = computed(() => Math.ceil(favoritesTotal.value / favoritesPerPage.value) || 1)
+
   const favoriteUrlSet = computed(() => new Set(favorites.value.map(f => f.url)))
 
-  async function fetchFavorites(folderId = null) {
+  async function fetchFavorites(folderId = null, page = null, perPage = null) {
     isLoading.value = true
     try {
       const params = {}
       if (folderId !== null) params.folder_id = folderId
+      params.page = page ?? favoritesPage.value
+      params.per_page = perPage ?? favoritesPerPage.value
+      params.sort = sortOrder.value
       const { data } = await getFavorites(params)
       favorites.value = data.favorites || []
+      favoritesTotal.value = data.total || 0
+      favoritesPage.value = data.page || 1
     } catch (e) {
       favorites.value = []
       throw e
     } finally {
       isLoading.value = false
     }
+  }
+
+  function setFavoritesPage(page) {
+    favoritesPage.value = page
+  }
+
+  function setFavoritesPerPage(n) {
+    favoritesPerPage.value = n
+    try { localStorage.setItem('iptv_fav_per_page', n) } catch {}
+  }
+
+  function setFavoritesSort(s) {
+    sortOrder.value = s
+    try { localStorage.setItem('iptv_fav_sort_order', s) } catch {}
   }
 
   async function fetchFolders() {
@@ -108,6 +143,11 @@ export const useFavoriteStore = defineStore('favorite', () => {
     folders,
     isLoading,
     activeFolderId,
+    favoritesPage,
+    favoritesTotal,
+    favoritesPerPage,
+    sortOrder,
+    totalPages,
     favoriteUrlSet,
     fetchFavorites,
     fetchFolders,
@@ -115,6 +155,9 @@ export const useFavoriteStore = defineStore('favorite', () => {
     toggleFavorite,
     addFavoriteTo,
     setDefaultFolder,
+    setFavoritesPage,
+    setFavoritesPerPage,
+    setFavoritesSort,
     addFolder,
     updateFolder,
     removeFolder,
