@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { getResults, getResultsStats, getCheckHistory } from '../api'
 
 export const useResultStore = defineStore('result', () => {
@@ -7,13 +7,44 @@ export const useResultStore = defineStore('result', () => {
   const resultsPage = ref(1)
   const resultsTotal = ref(0)
   const resultsPerPage = ref(50)
+  try {
+    const saved = localStorage.getItem('iptv_result_per_page')
+    if (saved) resultsPerPage.value = parseInt(saved, 10)
+  } catch {}
   const currentTab = ref('all')
+  try {
+    const saved = localStorage.getItem('iptv_result_tab')
+    if (saved) currentTab.value = saved
+  } catch {}
+
   const searchQuery = ref('')
+  try {
+    const saved = localStorage.getItem('iptv_result_search_query')
+    if (saved) searchQuery.value = saved
+  } catch {}
+
   const isLoading = ref(false)
   const error = ref(null)
   const history = ref([])
   const selectedSessionId = ref('')
+  try {
+    const saved = localStorage.getItem('iptv_result_session_id')
+    if (saved) selectedSessionId.value = saved
+  } catch {}
+
   const isHistoryLoading = ref(false)
+
+  watch(currentTab, (val) => {
+    try { localStorage.setItem('iptv_result_tab', val) } catch {}
+  })
+
+  watch(searchQuery, (val) => {
+    try { localStorage.setItem('iptv_result_search_query', val) } catch {}
+  })
+
+  watch(selectedSessionId, (val) => {
+    try { localStorage.setItem('iptv_result_session_id', val) } catch {}
+  })
 
   async function fetchResults(params = {}) {
     isLoading.value = true

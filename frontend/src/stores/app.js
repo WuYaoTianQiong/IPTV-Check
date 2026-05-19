@@ -30,7 +30,7 @@ export const useAppStore = defineStore('app', () => {
   const sourceStore = useSourceStore()
   const checkStore = useCheckStore()
   const resultStore = useResultStore()
-  const toast = useToast()
+  const { toast } = useToast()
 
   const isChecking = computed(() => checkStore.isChecking)
   const onlineSources = computed(() => sourceStore.onlineSources)
@@ -64,8 +64,21 @@ export const useAppStore = defineStore('app', () => {
   }
 
   async function doRefreshIsp() {
-    const { data } = await refreshIsp()
-    localIsp.value = data.local_isp
+    try {
+      const previousIsp = localIsp.value
+      localIsp.value = '检测中...'
+      const { data } = await refreshIsp()
+      localIsp.value = data.local_isp
+      
+      if (data.local_isp !== previousIsp) {
+        toast.success('运营商检测完成', `当前运营商：${data.local_isp}`)
+      } else {
+        toast.info('运营商未变化', `当前运营商：${data.local_isp}`)
+      }
+    } catch (e) {
+      localIsp.value = '检测失败'
+      toast.error('运营商检测失败', e.message || '请稍后重试')
+    }
   }
 
   async function fetchOnlineSources() {
@@ -200,6 +213,9 @@ export const useAppStore = defineStore('app', () => {
       toast.warning('源健康告警', `${unhealthy.length} 个源有效率低于阈值`)
     } else if (event === 'sync_progress') {
       syncProgress.value = { ...syncProgress.value, ...msg }
+    } else if (event === 'queue_overflow') {
+      const { toast } = useToast()
+      toast.warning('实时更新延迟', msg.message || '部分更新被跳过，数据将在轮询时自动修正')
     }
   }
 

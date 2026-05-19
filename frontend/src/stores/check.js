@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { getCheckProgress, getResultsStats } from '../api'
+import { getCheckProgress, getCheckState, getResultsStats } from '../api'
+import { sseStatus } from '../api'
 import { useToast } from '../composables/useToast'
 
 const RECONCILIATION_INTERVAL = 2000
@@ -25,6 +26,7 @@ export const useCheckStore = defineStore('check', () => {
 
   let reconciliationTimer = null
   let _reconciliationInterval = 2000
+  let _sseWasConnected = false
 
   // 阶段权重：解析 10% + 下载 15% + 检测 70% + 收尾 5%
   const stageWeights = {
@@ -171,34 +173,55 @@ export const useCheckStore = defineStore('check', () => {
     if (reconciliationTimer) return
     reconciliationTimer = setInterval(async () => {
       try {
-        const { data } = await getCheckProgress()
+        const { data } = await getCheckState()
+        const sseOk = sseStatus.connected
+
         if (data.is_running && !isChecking.value) {
           isChecking.value = true
-          phase.value = 'checking'
-          if (stage.value === '') stage.value = 'checking'
+          phase.value = data.phase || 'checking'
+          if (data.stage && stage.value === '') stage.value = data.stage
+          if (data.stage_message) stageMessage.value = data.stage_message
         }
-        if (
-          data.total !== checkTotal.value ||
-          data.checked !== checkedCount.value ||
-          data.valid !== validCount.value ||
-          (data.likely_valid || 0) !== likelyValidCount.value
-        ) {
+
+        if (!sseOk) {
+          if (data.checked >= checkedCount.value) {
+            checkTotal.value = data.total
+            checkedCount.value = data.checked
+            validCount.value = data.valid
+            likelyValidCount.value = data.likely_valid || 0
+            invalidCount.value = data.invalid
+          }
+          if (data.stage && data.stage !== stage.value) {
+            stage.value = data.stage
+          }
+          isChecking.value = data.is_running
+        }
+
+        if (data.phase === 'completed') {
+          if (phase.value !== 'completed') {
+            phase.value = 'completed'
+            isChecking.value = false
+            checkTotal.value = data.total || checkTotal.value
+            checkedCount.value = data.checked || checkedCount.value
+            validCount.value = data.valid || validCount.value
+            likelyValidCount.value = data.likely_valid || likelyValidCount.value
+            invalidCount.value = data.invalid || invalidCount.value
+            stage.value = ''
+            stageMessage.value = ''
+          }
+          stopReconciliation()
+        } else if (!data.is_running && isChecking.value) {
+          isChecking.value = false
+          phase.value = 'completed'
           checkTotal.value = data.total
           checkedCount.value = data.checked
           validCount.value = data.valid
           likelyValidCount.value = data.likely_valid || 0
           invalidCount.value = data.invalid
-          isChecking.value = data.is_running
-        }
-        if (!data.is_running && isChecking.value) {
-          isChecking.value = false
-          phase.value = 'completed'
-        }
-        if (!data.is_running && !isChecking.value && checkedCount.value > 0 && phase.value !== 'completed') {
-          phase.value = 'completed'
+          stage.value = ''
+          stageMessage.value = ''
           stopReconciliation()
-        }
-        if (!data.is_running && !isChecking.value && checkedCount.value === 0) {
+        } else if (!data.is_running && !isChecking.value && checkedCount.value === 0) {
           stopReconciliation()
         }
       } catch {}
