@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 from contextlib import asynccontextmanager
 
 from sqlmodel import SQLModel, Field, create_engine, Session, select, col
-from sqlalchemy import Index, func, text
+from sqlalchemy import Index, func, text, case as sa_case, Float
 from iptv_check.infra.cn_time import cn_now
 
 logger = logging.getLogger(__name__)
@@ -454,6 +454,7 @@ class DatabaseManager:
         page: int = 1,
         per_page: int = 50,
         search: str = "",
+        sort: str = "best",
         history_id: Optional[int] = None,
     ) -> dict:
         with self.get_session() as session:
@@ -495,9 +496,46 @@ class DatabaseManager:
             count_query = select(func.count()).select_from(base_query.subquery())
             total = session.exec(count_query).one()
 
+            # Build order_by clause from sort param
+            _order = [ChannelModel.name.asc()]
+            if sort == "best":
+                _order = [
+                    sa_case(
+                        (CheckResultModel.quality_tier == "valid", 0),
+                        (CheckResultModel.quality_tier == "likely_valid", 1),
+                        else_=2,
+                    ).asc(),
+                    sa_case(
+                        (CheckResultModel.latency.is_(None) | (CheckResultModel.latency < 0), 999999),
+                        else_=CheckResultModel.latency,
+                    ).asc(),
+                ]
+            elif sort == "name_asc":
+                _order = [ChannelModel.name.asc()]
+            elif sort == "name_desc":
+                _order = [ChannelModel.name.desc()]
+            elif sort == "latency_asc":
+                _order = [
+                    sa_case(
+                        (CheckResultModel.latency.is_(None) | (CheckResultModel.latency < 0), 999999),
+                        else_=CheckResultModel.latency,
+                    ).asc(),
+                ]
+            elif sort == "latency_desc":
+                _order = [CheckResultModel.latency.desc()]
+            elif sort == "speed_asc":
+                _order = [
+                    sa_case(
+                        (CheckResultModel.speed == "-", 999999999),
+                        else_=func.cast(CheckResultModel.speed, Float),
+                    ).asc(),
+                ]
+            elif sort == "speed_desc":
+                _order = [func.cast(CheckResultModel.speed, Float).desc()]
+
             offset = (page - 1) * per_page
             results = session.exec(
-                base_query.order_by(ChannelModel.name).offset(offset).limit(per_page)
+                base_query.order_by(*_order).offset(offset).limit(per_page)
             ).all()
 
             items = []

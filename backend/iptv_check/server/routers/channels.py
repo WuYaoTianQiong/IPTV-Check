@@ -106,7 +106,7 @@ async def get_results(
                 return await asyncio.to_thread(
                     state.read_model.get_checked_channels,
                     session_id=effective_session_id,
-                    tab=tab, page=page, per_page=per_page, search=search,
+                    tab=tab, page=page, per_page=per_page, search=search, sort=sort,
                     media_type=media_type, language=language,
                     country=country, region=region, category=category, quality=quality, protocol=protocol,
                     latency_min=latency_min, latency_max=latency_max,
@@ -118,7 +118,7 @@ async def get_results(
 
         if state and not state.is_checking and state.database:
             try:
-                return await asyncio.to_thread(state.database.query_results_paginated, tab=tab, page=page, per_page=per_page, search=search)
+                return await asyncio.to_thread(state.database.query_results_paginated, tab=tab, page=page, per_page=per_page, search=search, sort=sort)
             except Exception as e:
                 logger.error("查询历史结果失败: %s\n%s", e, traceback.format_exc())
 
@@ -326,7 +326,7 @@ async def save_results_to_db():
 
 
 @router.get("/favorites")
-async def get_favorites(folder_id: Optional[int] = None):
+async def get_favorites(folder_id: Optional[int] = None, page: int = 1, per_page: int = 50, sort: str = "default"):
     state = _get_state()
     from iptv_check.infra.database import FavoriteModel, ChannelModel, CheckResultModel
     from iptv_check.core.parser import _translate_channel_name, _map_group_name, _infer_country_code
@@ -390,16 +390,34 @@ async def get_favorites(folder_id: Optional[int] = None):
         from iptv_check.infra.cn_time import cn_now
         from sqlalchemy import text as sa_text
         with state.database.get_session() as session:
-            # 选择确定存在的列，避免 ORM/name_cn 问题
             cols = "id,channel_id,name,url,folder_id,channel_group,sort_order,latency,latency_updated_at,created_at"
-            sql = f"SELECT {cols} FROM favorites ORDER BY sort_order ASC, created_at DESC"
+            where_clause = ""
             params = {}
             if folder_id is not None:
-                sql = f"SELECT {cols} FROM favorites WHERE folder_id = :fid ORDER BY sort_order ASC, created_at DESC"
-                params = {"fid": folder_id}
-            rows = session.execute(sa_text(sql), params).fetchall()
+                where_clause = "WHERE folder_id = :fid"
+                params["fid"] = folder_id
 
-            return [
+            # 查询总数
+            count_sql = f"SELECT COUNT(*) FROM favorites {where_clause}"
+            total = session.execute(sa_text(count_sql), params).scalar() or 0
+
+            # 排序映射（收藏表无 speed 列，仅支持名称和延迟排序）
+            _fav_sort = {
+                "default":     "sort_order ASC, created_at DESC",
+                "name_asc":    "name ASC",
+                "name_desc":   "name DESC",
+                "latency_asc": "CASE WHEN latency IS NULL OR latency < 0 THEN 999999 ELSE latency END ASC",
+                "latency_desc": "latency DESC",
+            }
+            _fav_order = _fav_sort.get(sort, _fav_sort["default"])
+
+            # 分页查询
+            offset = (page - 1) * per_page
+            data_sql = f"SELECT {cols} FROM favorites {where_clause} ORDER BY {_fav_order} LIMIT :lim OFFSET :off"
+            data_params = {**params, "lim": per_page, "off": offset}
+            rows = session.execute(sa_text(data_sql), data_params).fetchall()
+
+            items = [
                 {"id": r.id, "channel_id": r.channel_id,
                  "name": r.name,
                  "name_cn": _translate_channel_name(r.name) or "",
@@ -415,8 +433,9 @@ async def get_favorites(folder_id: Optional[int] = None):
                  "created_at": r.created_at.isoformat() if hasattr(r.created_at, 'isoformat') else str(r.created_at)}
                 for r in rows
             ]
-    favorites = await asyncio.to_thread(_query)
-    return {"favorites": favorites}
+            return items, total
+    favorites, total = await asyncio.to_thread(_query)
+    return {"favorites": favorites, "total": total, "page": page, "per_page": per_page}
 
 @router.post("/favorites/refresh-latency")
 async def refresh_favorites_latency():

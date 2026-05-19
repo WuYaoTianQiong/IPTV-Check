@@ -847,6 +847,7 @@ class ReadModel:
 
     def get_checked_channels(self, session_id: str = None, tab: str = "all",
                              page: int = 1, per_page: int = 50, search: str = "",
+                             sort: str = "best",
                              media_type: str = "all", language: str = "",
                              country: str = "", region: str = "",
                              category: str = "", quality: str = "", protocol: str = "",
@@ -932,11 +933,22 @@ class ReadModel:
                 query_params["limit"] = per_page
                 query_params["offset"] = offset
 
+                _sort_map_mat = {
+                    "best": "CASE WHEN quality_tier = 'valid' THEN 0 WHEN quality_tier = 'likely_valid' THEN 1 ELSE 2 END, CASE WHEN latency IS NULL OR latency < 0 THEN 999999 ELSE latency END ASC",
+                    "name_asc":   "name ASC",
+                    "name_desc":  "name DESC",
+                    "latency_asc":  "CASE WHEN latency IS NULL OR latency < 0 THEN 999999 ELSE latency END ASC",
+                    "latency_desc": "latency DESC",
+                    "speed_asc":  "CASE WHEN speed = '-' THEN 999999999 ELSE CAST(speed AS REAL) END ASC",
+                    "speed_desc": "CAST(speed AS REAL) DESC",
+                }
+                _order = _sort_map_mat.get(sort, _sort_map_mat["best"])
+
                 results = session.exec(sa_text(f"""
                     SELECT name, url, is_valid, latency, speed, details, channel_group, sources, quality_tier, is_radio, tvg_name, clean_name, country, frequency
                     FROM channel_results
                     WHERE {search_where}
-                    ORDER BY created_at ASC
+                    ORDER BY {_order}
                     LIMIT :limit OFFSET :offset
                 """).bindparams(**query_params)).all()
 
@@ -1081,6 +1093,17 @@ class ReadModel:
             query_params["limit"] = per_page
             query_params["offset"] = offset
 
+            _sort_map_raw = {
+                "best": "CASE WHEN json_extract(payload, '$.quality_tier') = 'valid' THEN 0 WHEN json_extract(payload, '$.quality_tier') = 'likely_valid' THEN 1 ELSE 2 END, CASE WHEN CAST(json_extract(payload, '$.latency') AS REAL) IS NULL OR CAST(json_extract(payload, '$.latency') AS REAL) < 0 THEN 999999 ELSE CAST(json_extract(payload, '$.latency') AS REAL) END ASC",
+                "name_asc":   "json_extract(payload, '$.name') ASC",
+                "name_desc":  "json_extract(payload, '$.name') DESC",
+                "latency_asc":  "CASE WHEN CAST(json_extract(payload, '$.latency') AS REAL) IS NULL OR CAST(json_extract(payload, '$.latency') AS REAL) < 0 THEN 999999 ELSE CAST(json_extract(payload, '$.latency') AS REAL) END ASC",
+                "latency_desc": "CAST(json_extract(payload, '$.latency') AS REAL) DESC",
+                "speed_asc":  "CASE WHEN json_extract(payload, '$.speed') = '-' THEN 999999999 ELSE CAST(json_extract(payload, '$.speed') AS REAL) END ASC",
+                "speed_desc": "CAST(json_extract(payload, '$.speed') AS REAL) DESC",
+            }
+            _order = _sort_map_raw.get(sort, _sort_map_raw["best"])
+
             results = session.exec(
                 sa_text(f"""
                     SELECT
@@ -1100,7 +1123,7 @@ class ReadModel:
                         json_extract(payload, '$.frequency') as frequency
                     FROM check_events
                     WHERE {search_where}
-                    ORDER BY created_at ASC
+                    ORDER BY {_order}
                     LIMIT :limit OFFSET :offset
                 """).bindparams(**query_params)
             ).all()
@@ -1329,7 +1352,16 @@ class ReadModel:
 
                 total = _scalar(session, sa_text(f"SELECT COUNT(*) FROM ({base}) sub").bindparams(**params)) or 0
 
-                order_sql = "best_latency ASC, valid_count DESC" if sort == "best" else "ch_name ASC"
+                _group_sort = {
+                    "best": "best_latency ASC, valid_count DESC",
+                    "name_asc": "ch_name ASC",
+                    "name_desc": "ch_name DESC",
+                    "latency_asc": "best_latency ASC",
+                    "latency_desc": "best_latency DESC",
+                    "speed_asc": "ch_name ASC",
+                    "speed_desc": "ch_name DESC",
+                }
+                order_sql = _group_sort.get(sort, _group_sort["best"])
                 offset = (page - 1) * per_page
                 page_params = {**params, "limit": per_page, "offset": offset}
 
@@ -1515,7 +1547,16 @@ class ReadModel:
 
             total = _scalar(session, sa_text(f"SELECT COUNT(*) FROM ({base}) sub").bindparams(**params)) or 0
 
-            order_sql = "best_latency ASC, valid_count DESC" if sort == "best" else "ch_name ASC"
+            _group_sort = {
+                "best": "best_latency ASC, valid_count DESC",
+                "name_asc": "ch_name ASC",
+                "name_desc": "ch_name DESC",
+                "latency_asc": "best_latency ASC",
+                "latency_desc": "best_latency DESC",
+                "speed_asc": "ch_name ASC",
+                "speed_desc": "ch_name DESC",
+            }
+            order_sql = _group_sort.get(sort, _group_sort["best"])
             offset = (page - 1) * per_page
             page_params = {**params, "limit": per_page, "offset": offset}
 
