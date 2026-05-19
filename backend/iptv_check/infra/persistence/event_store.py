@@ -50,6 +50,9 @@ class ChannelResultModel(SQLModel, table=True):
     content_type: str = Field(default="")
     source_name: str = Field(default="")
     resolution: str = Field(default="")
+    tvg_name: str = Field(default="")
+    clean_name: str = Field(default="")
+    frequency: str = Field(default="")
     created_at: datetime = Field(default_factory=cn_now)
 
     __table_args__ = (
@@ -245,6 +248,18 @@ class EventStore:
                     conn.execute(text("ALTER TABLE channel_results ADD COLUMN resolution TEXT DEFAULT ''"))
                     conn.commit()
                     logger.info("迁移: channel_results 增加 resolution 列")
+                if "tvg_name" not in cr_cols:
+                    conn.execute(text("ALTER TABLE channel_results ADD COLUMN tvg_name TEXT DEFAULT ''"))
+                    conn.commit()
+                    logger.info("迁移: channel_results 增加 tvg_name 列")
+                if "clean_name" not in cr_cols:
+                    conn.execute(text("ALTER TABLE channel_results ADD COLUMN clean_name TEXT DEFAULT ''"))
+                    conn.commit()
+                    logger.info("迁移: channel_results 增加 clean_name 列")
+                if "frequency" not in cr_cols:
+                    conn.execute(text("ALTER TABLE channel_results ADD COLUMN frequency TEXT DEFAULT ''"))
+                    conn.commit()
+                    logger.info("迁移: channel_results 增加 frequency 列")
             logger.info("EventStore 初始化: %s", self._db_path)
         return self._engine
 

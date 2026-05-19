@@ -191,6 +191,19 @@ class AsyncCheckEngine:
         return False
 
     @staticmethod
+    def _is_valid_m3u8_content(content: str) -> bool:
+        """Check if content is valid M3U8, tolerating BOM, blank lines, and leading comments."""
+        text = content.strip()
+        if text.startswith('\ufeff'):
+            text = text[1:]
+        for line in text.splitlines():
+            line = line.strip()
+            if not line or line.startswith('#') and not line.startswith('#EXTM3U'):
+                continue
+            return line.startswith('#EXTM3U')
+        return False
+
+    @staticmethod
     def _handle_check_exception(exc: Exception, result: CheckResult) -> CheckResult:
         """将检测异常映射为CheckResult字段"""
         result.is_valid = False
@@ -209,6 +222,8 @@ class AsyncCheckEngine:
                 result.details = "连接被重置"
             else:
                 result.details = "连接失败"
+        elif isinstance(exc, aiohttp.ServerDisconnectedError):
+            result.details = "服务器断开连接"
         elif isinstance(exc, aiohttp.ClientResponseError):
             if exc.status == 403:
                 result.details = "访问被拒绝(403)"
@@ -254,7 +269,7 @@ class AsyncCheckEngine:
             if self._config.run_speed_test:
                 if is_m3u8:
                     playlist_content = await resp.text()
-                    if not playlist_content.strip().startswith("#EXTM3U"):
+                    if not self._is_valid_m3u8_content(playlist_content):
                         raise ValueError("非标准M3U8内容")
                     speed = await self._m3u8.get_speed_async(
                         channel.url, playlist_content, self._headers,
@@ -267,7 +282,7 @@ class AsyncCheckEngine:
             else:
                 if is_m3u8:
                     playlist_content = await resp.text()
-                    if not playlist_content.strip().startswith("#EXTM3U"):
+                    if not self._is_valid_m3u8_content(playlist_content):
                         raise ValueError("非标准M3U8内容")
                     await self._m3u8.validate_recursive_async(
                         channel.url, playlist_content, self._headers,
@@ -286,13 +301,13 @@ class AsyncCheckEngine:
             result.speed = speed
 
             if self._config.run_speed_test and speed in ("-", "N/A"):
-                result.is_valid = False
-                result.quality_tier = "invalid"
-                result.details = "流不可达" if not is_m3u8 else "分片不可达"
+                result.is_valid = True
+                result.quality_tier = "likely_valid"
+                result.details = "速度测试超时" if not is_m3u8 else "分片速度测试超时"
             elif latency > self._config.max_latency_ms * 2:
-                result.is_valid = False
-                result.quality_tier = "invalid"
-                result.details = f"延迟过高 ({latency}ms > {self._config.max_latency_ms * 2}ms)"
+                result.is_valid = True
+                result.quality_tier = "likely_valid"
+                result.details = f"延迟偏高 ({latency}ms > {self._config.max_latency_ms * 2}ms)"
             elif latency > self._config.max_latency_ms:
                 result.is_valid = True
                 result.quality_tier = "likely_valid"
@@ -365,7 +380,7 @@ class AsyncCheckEngine:
         async with self._semaphore:
             if self._stop_event.is_set():
                 result.is_valid = False
-                result.quality_tier = "invalid"
+                result.quality_tier = "stopped"
                 result.details = "已停止"
                 return result
 
@@ -376,7 +391,7 @@ class AsyncCheckEngine:
                 try:
                     if self._stop_event.is_set():
                         result.is_valid = False
-                        result.quality_tier = "invalid"
+                        result.quality_tier = "stopped"
                         result.details = "已停止"
                         return result
                     result = await self._execute_check(channel)

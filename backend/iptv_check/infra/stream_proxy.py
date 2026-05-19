@@ -63,8 +63,8 @@ class StreamProxy:
         self._source_errors: dict[str, int] = defaultdict(int)
         self._source_consecutive_errors: dict[str, int] = defaultdict(int)
         self._source_circuit_open: dict[str, float] = {}
-        self._circuit_threshold = 5
-        self._circuit_cooldown_secs = 30
+        self._circuit_threshold = 20
+        self._circuit_cooldown_secs = 15
 
     async def initialize(self):
         if self._session is None or self._session.closed:

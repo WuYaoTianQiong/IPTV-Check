@@ -69,7 +69,7 @@ class BatchResultCollector:
         self._session_id = session_id
         self._event_type = event_type
 
-        self._result_queue: asyncio.Queue = asyncio.Queue(maxsize=5000)
+        self._result_queue: asyncio.Queue = asyncio.Queue(maxsize=50000)
         self._progress = CheckProgress()
         self._invalid_channels: list = []
 
@@ -160,28 +160,70 @@ class BatchResultCollector:
             "content_type": self._classify_content_type(result),
             "quality_tier": result.quality_tier,
             "resolution": getattr(result.channel, "resolution", "") or "",
+            "tvg_name": result.channel.tvg_name or "",
+            "clean_name": result.channel.clean_name or "",
+            "frequency": getattr(result.channel, "frequency", "") or "",
         }
         if not result.is_valid:
             self._invalid_channels.append(result.channel)
         try:
-            loop.call_soon_threadsafe(self._result_queue.put_nowait, ("result", result_data))
+            self._result_queue.put_nowait(("result", result_data))
         except asyncio.QueueFull:
-            logger.warning("[BatchCollector] 队列满，丢弃结果: %s", result.channel.name)
+            async def _wait_put():
+                try:
+                    await self._result_queue.put(("result", result_data))
+                except Exception:
+                    pass
+            loop.call_soon_threadsafe(asyncio.create_task, _wait_put())
 
     def submit_cached_result_sync(self, result: CheckResult):
-        """缓存命中结果：只更新内存进度计数器，不走队列不写数据库"""
-        self._progress.checked += 1
-        tier = result.quality_tier
-        if not tier:
-            tier = "valid" if result.is_valid else "invalid"
-        if tier == "valid":
-            self._progress.valid += 1
-        elif tier == "likely_valid":
-            self._progress.likely_valid += 1
-        else:
-            self._progress.invalid += 1
+        """缓存命中结果：同样写入数据库以供查询"""
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            self._progress.checked += 1
+            tier = result.quality_tier or ("valid" if result.is_valid else "invalid")
+            if tier == "valid":
+                self._progress.valid += 1
+            elif tier == "likely_valid":
+                self._progress.likely_valid += 1
+            else:
+                self._progress.invalid += 1
+            if not result.is_valid:
+                self._invalid_channels.append(result.channel)
+            return
+
+        result_data = {
+            "url_key": result.channel.url_key,
+            "name": result.channel.name,
+            "url": result.channel.url,
+            "is_valid": result.is_valid,
+            "latency": result.latency_display,
+            "speed": result.speed,
+            "details": result.details,
+            "group": result.channel.group,
+            "sources": ", ".join(result.channel.sources),
+            "country": result.channel.country,
+            "is_radio": result.channel.is_radio,
+            "language": result.channel.language,
+            "content_type": self._classify_content_type(result),
+            "quality_tier": result.quality_tier,
+            "resolution": getattr(result.channel, "resolution", "") or "",
+            "tvg_name": result.channel.tvg_name or "",
+            "clean_name": result.channel.clean_name or "",
+            "frequency": getattr(result.channel, "frequency", "") or "",
+        }
         if not result.is_valid:
             self._invalid_channels.append(result.channel)
+        try:
+            self._result_queue.put_nowait(("result", result_data))
+        except asyncio.QueueFull:
+            async def _wait_put():
+                try:
+                    await self._result_queue.put(("result", result_data))
+                except Exception:
+                    pass
+            loop.call_soon_threadsafe(asyncio.create_task, _wait_put())
 
     def submit_complete_sync(self):
         """同步提交检测完成信号（由线程池线程调用）"""

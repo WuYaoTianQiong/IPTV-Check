@@ -96,10 +96,13 @@ class CustomChannelModel(CustomChannelBase, table=True):
 class FavoriteBase(SQLModel):
     channel_id: int = Field(default=0, index=True)
     name: str = Field(default="")
+    name_cn: str = Field(default="")
     url: str = Field(default="")
     folder_id: Optional[int] = Field(default=None, foreign_key="favorite_folders.id", index=True)
     channel_group: str = Field(default="")
     sort_order: int = Field(default=0)
+    latency: float = Field(default=0.0)
+    latency_updated_at: Optional[datetime] = Field(default=None)
     created_at: datetime = Field(default_factory=cn_now)
 
 
@@ -192,6 +195,15 @@ class DatabaseManager:
                     conn.execute(sa_text("ALTER TABLE channels ADD COLUMN resolution VARCHAR DEFAULT ''"))
                     conn.commit()
                     logger.info("迁移: channels 增加 resolution 列")
+                fav_cols = [row[1] for row in conn.execute(sa_text("PRAGMA table_info(favorites)")).fetchall()]
+                if "latency" not in fav_cols:
+                    conn.execute(sa_text("ALTER TABLE favorites ADD COLUMN latency FLOAT DEFAULT 0.0"))
+                    conn.commit()
+                    logger.info("迁移: favorites 增加 latency 列")
+                if "latency_updated_at" not in fav_cols:
+                    conn.execute(sa_text("ALTER TABLE favorites ADD COLUMN latency_updated_at DATETIME"))
+                    conn.commit()
+                    logger.info("迁移: favorites 增加 latency_updated_at 列")
             except Exception as e:
                 logger.warning("迁移检查失败: %s", e)
 

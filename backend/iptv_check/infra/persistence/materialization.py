@@ -84,6 +84,9 @@ class MaterializationService:
                         json_extract(payload, '$.source_name'),
                         json_extract(payload, '$.quality_tier'),
                         json_extract(payload, '$.resolution'),
+                        json_extract(payload, '$.tvg_name'),
+                        json_extract(payload, '$.clean_name'),
+                        json_extract(payload, '$.frequency'),
                         created_at
                     FROM check_events
                     WHERE session_id = :sid AND event_type = 'channel_checked'
@@ -180,7 +183,10 @@ class MaterializationService:
                         content_type=evt[12] or "",
                         source_name=evt[13] or "",
                         resolution=rc_resolution,
-                        created_at=_parse_dt(evt[16]) or cn_now(),
+                        tvg_name=evt[16] or "",
+                        clean_name=evt[17] or "",
+                        frequency=evt[18] or "",
+                        created_at=_parse_dt(evt[19]) or cn_now(),
                     )
                     session.add(result)
                 except Exception as e:
@@ -232,6 +238,9 @@ class MaterializationService:
                     content_type=ch.get("content_type", ""),
                     source_name=payload.get("source_name", ""),
                     resolution=ch.get("resolution", ""),
+                    tvg_name=ch.get("tvg_name", ""),
+                    clean_name=ch.get("clean_name", ""),
+                    frequency=payload.get("frequency", "") or ch.get("frequency", ""),
                 )
                 session.add(result)
                 session.commit()
@@ -314,3 +323,88 @@ class MaterializationService:
                 updated_at=now,
             )
             session.add(summary)
+
+    def repair_is_radio(self) -> int:
+        with Session(self._store.engine) as session:
+            # 修复 channel_results: 根据 channel_group / name / url 关键词推断
+            session.exec(sa_text("""
+                UPDATE channel_results SET is_radio = 1 WHERE is_radio = 0 AND (
+                    lower(channel_group) LIKE '%广播%' OR
+                    lower(channel_group) LIKE '%电台%' OR
+                    lower(channel_group) LIKE '%radio%' OR
+                    lower(name) LIKE '%广播%' OR
+                    lower(name) LIKE '%电台%' OR
+                    lower(name) LIKE '%radio%' OR
+                    lower(url) LIKE '%qingting.fm%' OR
+                    lower(url) LIKE '%xmcdn.com%' OR
+                    lower(url) LIKE '%ximalaya%' OR
+                    lower(url) LIKE '%lrc.la%'
+                )
+            """))
+            fixed = session.exec(sa_text("SELECT changes()")).scalar()
+
+            # 修复 check_events 事件表中的 is_radio
+            event_rows = session.exec(sa_text(
+                """SELECT id, payload FROM check_events
+                   WHERE event_type IN ('channel_checked', 'channel_rechecked')
+                   AND COALESCE(json_extract(payload, '$.is_radio'), 0) = 0
+                   AND (
+                       lower(json_extract(payload, '$.group')) LIKE '%广播%' OR
+                       lower(json_extract(payload, '$.group')) LIKE '%电台%' OR
+                       lower(json_extract(payload, '$.group')) LIKE '%radio%' OR
+                       lower(json_extract(payload, '$.name')) LIKE '%广播%' OR
+                       lower(json_extract(payload, '$.name')) LIKE '%电台%' OR
+                       lower(json_extract(payload, '$.name')) LIKE '%radio%' OR
+                       lower(json_extract(payload, '$.url')) LIKE '%qingting.fm%' OR
+                       lower(json_extract(payload, '$.url')) LIKE '%xmcdn.com%' OR
+                       lower(json_extract(payload, '$.url')) LIKE '%ximalaya%' OR
+                       lower(json_extract(payload, '$.url')) LIKE '%lrc.la%'
+                   )"""
+            )).all()
+
+            event_fixed = 0
+            _RADIO_KEYWORDS = {"广播", "电台", "radio", "fm", "am", "broadcast"}
+            _RADIO_URL_KEYWORDS = {"qingting.fm", "xmcdn.com", "ximalaya", "lrc.la"}
+            for row in event_rows:
+                eid, payload_str = row
+                try:
+                    payload = json.loads(payload_str)
+                except (json.JSONDecodeError, TypeError):
+                    continue
+                name = payload.get("name", "")
+                group = payload.get("group", "")
+                url = payload.get("url", "")
+                text_lower = f"{name} {group}".lower()
+                url_lower = (url or "").lower()
+                if (any(kw in text_lower for kw in _RADIO_KEYWORDS) or
+                    any(kw in url_lower for kw in _RADIO_URL_KEYWORDS)):
+                    payload["is_radio"] = True
+                    session.exec(sa_text(
+                        "UPDATE check_events SET payload = :p WHERE id = :id"
+                    ).bindparams(p=json.dumps(payload, ensure_ascii=False), id=eid))
+                    event_fixed += 1
+
+            if fixed or event_fixed:
+                session.commit()
+
+            # 更新 session_summaries
+            sessions_to_update = session.exec(sa_text(
+                "SELECT DISTINCT session_id FROM channel_results WHERE is_radio = 1"
+            )).all()
+            for sid_row in sessions_to_update:
+                sid = sid_row[0]
+                rc = session.exec(sa_text(
+                    "SELECT COUNT(*) FROM channel_results WHERE session_id = :sid AND is_radio = 1"
+                ).bindparams(sid=sid)).scalar()
+                tc = session.exec(sa_text(
+                    "SELECT COUNT(*) FROM channel_results WHERE session_id = :sid"
+                ).bindparams(sid=sid)).scalar()
+                session.exec(sa_text(
+                    "UPDATE session_summaries SET radio_count = :rc, tv_count = :tc WHERE session_id = :sid"
+                ).bindparams(rc=rc, tc=tc - rc, sid=sid))
+
+            if fixed or event_fixed:
+                session.commit()
+
+            logger.info("is_radio修复完成: 物化表修正 %d 条, 事件表修正 %d 条", fixed, event_fixed)
+            return fixed + event_fixed

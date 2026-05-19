@@ -127,6 +127,14 @@ class ErrorClassifier:
                 retryable=True,
             )
 
+        if isinstance(exception, aiohttp.ServerDisconnectedError):
+            return ErrorInfo(
+                severity=ErrorSeverity.TRANSIENT,
+                category=ErrorCategory.CONNECTION,
+                message="服务器断开连接",
+                retryable=True,
+            )
+
         if isinstance(exception, ValueError):
             return ErrorInfo(
                 severity=ErrorSeverity.PERMANENT,

@@ -319,7 +319,7 @@ def _country_to_flag(code: str) -> str:
     if not code or len(code) != 2:
         return ""
     try:
-        offset = 0x1F1E5 - ord('A')
+        offset = 0x1F1E6 - ord('A')
         c1 = chr(ord(code[0]) + offset)
         c2 = chr(ord(code[1]) + offset)
         return c1 + c2
@@ -379,6 +379,113 @@ def _infer_region_from_group(grp_name: str, country_code: str, is_radio: bool, c
             return "国际电视"
     
     return "未分类"
+
+
+_CN_REGION_KEYWORDS = [
+    ("北京", ["北京", "BTV", "btv", "北京卫视"]),
+    ("上海", ["上海", "东方"]),
+    ("天津", ["天津"]),
+    ("重庆", ["重庆"]),
+    ("河北", ["河北", "石家庄"]),
+    ("山西", ["山西", "太原"]),
+    ("辽宁", ["辽宁", "沈阳", "大连"]),
+    ("吉林", ["吉林", "长春"]),
+    ("黑龙江", ["黑龙江", "哈尔滨"]),
+    ("江苏", ["江苏", "南京", "苏州"]),
+    ("浙江", ["浙江", "杭州", "宁波"]),
+    ("安徽", ["安徽", "合肥"]),
+    ("福建", ["福建", "厦门", "福州", "泉州"]),
+    ("江西", ["江西", "南昌"]),
+    ("山东", ["山东", "济南", "青岛"]),
+    ("河南", ["河南", "郑州"]),
+    ("湖北", ["湖北", "武汉"]),
+    ("湖南", ["湖南", "长沙"]),
+    ("广东", ["广东", "广州", "深圳", "东莞", "佛山", "珠海", "中山", "惠州", "江门", "汕头", "肇庆", "湛江", "茂名", "梅州", "清远", "韶关", "阳江", "河源", "潮州", "揭阳", "云浮"]),
+    ("广西", ["广西", "南宁"]),
+    ("海南", ["海南", "海口"]),
+    ("四川", ["四川", "成都"]),
+    ("贵州", ["贵州", "贵阳"]),
+    ("云南", ["云南", "昆明"]),
+    ("西藏", ["西藏", "拉萨"]),
+    ("陕西", ["陕西", "西安"]),
+    ("甘肃", ["甘肃", "兰州"]),
+    ("青海", ["青海", "西宁"]),
+    ("宁夏", ["宁夏", "银川"]),
+    ("新疆", ["新疆", "乌鲁木齐"]),
+    ("内蒙古", ["内蒙古", "呼和浩特"]),
+    ("香港", ["香港", "ViuTV", "RTHK", "TVB", "凤凰卫视", "凤凰资讯"]),
+    ("澳门", ["澳门", "TDM"]),
+    ("台湾", ["台湾", "台视", "中视", "华视", "民视", "公视", "CTS", "TTV", "FTV", "PTS"]),
+]
+
+_COUNTRY_NAME_ZH = {
+    "CN": "中国", "HK": "中国香港", "MO": "中国澳门", "TW": "中国台湾",
+    "US": "美国", "UK": "英国", "GB": "英国", "JP": "日本", "KR": "韩国",
+    "FR": "法国", "DE": "德国", "IT": "意大利", "ES": "西班牙", "PT": "葡萄牙",
+    "RU": "俄罗斯", "IN": "印度", "BR": "巴西", "CA": "加拿大", "AU": "澳大利亚",
+    "SG": "新加坡", "MY": "马来西亚", "TH": "泰国", "VN": "越南", "PH": "菲律宾",
+    "ID": "印尼", "TR": "土耳其", "SA": "沙特", "AE": "阿联酋", "EG": "埃及",
+    "NG": "尼日利亚", "ZA": "南非", "AR": "阿根廷", "MX": "墨西哥", "CL": "智利",
+    "CO": "哥伦比亚", "PE": "秘鲁", "PL": "波兰", "NL": "荷兰", "SE": "瑞典",
+    "CH": "瑞士", "AT": "奥地利", "BE": "比利时", "DK": "丹麦", "NO": "挪威",
+    "FI": "芬兰", "IE": "爱尔兰", "NZ": "新西兰", "IL": "以色列", "IQ": "伊拉克",
+    "IR": "伊朗", "PK": "巴基斯坦", "BD": "孟加拉", "LK": "斯里兰卡", "MM": "缅甸",
+    "KH": "柬埔寨", "LA": "老挝", "NP": "尼泊尔", "UA": "乌克兰", "CZ": "捷克",
+    "RO": "罗马尼亚", "HU": "匈牙利", "GR": "希腊", "HR": "克罗地亚", "RS": "塞尔维亚",
+    "BG": "保加利亚", "SK": "斯洛伐克", "SI": "斯洛文尼亚", "LT": "立陶宛",
+    "LV": "拉脱维亚", "EE": "爱沙尼亚", "IS": "冰岛", "LU": "卢森堡",
+    "MT": "马耳他", "CY": "塞浦路斯", "GE": "格鲁吉亚", "AM": "亚美尼亚",
+    "AZ": "阿塞拜疆", "KZ": "哈萨克斯坦", "UZ": "乌兹别克斯坦",
+}
+
+
+def _infer_region(name: str, group: str, country_code: str) -> str:
+    """从频道名称、分组和国家代码推断具体地区名称
+
+    优先级：
+    1. 中国大陆省份/城市（从名称关键词匹配）
+    2. 港澳台（中国香港/中国澳门/中国台湾）
+    3. 国外国家名称（从country_code转中文名）
+    4. 兜底：从频道名中的品牌词推断国家代码
+    """
+    text = f"{name or ''} {group or ''}".lower()
+
+    # 1. 优先匹配中国大陆省份/城市
+    for region_name, keywords in _CN_REGION_KEYWORDS:
+        for kw in keywords:
+            if kw.lower() in text:
+                return region_name
+
+    # 2. 港澳台处理
+    normalized = _normalize_country_code(country_code or "")
+    if normalized in ("HK", "HKG"):
+        return "中国香港"
+    if normalized in ("MO", "MAC"):
+        return "中国澳门"
+    if normalized in ("TW", "TWN"):
+        return "中国台湾"
+
+    # 3. 国外国家代码转中文名
+    if normalized and normalized != "CN":
+        return _COUNTRY_NAME_ZH.get(normalized, normalized)
+
+    # 4. 从频道名中的品牌词推断国家代码
+    from iptv_check.core.parser import _COUNTRY_CODE_MAP, _CN_KEYWORDS
+
+    lower_name = (name or "").lower()
+    lower_group = (group or "").lower()
+
+    # 先检查是否为中国频道
+    for kw in _CN_KEYWORDS:
+        if kw.lower() in lower_name or kw.lower() in lower_group:
+            return "中国"
+
+    # 按关键词长度降序匹配
+    for kw, code in sorted(_COUNTRY_CODE_MAP.items(), key=lambda x: -len(x[0])):
+        if kw in lower_name or kw in lower_group:
+            return _COUNTRY_NAME_ZH.get(code, code)
+
+    return ""
 
 
 def _scalar(session, query):
@@ -652,6 +759,7 @@ class ReadModel:
                     (SELECT COUNT(*) FROM check_events WHERE session_id = :sid AND event_type = 'channel_checked') AS checked,
                     (SELECT COUNT(*) FROM check_events WHERE session_id = :sid AND event_type = 'channel_checked' AND json_extract(payload, '$.is_valid') = 1 AND COALESCE(json_extract(payload, '$.quality_tier'), 'valid') = 'valid') AS valid,
                     (SELECT COUNT(*) FROM check_events WHERE session_id = :sid AND event_type = 'channel_checked' AND COALESCE(json_extract(payload, '$.quality_tier'), 'invalid') = 'likely_valid') AS likely_valid,
+                    (SELECT COUNT(*) FROM check_events WHERE session_id = :sid AND event_type = 'channel_checked' AND json_extract(payload, '$.quality_tier') = 'stopped') AS stopped,
                     (SELECT 1 FROM check_events WHERE session_id = :sid AND event_type = 'check_started' LIMIT 1) AS started,
                     (SELECT event_type FROM check_events WHERE session_id = :sid AND event_type IN ('check_completed', 'check_stopped', 'check_failed') ORDER BY created_at DESC LIMIT 1) AS final_event
             """).bindparams(sid=sid)).first()
@@ -660,7 +768,8 @@ class ReadModel:
             checked_result = row[1] or 0
             valid_result = row[2] or 0
             likely_valid_result = row[3] or 0
-            is_running = row[4] is not None and row[5] is None
+            stopped_result = row[4] or 0
+            is_running = row[5] is not None and row[6] is None
 
             progress = min((checked_result / total_result * 100) if total_result > 0 else 0.0, 100.0)
 
@@ -669,7 +778,7 @@ class ReadModel:
                 "checked": min(checked_result, total_result) if total_result > 0 else checked_result,
                 "valid": valid_result,
                 "likely_valid": likely_valid_result,
-                "invalid": checked_result - valid_result - likely_valid_result,
+                "invalid": checked_result - valid_result - likely_valid_result - stopped_result,
                 "is_running": is_running,
                 "progress_percent": round(progress, 1),
             }
@@ -824,7 +933,7 @@ class ReadModel:
                 query_params["offset"] = offset
 
                 results = session.exec(sa_text(f"""
-                    SELECT name, url, is_valid, latency, speed, details, channel_group, sources, quality_tier, is_radio, tvg_name, clean_name
+                    SELECT name, url, is_valid, latency, speed, details, channel_group, sources, quality_tier, is_radio, tvg_name, clean_name, country, frequency
                     FROM channel_results
                     WHERE {search_where}
                     ORDER BY created_at ASC
@@ -835,7 +944,9 @@ class ReadModel:
                 for idx, r in enumerate(results):
                     is_valid = bool(r[2])
                     quality_tier = r[8] or ("valid" if is_valid else "invalid")
-                    name_val = r[0] or ""
+                    clean_name_val = r[11] or ""
+                    raw_name = r[0] or ""
+                    name_val = raw_name
                     if name_val == "N/A":
                         sources_val = r[7] or ""
                         if sources_val and sources_val != "N/A" and sources_val != "[]":
@@ -845,11 +956,25 @@ class ReadModel:
                                     name_val = str(src_list[0])
                             except (json.JSONDecodeError, TypeError):
                                 name_val = sources_val
+                    name_cn_val = clean_name_val
+                    if clean_name_val and clean_name_val != name_val:
+                        pass
+                    elif clean_name_val and clean_name_val == name_val:
+                        name_cn_val = ""
+                    if not name_cn_val:
+                        from iptv_check.core.parser import _translate_channel_name
+                        name_cn_val = _translate_channel_name(raw_name, r[10] or "")
+                    from iptv_check.core.parser import _infer_country_code
+                    country_val = r[12] or ""
+                    country_code = _infer_country_code(raw_name, r[6] or "", country_val)
+                    region_val = _infer_region(raw_name, r[6] or "", country_code)
                     items.append({
                         "index": offset + idx + 1,
                         "name": name_val,
+                        "name_cn": name_cn_val,
                         "url": r[1] or "",
                         "group": _map_group_name(r[6] or ""),
+                        "region": region_val,
                         "sources": r[7] or "",
                         "is_valid": is_valid,
                         "quality_tier": quality_tier,
@@ -859,7 +984,9 @@ class ReadModel:
                         "details": r[5] or "",
                         "is_radio": bool(r[9]),
                         "tvg_name": r[10] or "",
-                        "clean_name": r[11] or "",
+                        "clean_name": clean_name_val,
+                        "country": country_code,
+                        "frequency": r[13] or "",
                     })
 
                 return {"total": total_with_search, "page": page, "per_page": per_page, "items": items}
@@ -968,7 +1095,9 @@ class ReadModel:
                         json_extract(payload, '$.quality_tier') as quality_tier,
                         json_extract(payload, '$.is_radio') as is_radio,
                         json_extract(payload, '$.tvg_name') as tvg_name,
-                        json_extract(payload, '$.clean_name') as clean_name
+                        json_extract(payload, '$.clean_name') as clean_name,
+                        json_extract(payload, '$.country') as country,
+                        json_extract(payload, '$.frequency') as frequency
                     FROM check_events
                     WHERE {search_where}
                     ORDER BY created_at ASC
@@ -980,16 +1109,32 @@ class ReadModel:
             for idx, r in enumerate(results):
                 is_valid = bool(r[2])
                 quality_tier = r[8] or ("valid" if is_valid else "invalid")
-                name_val = r[0] or ""
+                clean_name_val = r[11] or ""
+                raw_name = r[0] or ""
+                name_val = raw_name
                 if name_val == "N/A":
                     sources_val = r[7] or ""
                     if sources_val and sources_val != "N/A":
                         name_val = sources_val
+                name_cn_val = clean_name_val
+                if clean_name_val and clean_name_val != name_val:
+                    pass
+                elif clean_name_val and clean_name_val == name_val:
+                    name_cn_val = ""
+                if not name_cn_val:
+                    from iptv_check.core.parser import _translate_channel_name
+                    name_cn_val = _translate_channel_name(raw_name, r[10] or "")
+                from iptv_check.core.parser import _infer_country_code
+                country_val = r[12] or ""
+                country_code = _infer_country_code(raw_name, r[6] or "", country_val)
+                region_val = _infer_region(raw_name, r[6] or "", country_code)
                 items.append({
                     "index": offset + idx + 1,
                     "name": name_val,
+                    "name_cn": name_cn_val,
                     "url": r[1] or "",
                     "group": _map_group_name(r[6] or ""),
+                    "region": region_val,
                     "sources": r[7] or "",
                     "is_valid": is_valid,
                     "quality_tier": quality_tier,
@@ -999,7 +1144,9 @@ class ReadModel:
                     "details": r[5] or "",
                     "is_radio": bool(r[9]),
                     "tvg_name": r[10] or "",
-                    "clean_name": r[11] or "",
+                    "clean_name": clean_name_val,
+                    "country": country_code,
+                    "frequency": r[13] or "",
                 })
 
             return {"total": total_with_search, "page": page, "per_page": per_page, "items": items}
@@ -1164,13 +1311,16 @@ class ReadModel:
 
                 base = f"""
                     SELECT
-                        CASE WHEN name = 'N/A' THEN COALESCE(source_name, name) ELSE name END as ch_name,
+                        CASE WHEN clean_name != '' THEN clean_name
+                             WHEN name = 'N/A' THEN COALESCE(source_name, name)
+                             ELSE name END as ch_name,
                         channel_group as ch_group,
                         COUNT(*) as source_count,
                         SUM(is_valid) as valid_count,
                         MIN(CASE WHEN is_valid = 1 AND latency > 0 THEN latency END) as best_latency,
                         MAX(is_radio) as is_radio,
-                        MAX(resolution) as resolution
+                        MAX(resolution) as resolution,
+                        MAX(frequency) as frequency
                     FROM channel_results
                     WHERE {where_sql}
                     GROUP BY ch_name, resolution
@@ -1184,7 +1334,7 @@ class ReadModel:
                 page_params = {**params, "limit": per_page, "offset": offset}
 
                 groups = session.exec(sa_text(f"""
-                    SELECT ch_name, ch_group, source_count, valid_count, best_latency, is_radio, resolution FROM ({base}) sub
+                    SELECT ch_name, ch_group, source_count, valid_count, best_latency, is_radio, resolution, frequency FROM ({base}) sub
                     ORDER BY {order_sql}
                     LIMIT :limit OFFSET :offset
                 """).bindparams(**page_params)).all()
@@ -1238,6 +1388,7 @@ class ReadModel:
                     valid_count = g[3] or 0
                     best_latency = g[4]
                     resolution = g[6] or ""
+                    frequency_val = g[7] or ""
 
                     group_key = f"{name}@{resolution}" if resolution else name
                     sources = sources_by_name.get(group_key, []) if group_path else []
@@ -1281,6 +1432,7 @@ class ReadModel:
                         "sources": sources,
                         "recommended_source_idx": recommended_idx,
                         "is_radio": bool(g[5]),
+                        "frequency": frequency_val,
                     })
 
                 return {"total": total, "page": page, "per_page": per_page, "items": items}
@@ -1344,14 +1496,17 @@ class ReadModel:
 
             base = f"""
                 SELECT
-                    CASE WHEN json_extract(payload, '$.name') = 'N/A' OR json_extract(payload, '$.name') IS NULL
+                    CASE WHEN json_extract(payload, '$.clean_name') != '' AND json_extract(payload, '$.clean_name') IS NOT NULL
+                         THEN json_extract(payload, '$.clean_name')
+                         WHEN json_extract(payload, '$.name') = 'N/A' OR json_extract(payload, '$.name') IS NULL
                          THEN COALESCE(json_extract(payload, '$.sources'), 'N/A')
                          ELSE json_extract(payload, '$.name') END as ch_name,
                     json_extract(payload, '$.group') as ch_group,
                     COUNT(*) as source_count,
                     SUM(CASE WHEN json_extract(payload, '$.is_valid') = 1 THEN 1 ELSE 0 END) as valid_count,
                     MIN(CASE WHEN json_extract(payload, '$.is_valid') = 1 AND CAST(json_extract(payload, '$.latency') AS REAL) > 0 THEN CAST(json_extract(payload, '$.latency') AS REAL) END) as best_latency,
-                    MAX(COALESCE(json_extract(payload, '$.is_radio'), 0)) as is_radio
+                    MAX(COALESCE(json_extract(payload, '$.is_radio'), 0)) as is_radio,
+                    MAX(COALESCE(json_extract(payload, '$.frequency'), '')) as frequency
                 FROM check_events
                 WHERE {where_sql}
                 GROUP BY ch_name
@@ -1365,7 +1520,7 @@ class ReadModel:
             page_params = {**params, "limit": per_page, "offset": offset}
 
             groups = session.exec(sa_text(f"""
-                SELECT ch_name, ch_group, source_count, valid_count, best_latency, is_radio FROM ({base}) sub
+                SELECT ch_name, ch_group, source_count, valid_count, best_latency, is_radio, frequency FROM ({base}) sub
                 ORDER BY {order_sql}
                 LIMIT :limit OFFSET :offset
             """).bindparams(**page_params)).all()
@@ -1464,6 +1619,7 @@ class ReadModel:
                     "sources": sources,
                     "recommended_source_idx": recommended_idx,
                     "is_radio": bool(g[5]),
+                    "frequency": g[6] or "",
                 })
 
             return {"total": total, "page": page, "per_page": per_page, "items": items}

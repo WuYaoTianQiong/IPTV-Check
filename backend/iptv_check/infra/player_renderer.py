@@ -50,6 +50,10 @@ class PlayerRenderer:
         stream_url: str = "",
         channel_name: str = "未知频道",
         sources: Optional[list] = None,
+        is_radio: bool = False,
+        channel_group: str = "",
+        country_flag: str = "",
+        frequency: str = "",
     ) -> str:
         """
         Render the complete player HTML page.
@@ -59,6 +63,8 @@ class PlayerRenderer:
             channel_name: Human-readable channel name shown in the header.
             sources: Optional list of alternative source dicts, each with:
                      {url, latency, recommended (bool)}.
+            is_radio: Whether this is a radio (audio-only) channel.
+            frequency: Radio frequency info (e.g., "FM 104.5").
         """
         template = self._read_template()
         proxy_url = f"/proxy?url={self._encode_proxy_url(stream_url)}" if stream_url else ""
@@ -73,6 +79,10 @@ class PlayerRenderer:
             "sources_json": json.dumps(sources, ensure_ascii=False) if sources else "null",
             "recommended_idx": self._find_recommended_idx(sources) if sources else -1,
             "source_selector_class": "visible" if has_multi_sources else "",
+            "is_radio": "true" if is_radio else "false",
+            "channel_group": channel_group,
+            "country_flag": country_flag,
+            "frequency": frequency,
         }
 
         html = template

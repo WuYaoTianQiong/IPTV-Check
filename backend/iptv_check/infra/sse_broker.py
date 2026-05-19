@@ -148,23 +148,39 @@ class SSEBroker:
         sse_message = f"id: {self._counter}\nevent: {event}\ndata: {json.dumps(message, ensure_ascii=False)}\n\n"
         
         dead_subscribers = []
+        overflow_subscribers = []
         
         async with self._lock:
             subs = list(self._subscribers.items())
         
-        logger.info("[SSE-BROKER] 广播事件 %s，订阅者数=%d", event, len(subs))
+        logger.info("[SSE-BROKER] broadcast event=%s subscribers=%d", event, len(subs))
         
         for sub_id, subscriber in subs:
             try:
                 success = await subscriber.put(sse_message)
                 if success:
-                    logger.debug("[SSE-BROKER] 消息已投递到 %s", sub_id)
+                    logger.debug("[SSE-BROKER] message sent to %s", sub_id)
                 else:
-                    logger.warning("[SSE-BROKER] 消息投递失败 %s (队列满)", sub_id)
+                    logger.warning("[SSE-BROKER] message dropped for %s (queue full)", sub_id)
+                    overflow_subscribers.append(subscriber)
                     if subscriber.is_stale(self.stale_timeout):
                         dead_subscribers.append(sub_id)
             except Exception as e:
-                logger.error("[SSE-BROKER] 投递异常 %s: %s", sub_id, e)
+                logger.error("[SSE-BROKER] broadcast error for %s: %s", sub_id, e)
+        
+        if overflow_subscribers:
+            self._counter += 1
+            overflow_msg = {
+                "id": self._counter,
+                "event": "queue_overflow",
+                "message": "部分实时更新因处理速度不足被跳过，数据将在下次轮询时自动修正",
+            }
+            overflow_sse = f"id: {self._counter}\nevent: queue_overflow\ndata: {json.dumps(overflow_msg, ensure_ascii=False)}\n\n"
+            for subscriber in overflow_subscribers:
+                try:
+                    await subscriber.put(overflow_sse)
+                except Exception:
+                    pass
         
         for sub_id in dead_subscribers:
             await self._remove_subscriber(sub_id)
