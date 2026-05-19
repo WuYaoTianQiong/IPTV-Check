@@ -82,3 +82,30 @@ _cp.py
 批量检测_*.csv
 批量检测_*.xlsx
 *.m3u
+
+# Temporary scripts in root
+_check_*.py
+_diag_*.py
+run_full_check.py
+
+# Database files
+*.db
+_events_*.db
+
+# Backend temporary scripts
+backend/check_*.py
+backend/final_check.py
+backend/fix_*.py
+backend/test_*.py
+backend/verify.py
+backend/monitor.py
+backend/restart.py
+
+# Frontend temporary files
+frontend/src/_verify.cjs
+
+# Other temp files
+nul
+pytest-of-*/
+scripts/
+sdd/
