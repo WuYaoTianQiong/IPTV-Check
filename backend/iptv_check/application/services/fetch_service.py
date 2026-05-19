@@ -63,6 +63,7 @@ class FetchService:
         }
 
     def get_fetched_channels(self, source_ids: Optional[List[str]] = None) -> List[Channel]:
+        from iptv_check.core.parser import _translate_channel_name, _clean_name
         with self._session_factory() as session:
             if source_ids:
                 rows = session.exec(
@@ -72,8 +73,10 @@ class FetchService:
                 rows = session.exec(select(FetchedChannelModel)).all()
             channels = []
             for row in rows:
+                cleaned = _clean_name(row.name) if row.name else row.name
+                clean_name = _translate_channel_name(cleaned, row.tvg_name or "")
                 ch = Channel(
-                    name=row.name,
+                    name=cleaned,
                     url=row.url,
                     group=row.channel_group,
                     tvg_id=row.tvg_id,
@@ -83,6 +86,7 @@ class FetchService:
                     country=row.country,
                     is_radio=bool(row.is_radio),
                     resolution=row.resolution,
+                    clean_name=clean_name,
                 )
                 channels.append(ch)
             return channels

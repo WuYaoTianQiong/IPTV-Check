@@ -122,6 +122,7 @@ class AppState:
         self.export_engine = ExportEngine()
 
         db_path = settings.db_path or os.path.join(DATA_DIR, "events.db")
+        self.database = DatabaseManager(db_path=db_path)
         self.event_store = EventStore(db_path=db_path)
         self.source_store = SourceStore(self.event_store)
         self.read_model = ReadModel(self.event_store)
@@ -161,7 +162,7 @@ class AppState:
             if self.source_store:
                 migrated = self.source_store.migrate_from_json(os.path.join(DATA_DIR, "local_sources.json"))
                 if migrated > 0:
-                    logger.info("从 JSON 迁移 %d 个源到数据库", migrated)
+                    logger.info("数据库已有 %d 个源，跳过 JSON 迁移", migrated)
             self.online_sources = self.source_store.load_all() if self.source_store else self._load_online_sources_from_json()
             logger.info("加载了 %d 个在线直播源", len(self.online_sources))
         except Exception as e:
@@ -173,7 +174,7 @@ class AppState:
             if self.source_store:
                 migrated = await asyncio.to_thread(self.source_store.migrate_from_json, os.path.join(DATA_DIR, "local_sources.json"))
                 if migrated > 0:
-                    logger.info("从 JSON 迁移 %d 个源到数据库", migrated)
+                    logger.info("数据库已有 %d 个源，跳过 JSON 迁移", migrated)
             if self.source_store:
                 self.online_sources = await asyncio.to_thread(self.source_store.load_all)
             else:
@@ -230,6 +231,10 @@ class AppState:
 
         logger.info("检测服务初始化完成，FFmpeg: %s", "可用" if self._ffmpeg_available else "不可用")
 
+        repaired = await asyncio.to_thread(self.materialization.repair_is_radio)
+        if repaired > 0:
+            logger.info("启动时自动修复 is_radio: %d 条记录", repaired)
+
         epg_cache = EpgCacheManager(DATA_DIR)
         logo_cache = LogoCacheManager(DATA_DIR)
         self._epg_service = EpgService(self.http_client, epg_cache)
@@ -244,12 +249,18 @@ class AppState:
             source_store=self.source_store,
             broadcast_fn=self.broadcast,
         )
-        try:
-            sync_result = await self._source_sync_service.sync()
-            if sync_result.success and (sync_result.added > 0 or sync_result.updated > 0):
-                await self._load_online_sources_async()
-        except Exception as e:
-            logger.warning("首次源同步失败: %s", e)
+        # Only sync from remote on first startup (empty DB); subsequent syncs use /source page
+        if self.source_store and self.source_store.count() == 0:
+            try:
+                logger.info("数据库无源数据，执行首次远程同步...")
+                sync_result = await self._source_sync_service.sync()
+                if sync_result.success and (sync_result.added > 0 or sync_result.updated > 0):
+                    await self._load_online_sources_async()
+            except Exception as e:
+                logger.warning("首次源同步失败: %s", e)
+        else:
+            logger.info("数据库已有 %d 个源，跳过启动同步（使用 /source 页面手动同步）",
+                        self.source_store.count() if self.source_store else 0)
 
         try:
             if self._fetch_service and not self._fetch_service.is_fetching and not self._fetch_service.has_fetched_channels():
@@ -310,6 +321,14 @@ class AppState:
 
 
 app_state: Optional[AppState] = None
+
+
+def get_app_state() -> AppState:
+    """获取全局 app_state 实例"""
+    global app_state
+    if app_state is None:
+        app_state = AppState.get_instance()
+    return app_state
 
 
 def create_app() -> FastAPI:
@@ -429,13 +448,14 @@ def create_app() -> FastAPI:
     from iptv_check.infra.config.settings import render_player_html  # keep compat
 
     @app.get("/player")
-    async def player_page(url: str = "", name: str = "", sources: str = ""):
+    async def player_page(url: str = "", name: str = "", sources: str = "", radio: str = "", region: str = "", freq: str = ""):
         try:
             decoded = base64.b64decode(url).decode("utf-8") if url else ""
             stream_url = urllib.parse.unquote(decoded)
         except Exception:
             stream_url = url
         channel_name = name or "未知频道"
+        is_radio = radio == "1"
 
         source_list = None
         if sources:
@@ -444,7 +464,7 @@ def create_app() -> FastAPI:
             except Exception:
                 pass
 
-        html = player_renderer.render(stream_url, channel_name, sources=source_list)
+        html = player_renderer.render(stream_url, channel_name, sources=source_list, is_radio=is_radio, channel_group=region, frequency=freq)
         return HTMLResponse(html)
 
     @app.get("/proxy")

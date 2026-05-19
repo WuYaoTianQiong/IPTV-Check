@@ -48,20 +48,16 @@ class AddCustomChannelRequest(BaseModel):
 
 
 def _get_state():
-    """获取 AppState 单例实例"""
-    try:
-        from iptv_check.server.app import AppState
-        return AppState.get_instance()
-    except Exception:
-        from iptv_check.server.app import app_state
-        return app_state
+    from iptv_check.server.app import get_app_state
+    return get_app_state()
 
 
 def _get_check_service():
     state = _get_state()
-    if state is None:
-        return None
-    return state._check_service
+    return getattr(state, "check_service", None)
+
+
+from iptv_check.infra.persistence.read_model import _infer_region
 
 
 @router.get("/results")
@@ -258,6 +254,64 @@ async def get_check_history():
         return []
 
 
+class QuickCheckItem(BaseModel):
+    url: str = ""
+    name: str = ""
+
+
+class QuickCheckResponse(BaseModel):
+    results: list[dict] = []
+
+
+@router.post("/results/quick-check")
+async def quick_check_latency(items: list[QuickCheckItem]):
+    """实时检测一批频道的当前延迟（HEAD 请求），不写入数据库"""
+    if not items:
+        return {"results": []}
+
+    import aiohttp
+    import ssl
+    import time
+
+    ssl_context = ssl.create_default_context()
+    ssl_context.check_hostname = False
+    ssl_context.verify_mode = ssl.CERT_NONE
+
+    connector = aiohttp.TCPConnector(ssl=ssl_context, limit=50)
+    timeout = aiohttp.ClientTimeout(total=5, connect=3)
+
+    async def probe_one(item: QuickCheckItem, session: aiohttp.ClientSession):
+        url = item.url
+        start = time.time()
+        try:
+            async with session.head(url, allow_redirects=True, ssl=False) as resp:
+                elapsed_ms = int((time.time() - start) * 1000)
+                return {
+                    "url": url,
+                    "name": item.name,
+                    "latency": elapsed_ms,
+                    "status": resp.status,
+                    "ok": resp.status < 400,
+                }
+        except asyncio.TimeoutError:
+            return {"url": url, "name": item.name, "latency": -1, "status": 0, "ok": False, "error": "超时"}
+        except Exception as e:
+            return {"url": url, "name": item.name, "latency": -1, "status": 0, "ok": False, "error": str(e)[:60]}
+
+    async with aiohttp.ClientSession(connector=connector, timeout=timeout) as session:
+        tasks = [probe_one(item, session) for item in items]
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+
+    processed = []
+    for i, r in enumerate(results):
+        if isinstance(r, Exception):
+            processed.append({"url": items[i].url, "name": items[i].name, "latency": -1, "status": 0, "ok": False, "error": str(r)[:60]})
+        else:
+            processed.append(r)
+
+    return {"results": processed}
+
+
 @router.post("/results/save")
 async def save_results_to_db():
     state = _get_state()
@@ -272,29 +326,175 @@ async def save_results_to_db():
 
 
 @router.get("/favorites")
-async def get_favorites(folder_id: int = None):
+async def get_favorites(folder_id: Optional[int] = None):
     state = _get_state()
-    from iptv_check.infra.database import FavoriteModel
+    from iptv_check.infra.database import FavoriteModel, ChannelModel, CheckResultModel
+    from iptv_check.core.parser import _translate_channel_name, _map_group_name, _infer_country_code
+    _RADIO_KW = {"广播", "电台", "radio", "fm", "am", "broadcast"}
+    _RADIO_URL_KW = {"qingting.fm", "xmcdn.com", "ximalaya", "lrc.la"}
+    def _is_radio(name, group, url):
+        text = f"{name or ''} {group or ''} {url or ''}".lower()
+        url_lower = (url or "").lower()
+        return any(kw in text for kw in _RADIO_KW) or any(kw in url_lower for kw in _RADIO_URL_KW)
+    def _extract_frequency(name, group):
+        import re
+        text_to_search = f"{name or ''} {group or ''}"
+        match = re.search(r'(?:^|[^a-zA-Z0-9])(?:FM\s*)?(\d{2,3}\.\d)\s*(?:MHz|FM|fm)?', text_to_search, re.IGNORECASE)
+        if match:
+            try:
+                freq_val = float(match.group(1))
+                if 70.0 <= freq_val <= 108.0:
+                    return f"FM {match.group(1)}"
+            except ValueError:
+                pass
+        match = re.search(r'(?:^|[^a-zA-Z0-9])FM\s*(\d{2,3})(?:\s*(?:MHz|FM|fm))?(?:$|[^a-zA-Z0-9.])', text_to_search, re.IGNORECASE)
+        if match:
+            try:
+                freq_val = int(match.group(1))
+                if 87 <= freq_val <= 108:
+                    return f"FM {match.group(1)}"
+            except ValueError:
+                pass
+        match = re.search(r'(?:^|[^a-zA-Z0-9.])(\d{2,3})\s*FM(?:\s*(?:MHz))?(?:$|[^a-zA-Z0-9.])', text_to_search, re.IGNORECASE)
+        if match:
+            try:
+                freq_val = int(match.group(1))
+                if 87 <= freq_val <= 108:
+                    return f"FM {match.group(1)}"
+            except ValueError:
+                pass
+        match = re.search(r'(?:^|[^a-zA-Z0-9])(?:AM\s*)?(\d{3,4})\s*(?:kHz|AM|am|KHz)', text_to_search, re.IGNORECASE)
+        if match:
+            try:
+                freq_val = float(match.group(1))
+                if 500 <= freq_val <= 1700:
+                    return f"AM {match.group(1)}"
+            except ValueError:
+                pass
+        _radio_kw = ['广播', '电台', 'radio', 'fm', 'am', 'broadcast']
+        text_lower = text_to_search.lower()
+        if any(kw in text_lower for kw in _radio_kw):
+            match = re.search(r'(?:^|[^a-zA-Z0-9.])(\d{2,3}\.\d)(?:$|[^a-zA-Z0-9.])', text_to_search)
+            if match:
+                try:
+                    freq_val = float(match.group(1))
+                    if 70.0 <= freq_val <= 108.0:
+                        return f"FM {match.group(1)}"
+                except ValueError:
+                    pass
+        return ""
+
+    LAG_SECONDS = 6 * 3600  # 超过 6 小时未更新的延迟重新查询
+
     def _query():
+        from iptv_check.infra.cn_time import cn_now
+        from sqlalchemy import text as sa_text
         with state.database.get_session() as session:
-            query = select(FavoriteModel).order_by(FavoriteModel.created_at.desc())
+            # 选择确定存在的列，避免 ORM/name_cn 问题
+            cols = "id,channel_id,name,url,folder_id,channel_group,sort_order,latency,latency_updated_at,created_at"
+            sql = f"SELECT {cols} FROM favorites ORDER BY sort_order ASC, created_at DESC"
+            params = {}
             if folder_id is not None:
-                query = query.where(FavoriteModel.folder_id == folder_id)
-            items = session.exec(query).all()
+                sql = f"SELECT {cols} FROM favorites WHERE folder_id = :fid ORDER BY sort_order ASC, created_at DESC"
+                params = {"fid": folder_id}
+            rows = session.execute(sa_text(sql), params).fetchall()
+
             return [
-                {"id": f.id, "channel_id": f.channel_id, "name": f.name, "url": f.url,
-                 "folder_id": f.folder_id, "channel_group": f.channel_group,
-                 "created_at": f.created_at.isoformat()}
-                for f in items
+                {"id": r.id, "channel_id": r.channel_id,
+                 "name": r.name,
+                 "name_cn": _translate_channel_name(r.name) or "",
+                 "url": r.url,
+                 "folder_id": r.folder_id,
+                 "sort_order": r.sort_order,
+                 "latency": r.latency,
+                 "channel_group": _map_group_name(r.channel_group),
+                 "region": _infer_region(r.name, r.channel_group, _infer_country_code(r.name, r.channel_group)),
+                 "is_radio": _is_radio(r.name, r.channel_group, r.url),
+                 "country": _infer_country_code(r.name, r.channel_group),
+                 "frequency": _extract_frequency(r.name, r.channel_group),
+                 "created_at": r.created_at.isoformat() if hasattr(r.created_at, 'isoformat') else str(r.created_at)}
+                for r in rows
             ]
     favorites = await asyncio.to_thread(_query)
     return {"favorites": favorites}
+
+@router.post("/favorites/refresh-latency")
+async def refresh_favorites_latency():
+    """实时检测收藏夹中所有频道的延迟（HTTP HEAD请求）"""
+    state = _get_state()
+    from iptv_check.infra.cn_time import cn_now
+    import aiohttp
+    import ssl
+
+    def _fetch_favorites():
+        from sqlalchemy import text as sa_text
+        with state.database.get_session() as session:
+            rows = session.exec(sa_text("SELECT id, url, name FROM favorites WHERE url != ''")).all()
+            return [{"id": r[0], "url": r[1], "name": r[2]} for r in rows]
+
+    favs_data = await asyncio.to_thread(_fetch_favorites)
+
+    if not favs_data:
+        return {"updated": 0, "results": []}
+
+    ssl_context = ssl.create_default_context()
+    ssl_context.check_hostname = False
+    ssl_context.verify_mode = ssl.CERT_NONE
+
+    connector = aiohttp.TCPConnector(ssl=ssl_context, limit=50)
+    timeout = aiohttp.ClientTimeout(total=2, connect=1)
+
+    async def probe_one(fav, session):
+        url = fav["url"]
+        start = asyncio.get_event_loop().time()
+        try:
+            async with session.head(url, allow_redirects=True) as resp:
+                elapsed_ms = int((asyncio.get_event_loop().time() - start) * 1000)
+                return {"id": fav["id"], "latency": elapsed_ms, "status": resp.status, "ok": resp.status < 400}
+        except asyncio.TimeoutError:
+            elapsed_ms = int((asyncio.get_event_loop().time() - start) * 1000)
+            return {"id": fav["id"], "latency": -1, "status": 0, "ok": False, "error": "超时"}
+        except Exception as e:
+            elapsed_ms = int((asyncio.get_event_loop().time() - start) * 1000)
+            return {"id": fav["id"], "latency": -1, "status": 0, "ok": False, "error": str(e)[:50]}
+
+    async with aiohttp.ClientSession(connector=connector, timeout=timeout) as session:
+        tasks = [probe_one(f, session) for f in favs_data]
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+
+    processed_results = []
+    for i, r in enumerate(results):
+        if isinstance(r, Exception):
+            processed_results.append({"id": favs_data[i]["id"], "latency": -1, "status": 0, "ok": False, "error": str(r)[:50]})
+        else:
+            processed_results.append(r)
+
+    # Update database
+    now = cn_now().isoformat()
+    def _update(results):
+        from sqlalchemy import text as sa_text
+        count = 0
+        with state.database.get_session() as session:
+            for res in results:
+                if res["ok"] and res["latency"] > 0:
+                    session.execute(
+                        sa_text("UPDATE favorites SET latency = :lat, latency_updated_at = :ts WHERE id = :fid"),
+                        {"lat": res["latency"], "ts": now, "fid": res["id"]}
+                    )
+                    count += 1
+            session.commit()
+        return count
+
+    update_count = await asyncio.to_thread(_update, processed_results)
+
+    return {"updated": update_count, "results": processed_results}
 
 
 @router.post("/favorites")
 async def add_favorite(req: AddFavoriteRequest):
     state = _get_state()
     from iptv_check.infra.database import FavoriteModel, ChannelModel
+    from iptv_check.core.parser import _translate_channel_name
     def _query():
         with state.database.get_session() as session:
             url = req.url
@@ -303,10 +503,12 @@ async def add_favorite(req: AddFavoriteRequest):
                 return {"id": existing.id, "name": existing.name, "url": existing.url, "folder_id": existing.folder_id, "created_at": existing.created_at.isoformat()}
             channel = session.exec(select(ChannelModel).where(ChannelModel.url == url)).first()
             channel_id = channel.id if channel else 0
-            name = req.name or (channel.name if channel else "")
+            raw_name = req.name or (channel.name if channel else "")
+            translated = _translate_channel_name(raw_name, channel.tvg_name if channel else "")
+            name_cn = translated if translated else ""
             folder_id = req.folder_id
             channel_group = req.channel_group or (channel.group if channel else "")
-            fav = FavoriteModel(channel_id=channel_id, name=name, url=url, folder_id=folder_id, channel_group=channel_group)
+            fav = FavoriteModel(channel_id=channel_id, name=raw_name, url=url, folder_id=folder_id, channel_group=channel_group, name_cn=name_cn)
             session.add(fav)
             session.commit()
             session.refresh(fav)
@@ -350,15 +552,25 @@ async def update_favorite(fav_id: int, req: UpdateFavoriteRequest):
 
 
 @router.get("/favorites/m3u")
-async def export_favorites_m3u():
+async def export_favorites_m3u(folder_id: str = None):
     state = _get_state()
     from iptv_check.infra.database import FavoriteModel
     from fastapi.responses import Response
     def _query():
         with state.database.get_session() as session:
-            items = session.exec(select(FavoriteModel).order_by(FavoriteModel.created_at.desc())).all()
+            if folder_id is not None:
+                try:
+                    fid = int(folder_id)
+                    items = session.exec(select(FavoriteModel).where(FavoriteModel.folder_id == fid).order_by(FavoriteModel.sort_order.asc(), FavoriteModel.created_at.desc())).all()
+                except ValueError:
+                    items = session.exec(select(FavoriteModel).where(FavoriteModel.folder_id == None).order_by(FavoriteModel.sort_order.asc(), FavoriteModel.created_at.desc())).all()
+            else:
+                items = session.exec(select(FavoriteModel).order_by(FavoriteModel.sort_order.asc(), FavoriteModel.created_at.desc())).all()
             return [(f.name, f.url) for f in items]
     items = await asyncio.to_thread(_query)
+    if not items:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=400, detail="没有可导出的收藏数据")
     lines = ["#EXTM3U"]
     for name, url in items:
         lines.append(f'#EXTINF:-1,{name}')
@@ -370,18 +582,26 @@ async def export_favorites_m3u():
 @router.get("/favorite-folders")
 async def get_favorite_folders():
     state = _get_state()
-    from iptv_check.infra.database import FavoriteFolderModel, FavoriteModel
     def _query():
+        from sqlalchemy import text as sa_text
         with state.database.get_session() as session:
-            folders = session.exec(select(FavoriteFolderModel).order_by(FavoriteFolderModel.sort_order)).all()
+            folders = session.exec(
+                sa_text("SELECT id, name, icon, sort_order FROM favorite_folders ORDER BY sort_order")
+            ).all()
+            # 一条 SQL 查全部文件夹的收藏数
+            count_map = {}
+            for row in session.exec(
+                sa_text("SELECT folder_id, COUNT(*) as cnt FROM favorites GROUP BY folder_id")
+            ).all():
+                count_map[row.folder_id] = row.cnt
             result = []
             for folder in folders:
-                count = len(session.exec(select(FavoriteModel).where(FavoriteModel.folder_id == folder.id)).all())
                 result.append({
                     "id": folder.id, "name": folder.name, "icon": folder.icon,
-                    "sort_order": folder.sort_order, "count": count,
+                    "sort_order": folder.sort_order,
+                    "count": count_map.get(folder.id, 0),
                 })
-            unfiled = len(session.exec(select(FavoriteModel).where(FavoriteModel.folder_id == None)).all())
+            unfiled = count_map.get(None, 0)
             result.append({"id": None, "name": "未分类", "icon": "", "sort_order": 999, "count": unfiled})
             return result
     folders = await asyncio.to_thread(_query)

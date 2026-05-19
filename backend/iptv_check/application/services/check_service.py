@@ -165,7 +165,7 @@ class CheckService:
         for ch in all_channels:
             await self._event_store.append(
                 DomainEvents.CHANNEL_SUBMITTED,
-                {"url_key": ch.url_key, "name": ch.name, "url": ch.url, "group": ch.group},
+                {"url_key": ch.url_key, "name": ch.name, "url": ch.url, "group": ch.group, "is_radio": ch.is_radio},
                 self._session_id,
             )
 
@@ -244,7 +244,7 @@ class CheckService:
             for ch in channels:
                 await self._event_store.append(
                     DomainEvents.CHANNEL_SUBMITTED,
-                    {"url_key": ch.url_key, "name": ch.name, "url": ch.url, "group": ch.group},
+                    {"url_key": ch.url_key, "name": ch.name, "url": ch.url, "group": ch.group, "is_radio": ch.is_radio},
                     self._session_id,
                 )
 
@@ -370,6 +370,16 @@ class CheckService:
         self._current_stage = ""
         self._current_stage_message = ""
 
+        await self._event_store.append(
+            DomainEvents.CHECK_COMPLETED,
+            {
+                "total": self._collector.progress.total,
+                "valid": self._collector.progress.valid,
+                "invalid": self._collector.progress.invalid,
+            },
+            self._session_id,
+        )
+
         await self._broadcast_fn("check_completed", {
             "total": self._collector.progress.total,
             "checked": self._collector.progress.checked,
@@ -490,7 +500,7 @@ class CheckService:
             results.append(direct_channels)
             await self._event_store.append_batch(
                 [(DomainEvents.CHANNEL_SUBMITTED,
-                  {"url_key": ch.url_key, "name": ch.name, "url": ch.url, "group": ch.group})
+                  {"url_key": ch.url_key, "name": ch.name, "url": ch.url, "group": ch.group, "is_radio": ch.is_radio})
                  for ch in direct_channels],
                 self._session_id,
             )
