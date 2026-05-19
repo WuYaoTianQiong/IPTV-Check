@@ -1,6 +1,6 @@
-import{c as o}from"./index-CseRTdlN.js";/**
+import{c}from"./index-LVoWcRrO.js";/**
  * @license lucide-vue-next v0.460.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
- */const c=o("PlayIcon",[["polygon",{points:"6 3 20 12 6 21 6 3",key:"1oa8hb"}]]);export{c as P};
+ */const o=c("XIcon",[["path",{d:"M18 6 6 18",key:"1bl5f8"}],["path",{d:"m6 6 12 12",key:"d8bk6v"}]]);export{o as X};
