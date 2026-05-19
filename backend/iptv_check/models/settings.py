@@ -3,13 +3,13 @@ from dataclasses import dataclass
 
 @dataclass
 class CheckConfig:
-    timeout_connect: int = 5
-    timeout_read: int = 8
+    timeout_connect: int = 8
+    timeout_read: int = 15
     max_threads: int = 120
     min_threads: int = 5
     run_speed_test: bool = False
     use_cache: bool = True
-    max_latency_ms: int = 10000
+    max_latency_ms: int = 15000
     enable_recheck: bool = False
 
     @property

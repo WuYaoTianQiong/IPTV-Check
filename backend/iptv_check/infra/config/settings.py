@@ -108,13 +108,13 @@ class AppSettings(BaseSettings):
     http_max_retries: int = Field(default=3, ge=0, le=10)
     
     # Check settings
-    check_timeout_connect: int = Field(default=5, ge=1, le=30)
-    check_timeout_read: int = Field(default=8, ge=1, le=60)
+    check_timeout_connect: int = Field(default=8, ge=1, le=30)
+    check_timeout_read: int = Field(default=15, ge=1, le=60)
     check_max_threads: int = Field(default=120, ge=1, le=500)
     
     # Stream proxy settings
     stream_proxy_max_connections: int = Field(default=100, ge=1, le=1000)
-    stream_proxy_timeout_connect: int = Field(default=10, ge=1, le=60)
+    stream_proxy_timeout_connect: int = Field(default=5, ge=1, le=30)
     stream_proxy_timeout_read: int = Field(default=30, ge=1, le=120)
     stream_proxy_base: str = Field(default="http://127.0.0.1:9528/proxy")
     

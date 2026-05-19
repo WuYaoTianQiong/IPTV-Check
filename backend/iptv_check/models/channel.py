@@ -64,8 +64,18 @@ class Channel:
         import re
         attrs = cls._parse_extinf_attrs(info_line)
         name = attrs.pop("name", "N/A")
+        url = url_line.strip()
         sources = [source_name] if source_name else []
-        return cls(name=name, url=url_line.strip(), sources=sources, index=index, **attrs)
+        channel = cls(name=name, url=url, sources=sources, index=index, **attrs)
+
+        radio_kw = ["广播", "电台", "radio", "fm", "am"]
+        text_lower = f"{channel.name} {channel.group} {channel.frequency}".lower()
+        url_lower = url.lower()
+        if (any(kw in text_lower for kw in radio_kw) or
+            any(kw in url_lower for kw in ["qingting.fm", "xmcdn.com", "ximalaya", "lrc.la"])):
+            channel.is_radio = True
+
+        return channel
 
     @staticmethod
     def _parse_extinf_attrs(info_line: str) -> dict:
@@ -91,10 +101,6 @@ class Channel:
         if catchup_match:
             attrs["category"] = "catchup"
 
-        radio_group = attrs.get("group", "").lower()
-        if any(kw in radio_group for kw in ["广播", "电台", "radio", "fm", "am"]):
-            attrs["is_radio"] = True
-
         name = attrs.get("name", "")
         group = attrs.get("group", "")
         frequency = Channel._extract_frequency(name, group)
@@ -117,7 +123,27 @@ class Channel:
                     return f"FM {freq}"
             except ValueError:
                 pass
-        
+
+        match = re.search(r'(?:^|[^a-zA-Z0-9])FM\s*(\d{2,3})(?:\s*(?:MHz|FM|fm))?(?:$|[^a-zA-Z0-9.])', text_to_search, re.IGNORECASE)
+        if match:
+            freq = match.group(1)
+            try:
+                freq_val = int(freq)
+                if 87 <= freq_val <= 108:
+                    return f"FM {freq}"
+            except ValueError:
+                pass
+
+        match = re.search(r'(?:^|[^a-zA-Z0-9.])(\d{2,3})\s*FM(?:\s*(?:MHz))?(?:$|[^a-zA-Z0-9.])', text_to_search, re.IGNORECASE)
+        if match:
+            freq = match.group(1)
+            try:
+                freq_val = int(freq)
+                if 87 <= freq_val <= 108:
+                    return f"FM {freq}"
+            except ValueError:
+                pass
+
         match = re.search(r'(?:^|[^a-zA-Z0-9])(?:AM\s*)?(\d{3,4})\s*(?:kHz|AM|am|KHz)', text_to_search, re.IGNORECASE)
         if match:
             freq = match.group(1)
@@ -127,7 +153,19 @@ class Channel:
                     return f"AM {freq}"
             except ValueError:
                 pass
-        
+
+        _radio_kw = ['广播', '电台', 'radio', 'fm', 'am', 'broadcast']
+        text_lower = text_to_search.lower()
+        if any(kw in text_lower for kw in _radio_kw):
+            match = re.search(r'(?:^|[^a-zA-Z0-9.])(\d{2,3}\.\d)(?:$|[^a-zA-Z0-9.])', text_to_search)
+            if match:
+                try:
+                    freq_val = float(match.group(1))
+                    if 70.0 <= freq_val <= 108.0:
+                        return f"FM {match.group(1)}"
+                except ValueError:
+                    pass
+
         return ""
 
     @classmethod
@@ -138,7 +176,16 @@ class Channel:
         else:
             name, url = "N/A", parts[0].strip()
         sources = [source_name] if source_name else []
-        return cls(name=name, url=url, index=index, sources=sources)
+        channel = cls(name=name, url=url, index=index, sources=sources)
+
+        radio_kw = ["广播", "电台", "radio", "fm", "am"]
+        text_lower = f"{channel.name} {channel.frequency}".lower()
+        url_lower = url.lower()
+        if (any(kw in text_lower for kw in radio_kw) or
+            any(kw in url_lower for kw in ["qingting.fm", "xmcdn.com", "ximalaya", "lrc.la"])):
+            channel.is_radio = True
+
+        return channel
 
     @property
     def url_key(self) -> str:
