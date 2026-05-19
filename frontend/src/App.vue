@@ -7,19 +7,39 @@
 <script setup>
 import { onMounted, onUnmounted } from 'vue'
 import { useAppStore } from './stores/app'
-import { createSSEConnection, setToastHandler } from './api'
+import { useCheckStore } from './stores/check'
+import { createSSEConnection, setToastHandler, getCheckState } from './api'
 import AppLayout from './components/layout/AppLayout.vue'
 
 const store = useAppStore()
+const checkStore = useCheckStore()
 let sse = null
 
 setToastHandler((message, type) => {
   store.showToast?.(message, type)
 })
 
+async function handleSSEReconnect() {
+  try {
+    const { data } = await getCheckState()
+    if (data.is_running || data.phase === 'checking') {
+      checkStore.isChecking = true
+      checkStore.phase = data.phase || 'checking'
+      if (data.total) checkStore.checkTotal = data.total
+      if (data.checked) checkStore.checkedCount = data.checked
+      if (data.valid) checkStore.validCount = data.valid
+      if (data.likely_valid) checkStore.likelyValidCount = data.likely_valid
+      if (data.invalid) checkStore.invalidCount = data.invalid
+      if (data.stage) checkStore.stage = data.stage
+      if (data.stage_message) checkStore.stageMessage = data.stage_message
+      checkStore.addLog('SSE重连后已同步服务端状态', 'info')
+    }
+  } catch {}
+}
+
 onMounted(async () => {
   await store.fetchInfo()
-  sse = createSSEConnection((msg) => store.handleSSEMessage(msg))
+  sse = createSSEConnection((msg) => store.handleSSEMessage(msg), handleSSEReconnect)
   store.startReconciliation()
 
   if (store.localIsp === '检测中...' || store.localIsp === '未知') {

@@ -1,7 +1,7 @@
 <template>
   <header class="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
     <div class="flex h-14 items-center px-4 gap-4">
-      <RouterLink to="/live" class="flex items-center gap-2 shrink-0 hover:opacity-80 transition-opacity">
+      <RouterLink to="/favorites" class="flex items-center gap-2 shrink-0 hover:opacity-80 transition-opacity">
         <Tv class="h-6 w-6 text-primary" />
         <span class="font-semibold text-lg hidden sm:inline">电视直播源检测工具</span>
         <span class="font-semibold text-lg sm:hidden">IPTV检测</span>
@@ -99,7 +99,7 @@
           )"
         >
           <component :is="item.icon" class="h-5 w-5" />
-          <span class="text-[10px]">{{ item.mobileLabel || item.label }}</span>
+          <span class="text-[10px]">{{ item.label }}</span>
         </button>
       </RouterLink>
     </div>
@@ -131,11 +131,10 @@ onMounted(() => {
 onUnmounted(() => clearInterval(wsPollTimer))
 
 const navItems = computed(() => [
-  { id: 'source', to: '/source', label: '源配置', mobileLabel: '源', icon: Radio },
-  { id: 'checking', to: '/checking', label: '检测中', mobileLabel: '检测', icon: PlayCircle, badge: store.isChecking ? '进行中' : null },
-  { id: 'result', to: '/result', label: '结果', mobileLabel: '结果', icon: BarChart3 },
-  { id: 'live', to: '/live', label: '直播', mobileLabel: '直播', icon: Tv },
-  { id: 'toolbox', to: '/toolbox', label: '工具箱', mobileLabel: '工具', icon: Wrench },
-  { id: 'favorites', to: '/favorites', label: '收藏夹', mobileLabel: '收藏', icon: Star },
+  { id: 'source', to: '/source', label: '源配置', icon: Radio },
+  { id: 'checking', to: '/checking', label: store.isChecking ? '检测中' : '开始检测', icon: PlayCircle, badge: store.isChecking ? '进行中' : null },
+  { id: 'result', to: '/result', label: '结果', icon: BarChart3 },
+  { id: 'toolbox', to: '/toolbox', label: '工具箱', icon: Wrench },
+  { id: 'favorites', to: '/favorites', label: '收藏夹', icon: Star },
 ])
 </script>

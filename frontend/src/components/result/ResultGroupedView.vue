@@ -10,10 +10,19 @@
         <div class="flex-1 min-w-0">
           <div class="flex items-center gap-2 flex-wrap">
             <span class="font-medium text-base">{{ item.name }}</span>
-            <Badge variant="outline" class="text-[10px] shrink-0">{{ item.group || '未分组' }}</Badge>
+            <Badge
+              v-if="item.region"
+              variant="default"
+              class="text-[10px] shrink-0 bg-emerald-600 text-white dark:bg-emerald-500"
+            >{{ item.region }}</Badge>
             <Badge :variant="item.is_radio ? 'secondary' : 'default'" class="text-[10px] shrink-0">
               {{ item.is_radio ? '电台' : '电视' }}
             </Badge>
+            <Badge
+              v-if="item.is_radio && item.frequency"
+              variant="default"
+              class="text-[10px] shrink-0 bg-emerald-600 text-white dark:bg-emerald-500"
+            >{{ item.frequency }}</Badge>
             <Badge v-if="item.source_count > 1" variant="secondary" class="text-[10px] shrink-0">
               {{ item.source_count }}源
             </Badge>
@@ -32,7 +41,8 @@
         </div>
         <div class="flex items-center gap-1 shrink-0">
           <Button variant="ghost" size="icon" class="h-8 w-8" @click="$emit('toggle-favorite', item)">
-            <Star v-if="favoriteStore.isFavorite(getBestUrl(item))" class="h-4 w-4 fill-primary text-primary" />
+            <Loader2 v-if="favoriteStore.isLoading" class="h-4 w-4 animate-spin text-muted-foreground" />
+            <Star v-else-if="favoriteStore.isFavorite(getBestUrl(item))" class="h-4 w-4 fill-primary text-primary" />
             <Star v-else class="h-4 w-4" />
           </Button>
           <Button variant="ghost" size="icon" class="h-8 w-8" @click="$emit('open-epg', item)">
@@ -77,7 +87,7 @@
 </template>
 
 <script setup>
-import { Calendar, PlayCircle, ChevronDown, ChevronRight, SearchX, Star } from 'lucide-vue-next'
+import { Calendar, PlayCircle, ChevronDown, ChevronRight, SearchX, Star, Loader2 } from 'lucide-vue-next'
 import { Button } from '../ui/button'
 import { Badge } from '../ui/badge'
 import { useFavoriteStore } from '../../stores/favorite'

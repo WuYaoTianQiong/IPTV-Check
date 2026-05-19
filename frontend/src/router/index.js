@@ -1,8 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
 const routes = [
-  { path: '/', redirect: '/live' },
-  { path: '/live', name: 'live', component: () => import('../views/LiveView.vue') },
+  { path: '/', redirect: '/favorites' },
   { path: '/source', name: 'source', component: () => import('../views/SourceView.vue') },
   { path: '/checking', name: 'checking', component: () => import('../views/CheckingView.vue') },
   { path: '/result', name: 'result', component: () => import('../views/ResultView.vue') },

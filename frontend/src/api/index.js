@@ -50,6 +50,7 @@ export const getAvailableRegions = () => api.get('/results/regions')
 export const getSourceHealth = () => api.get('/results/source-health')
 export const getResultsStats = () => api.get('/results/stats')
 export const getCheckHistory = (limit = 20) => api.get('/results/history', { params: { limit } })
+export const quickCheckResults = (items) => api.post('/results/quick-check', items)
 export const saveResults = () => api.post('/results/save')
 export const exportResults = (data) => api.post('/export', data)
 export const convertFormat = (data) => api.post('/convert', data)
@@ -61,8 +62,9 @@ export const getFavorites = (params = {}) => api.get('/favorites', { params })
 export const addFavorite = (data) => api.post('/favorites', data)
 export const removeFavorite = (id) => api.delete(`/favorites/${id}`)
 export const updateFavorite = (id, data) => api.put(`/favorites/${id}`, data)
-export const exportFavoritesM3u = () => api.get('/favorites/m3u', { responseType: 'blob' })
+export const exportFavoritesM3u = (params = {}) => api.get('/favorites/m3u', { params, responseType: 'blob' })
 
+export const refreshFavoritesLatency = () => api.post('/favorites/refresh-latency')
 export const getFavoriteFolders = () => api.get('/favorite-folders')
 export const createFavoriteFolder = (data) => api.post('/favorite-folders', data)
 export const updateFavoriteFolder = (id, data) => api.put(`/favorite-folders/${id}`, data)
@@ -128,11 +130,9 @@ export const getFetchProgress = () => api.get('/fetch/progress')
 export const getFetchedChannels = () => api.get('/fetch/channels')
 export const clearFetchedChannels = () => api.delete('/fetch/channels')
 
-export const getLiveChannels = (params = {}) => api.get('/live-channels', { params })
-
 export const sseStatus = { connected: false, reconnecting: false }
 
-export function createSSEConnection(onMessage) {
+export function createSSEConnection(onMessage, onReconnect) {
   const url = '/api/events/stream'
   let es = null
   let retryCount = 0
@@ -151,14 +151,22 @@ export function createSSEConnection(onMessage) {
 
     es.onopen = () => {
       console.log('[SSE] onopen 触发')
+      const wasReconnect = retryCount > 0
       sseStatus.connected = true
       sseStatus.reconnecting = false
       retryCount = 0
+      if (wasReconnect && onReconnect) {
+        onReconnect()
+      }
     }
 
     es.addEventListener('init', (e) => {
       console.log('[SSE] 收到 init 事件')
       try { onMessage({ event: 'init', ...JSON.parse(e.data) }) } catch {}
+    })
+
+    es.addEventListener('queue_overflow', (e) => {
+      try { onMessage({ event: 'queue_overflow', ...JSON.parse(e.data) }) } catch {}
     })
 
     es.onmessage = (e) => {
