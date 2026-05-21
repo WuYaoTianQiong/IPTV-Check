@@ -51,6 +51,14 @@ export const getSourceHealth = () => api.get('/results/source-health')
 export const getResultsStats = () => api.get('/results/stats')
 export const getCheckHistory = (limit = 20) => api.get('/results/history', { params: { limit } })
 export const quickCheckResults = (items) => api.post('/results/quick-check', items)
+export const refreshResultsLatency = (sessionId) => api.post(`/results/refresh-latency?session_id=${encodeURIComponent(sessionId || '')}`, {}, { timeout: 10000 })
+export const thoroughCheck = (sessionId, urls = []) => {
+  const params = [`session_id=${encodeURIComponent(sessionId || '')}`]
+  if (urls.length > 0) params.push(`urls=${encodeURIComponent(urls.join(','))}`)
+  return api.post(`/results/thorough-check?${params.join('&')}`, {}, { timeout: 10000 })
+}
+export const getRefreshLatencyStatus = () => api.get('/results/refresh-latency/status')
+export const stopRefreshLatency = () => api.post('/results/refresh-latency/stop')
 export const saveResults = () => api.post('/results/save')
 export const exportResults = (data) => api.post('/export', data)
 export const convertFormat = (data) => api.post('/convert', data)
@@ -167,6 +175,18 @@ export function createSSEConnection(onMessage, onReconnect) {
 
     es.addEventListener('queue_overflow', (e) => {
       try { onMessage({ event: 'queue_overflow', ...JSON.parse(e.data) }) } catch {}
+    })
+
+    es.addEventListener('refresh_latency_progress', (e) => {
+      try { onMessage({ event: 'refresh_latency_progress', ...JSON.parse(e.data) }) } catch {}
+    })
+
+    es.addEventListener('refresh_latency_completed', (e) => {
+      try { onMessage({ event: 'refresh_latency_completed', ...JSON.parse(e.data) }) } catch {}
+    })
+
+    es.addEventListener('refresh_latency_failed', (e) => {
+      try { onMessage({ event: 'refresh_latency_failed', ...JSON.parse(e.data) }) } catch {}
     })
 
     es.onmessage = (e) => {

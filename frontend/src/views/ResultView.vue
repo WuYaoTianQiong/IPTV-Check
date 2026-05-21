@@ -73,14 +73,34 @@
         </p>
       </div>
       <div class="flex gap-2">
-        <Button variant="outline" class="gap-2" @click="handleRefreshLatency" :disabled="isRefreshingLatency">
-          <RefreshCw class="h-4 w-4" :class="{ 'animate-spin': isRefreshingLatency }" />
-          {{ isRefreshingLatency ? '检测中...' : '实时检测延迟' }}
+        <div class="relative">
+          <Button variant="outline" class="gap-2" @click="handleRefreshLatency" :disabled="isRefreshingLatency">
+            <RefreshCw class="h-4 w-4" :class="{ 'animate-spin': isRefreshingLatency }" />
+            {{ isRefreshingLatency ? '当前页检测中...' : '实时检测延迟' }}
+          </Button>
+        </div>
+        <Button variant="outline" class="gap-2" @click="handleFullRefreshLatency" :disabled="isFullRefreshing">
+          <RefreshCw class="h-4 w-4" :class="{ 'animate-spin': isFullRefreshing }" />
+          {{ isFullRefreshing ? '全量检测中...' : '⚡ 全量刷新延迟' }}
         </Button>
+        <Button variant="outline" class="gap-2" @click="handleThoroughCheck" :disabled="isFullRefreshing" :title="selectedItems.size > 0 ? `仅检测已选${selectedItems.size}个频道` : 'GET下载验证，更准确但更慢'">
+          <Search class="h-4 w-4" />
+          {{ isFullRefreshing ? '彻底版检测中...' : `彻底版检测${selectedItems.size > 0 ? `(${selectedItems.size}个)` : ''}` }}
+        </Button>
+        <div v-if="appStore.isRefreshLatencyRunning" class="flex items-center gap-3 ml-1 min-w-[280px]">
+          <Progress :model-value="fullRefreshPercent" class="flex-1 h-2" />
+          <span class="text-xs text-muted-foreground whitespace-nowrap">
+            {{ appStore.refreshLatencyProgress.checked }}/{{ appStore.refreshLatencyProgress.total }}
+            ({{ fullRefreshPercent }}%)
+          </span>
+          <span class="text-xs text-muted-foreground whitespace-nowrap">{{ refreshElapsed }}s</span>
+          <Button variant="outline" size="sm" class="h-6 text-xs text-destructive border-destructive/50 hover:bg-destructive/10" @click="handleStopRefresh">停止</Button>
+        </div>
         <Button variant="outline" class="gap-2" @click="showExport = true">
           <Download class="h-4 w-4" /> 导出
         </Button>
       </div>
+
     </div>
 
         <Card>
@@ -120,38 +140,43 @@
             <table class="text-sm table-fixed w-full">
               <thead>
                 <tr class="border-b bg-muted/50">
-                  <th v-if="batchSelectMode" class="h-10 px-3 text-center font-medium text-muted-foreground whitespace-nowrap" style="width: 40px">
+                  <th class="h-10 px-3 text-center font-medium text-muted-foreground whitespace-nowrap" style="width: 40px">
                     <Checkbox
                       :model-value="resultStore.checkResults.length > 0 && resultStore.checkResults.every(item => selectedItems.has(item.url))"
                       @update:model-value="selectAllItems"
                     />
                   </th>
-                  <th class="h-10 px-3 text-left font-medium text-muted-foreground whitespace-nowrap cursor-pointer select-none hover:bg-accent/50 transition-colors" style="width: 40%;" @click="toggleTableSort('name_asc', 'name_desc')">
+                  <th class="h-10 px-3 text-left font-medium text-muted-foreground whitespace-nowrap cursor-pointer select-none hover:bg-accent/50 transition-colors group" style="width: 40%;" @click="toggleTableSort('name_asc', 'name_desc')">
                     <span class="inline-flex items-center gap-1">
                       频道名
                       <span v-if="resultStore.sortOrder === 'name_asc'" class="text-primary text-xs">▲</span>
                       <span v-else-if="resultStore.sortOrder === 'name_desc'" class="text-primary text-xs">▼</span>
+                      <span v-else class="text-xs text-muted-foreground/30 group-hover:text-muted-foreground/60 transition-colors">⇅</span>
                     </span>
                   </th>
                   <th v-if="isWideScreen" class="h-10 px-3 text-left font-medium text-muted-foreground whitespace-nowrap" style="width: 15%;">分组</th>
-                  <th class="h-10 px-3 text-center font-medium text-muted-foreground whitespace-nowrap cursor-pointer select-none hover:bg-accent/50 transition-colors" style="width: 60px" @click="toggleTableSort('best', 'best')">
+                  <th class="h-10 px-3 text-center font-medium text-muted-foreground whitespace-nowrap cursor-pointer select-none hover:bg-accent/50 transition-colors group" style="width: 60px" @click="toggleTableSort('best', 'best')">
                     <span class="inline-flex items-center gap-1">
                       状态
                       <span v-if="resultStore.sortOrder === 'best'" class="text-primary text-xs">▲</span>
+                      <span v-else class="text-xs text-muted-foreground/30 group-hover:text-muted-foreground/60 transition-colors">⇅</span>
                     </span>
                   </th>
-                  <th v-if="isMediumScreen" class="h-10 px-3 text-center font-medium text-muted-foreground whitespace-nowrap cursor-pointer select-none hover:bg-accent/50 transition-colors" style="width: 72px" @click="toggleTableSort('latency_asc', 'latency_desc')">
+                  <th v-if="isMediumScreen" class="h-10 px-3 text-center font-medium text-muted-foreground whitespace-nowrap cursor-pointer select-none hover:bg-accent/50 transition-colors group" style="width: 72px" @click="toggleTableSort('latency_asc', 'latency_desc')">
                     <span class="inline-flex items-center gap-1">
+                      <span v-if="hasLiveLatency" class="text-[10px] text-green-500" title="实时数据">●</span>
                       延迟
                       <span v-if="resultStore.sortOrder === 'latency_asc'" class="text-primary text-xs">▲</span>
                       <span v-else-if="resultStore.sortOrder === 'latency_desc'" class="text-primary text-xs">▼</span>
+                      <span v-else class="text-xs text-muted-foreground/30 group-hover:text-muted-foreground/60 transition-colors">⇅</span>
                     </span>
                   </th>
-                  <th v-if="isMediumScreen" class="h-10 px-3 text-center font-medium text-muted-foreground whitespace-nowrap cursor-pointer select-none hover:bg-accent/50 transition-colors" style="width: 72px" @click="toggleTableSort('speed_asc', 'speed_desc')">
+                  <th v-if="isMediumScreen" class="h-10 px-3 text-center font-medium text-muted-foreground whitespace-nowrap cursor-pointer select-none hover:bg-accent/50 transition-colors group" style="width: 72px" @click="toggleTableSort('speed_asc', 'speed_desc')">
                     <span class="inline-flex items-center gap-1">
                       速度
                       <span v-if="resultStore.sortOrder === 'speed_asc'" class="text-primary text-xs">▲</span>
                       <span v-else-if="resultStore.sortOrder === 'speed_desc'" class="text-primary text-xs">▼</span>
+                      <span v-else class="text-xs text-muted-foreground/30 group-hover:text-muted-foreground/60 transition-colors">⇅</span>
                     </span>
                   </th>
                   <th class="h-10 px-3 text-center font-medium text-muted-foreground whitespace-nowrap" style="width: 96px">操作</th>
@@ -162,7 +187,7 @@
                   v-for="item in resultStore.checkResults" :key="item.name"
                   class="border-b transition-colors hover:bg-accent/50"
                 >
-                  <td v-if="batchSelectMode" class="px-3 py-2 text-center" style="width: 40px">
+                  <td class="px-3 py-2 text-center" style="width: 40px">
                     <Checkbox
                       :model-value="selectedItems.has(item.url)"
                       @update:model-value="toggleItemSelection(item.url)"
@@ -242,7 +267,6 @@
               class="flex items-center gap-3 p-3 rounded-lg border bg-card"
             >
               <Checkbox
-                v-if="batchSelectMode"
                 :model-value="selectedItems.has(item.url)"
                 @update:model-value="toggleItemSelection(item.url)"
                 class="shrink-0"
@@ -323,6 +347,17 @@
       <AlertDialogFooter>
         <Button variant="outline" @click="showOptimizeDialog = false">取消</Button>
         <Button @click="showOptimizeDialog = false; handleSmartOptimize()">确认优选</Button>
+      </AlertDialogFooter>
+    </AlertDialog>
+
+    <AlertDialog v-model:open="showThoroughConfirmDialog">
+      <AlertDialogHeader>彻底版全量检测</AlertDialogHeader>
+      <AlertDialogDescription>
+        未勾选频道，将检测全部 {{ resultStore.checkResults.length }} 个频道（GET下载验证，较慢）。确认继续？
+      </AlertDialogDescription>
+      <AlertDialogFooter>
+        <Button variant="outline" @click="showThoroughConfirmDialog = false">取消</Button>
+        <Button @click="runThoroughCheck()">确认全量检测</Button>
       </AlertDialogFooter>
     </AlertDialog>
 
@@ -449,14 +484,15 @@
 <script setup>
 import { ref, computed, onMounted, watch, onBeforeUnmount, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { Wand2, Download, BarChart3, Play, Star, ChevronDown, Folder, Inbox, Check, Plus, RefreshCw } from 'lucide-vue-next'
+import { Wand2, Download, BarChart3, Play, Star, ChevronDown, Folder, Inbox, Check, Plus, RefreshCw, Search } from 'lucide-vue-next'
 import ResultPagination from '../components/result/ResultPagination.vue'
 import LatencyBadge from '../components/LatencyBadge.vue'
 import ResultFilterBar from '../components/result/ResultFilterBar.vue'
 import { useCheckStore } from '../stores/check'
 import { useResultStore } from '../stores/result'
 import { useFavoriteStore } from '../stores/favorite'
-import { smartOptimize, exportResults, getAvailableCountries, getAvailableRegions, getCategoryTree, quickCheckResults } from '../api'
+import { useAppStore } from '../stores/app'
+import { smartOptimize, exportResults, getAvailableCountries, getAvailableRegions, getCategoryTree, quickCheckResults, refreshResultsLatency, thoroughCheck, stopRefreshLatency } from '../api'
 import { useToast } from '../composables/useToast'
 import { cn, countryCodeToName } from '../lib/utils'
 import { Card, CardContent } from '../components/ui/card'
@@ -465,16 +501,19 @@ import { Badge } from '../components/ui/badge'
 import { Dialog, DialogHeader, DialogTitle } from '../components/ui/dialog'
 import { Checkbox } from '../components/ui/checkbox'
 import { AlertDialog, AlertDialogHeader, AlertDialogDescription, AlertDialogFooter } from '../components/ui/alert-dialog'
+import Progress from '../components/ui/progress/Progress.vue'
 
 const checkStore = useCheckStore()
 const resultStore = useResultStore()
 const favoriteStore = useFavoriteStore()
+const appStore = useAppStore()
 const router = useRouter()
 const route = useRoute()
 const { toast } = useToast()
 
 const showExport = ref(false)
 const showOptimizeDialog = ref(false)
+const showThoroughConfirmDialog = ref(false)
 const mediaType = ref('all')
 try {
   const saved = localStorage.getItem('iptv_result_media_type')
@@ -808,6 +847,10 @@ watch([
 
 onMounted(async () => {
   syncStateFromURL()
+  if (appStore.isRefreshLatencyRunning) {
+    isFullRefreshing.value = true
+    startRefreshTimer()
+  }
   await resultStore.fetchHistory()
   try {
     await favoriteStore.fetchFavorites()
@@ -902,6 +945,7 @@ const sessionAgeUrgency = computed(() => {
 // ---------- 实时刷新延迟 ----------
 const isRefreshingLatency = ref(false)
 const liveLatencyMap = ref({})
+const hasLiveLatency = computed(() => Object.keys(liveLatencyMap.value).length > 0)
 
 async function handleRefreshLatency() {
   const items = resultStore.checkResults
@@ -934,6 +978,111 @@ function getLiveLatency(item) {
   if (!liveLatencyMap.value[item.url]) return null
   return liveLatencyMap.value[item.url]
 }
+
+// ---------- 全量刷新延迟 ----------
+const isFullRefreshing = ref(appStore.isRefreshLatencyRunning)
+watch(() => appStore.isRefreshLatencyRunning, (val) => { isFullRefreshing.value = val })
+const fullRefreshProgress = ref({ total: 0, checked: 0, updated: 0, percent: 0 })
+const refreshElapsed = ref(0)
+let refreshTimer = null
+
+const fullRefreshPercent = computed(() => {
+  const p = appStore.refreshLatencyProgress
+  if (!p.total || p.total === 0) return 0
+  return Math.floor((p.checked / p.total) * 100)
+})
+
+function startRefreshTimer() {
+  refreshElapsed.value = 0
+  refreshTimer = setInterval(() => { refreshElapsed.value++ }, 1000)
+}
+function stopRefreshTimer() {
+  if (refreshTimer) { clearInterval(refreshTimer); refreshTimer = null }
+}
+
+async function handleFullRefreshLatency() {
+  if (isFullRefreshing.value) return
+  isFullRefreshing.value = true
+  appStore.isRefreshLatencyRunning = true
+  startRefreshTimer()
+  try {
+    const sid = resultStore.selectedSessionId || ''
+    const { data } = await refreshResultsLatency(sid)
+    if (data && data.total) {
+      appStore.refreshLatencyProgress = { checked: 0, total: data.total, updated: 0 }
+    }
+  } catch (e) {
+    if (e.response?.status === 409) {
+      toast.info('提示', '刷新任务正在运行中')
+    } else {
+      stopRefreshTimer()
+      isFullRefreshing.value = false
+      appStore.isRefreshLatencyRunning = false
+      const msg = e.response?.data?.detail || e?.message || '全量刷新失败'
+      toast.error('全量刷新失败', msg)
+    }
+  }
+}
+
+function handleThoroughCheck() {
+  if (isFullRefreshing.value) return
+  if (selectedItems.value.size === 0) {
+    showThoroughConfirmDialog.value = true
+    return
+  }
+  runThoroughCheck()
+}
+
+async function runThoroughCheck() {
+  showThoroughConfirmDialog.value = false
+  isFullRefreshing.value = true
+  appStore.isRefreshLatencyRunning = true
+  startRefreshTimer()
+  try {
+    const sid = resultStore.selectedSessionId || ''
+    const selectedUrls = Array.from(selectedItems.value).map(url => btoa(encodeURIComponent(url)))
+    const { data } = await thoroughCheck(sid, selectedUrls)
+    if (data && data.total) {
+      appStore.refreshLatencyProgress = { checked: 0, total: data.total, updated: 0 }
+    }
+  } catch (e) {
+    if (e.response?.status === 409) {
+      toast.info('提示', '检测任务正在运行中')
+    } else {
+      stopRefreshTimer()
+      isFullRefreshing.value = false
+      appStore.isRefreshLatencyRunning = false
+      const msg = e.response?.data?.detail || e?.message || '彻底版检测失败'
+      toast.error('彻底版检测失败', msg)
+    }
+  }
+}
+
+async function handleStopRefresh() {
+  try {
+    await stopRefreshLatency()
+    stopRefreshTimer()
+    isFullRefreshing.value = false
+    appStore.isRefreshLatencyRunning = false
+  } catch (e) {
+    toast.error('停止失败', e.response?.data?.detail || e.message)
+  }
+}
+
+watch(() => appStore.isRefreshLatencyRunning, (running, wasRunning) => {
+  if (!wasRunning && running) {
+    startRefreshTimer()
+  }
+  if (wasRunning && !running) {
+    stopRefreshTimer()
+    isFullRefreshing.value = false
+    const p = appStore.refreshLatencyProgress
+    if (p.checked > 0 && p.checked === p.total) {
+      toast.success('全量延迟刷新完成', `检测 ${p.checked} 个，${p.updated} 个可达`)
+      resultStore.fetchResults()
+    }
+  }
+})
 
 function onSessionChange() {
   resultStore.selectSession(selectedSessionId.value)
@@ -1000,7 +1149,25 @@ function toggleTableSort(ascVal, descVal) {
   const newSort = resultStore.sortOrder === ascVal ? descVal : ascVal
   resultStore.setSort(newSort)
   resultStore.setPage(1)
+
+  // 延迟排序 & 有实时数据 → 客户端排序（不做 API 请求）
+  if (viewMode.value === 'flat' && Object.keys(liveLatencyMap.value).length > 0 && (ascVal === 'latency_asc' || descVal === 'latency_desc')) {
+    doLocalLatencySort(newSort)
+    return
+  }
+
   applyAdvancedFilters()
+}
+
+function doLocalLatencySort(sortDir) {
+  const sorted = [...resultStore.checkResults].sort((a, b) => {
+    const la = getLiveLatency(a)?.latency ?? (a.latency !== '-' ? parseInt(a.latency) : 999999)
+    const lb = getLiveLatency(b)?.latency ?? (b.latency !== '-' ? parseInt(b.latency) : 999999)
+    const va = la > 0 ? la : 999999
+    const vb = lb > 0 ? lb : 999999
+    return sortDir === 'latency_asc' ? va - vb : vb - va
+  })
+  resultStore.checkResults = sorted
 }
 
 function selectCategory(cat) {
@@ -1137,7 +1304,27 @@ function openPlayer(item) {
   const radio = item.is_radio ? '&radio=1' : ''
   const region = item.region ? `&region=${encodeURIComponent(item.region)}` : ''
   const freq = item.frequency ? `&freq=${encodeURIComponent(item.frequency)}` : ''
-  window.open(`/player?url=${encoded}&name=${encodeURIComponent(item.name)}${radio}${region}${freq}`, '_blank')
+  let sourcesParam = ''
+  if (item.sources && item.sources.length >= 1) {
+    const sourcesList = item.sources.map((s, idx) => {
+      // 后端 latency 可能是字符串（如 "5" 或 "-"），转为数字
+      let lat = -1
+      if (typeof s.latency === 'number') lat = s.latency
+      else if (typeof s.latency === 'string') {
+        const parsed = parseFloat(s.latency)
+        if (!isNaN(parsed) && parsed >= 0) lat = parsed
+      }
+      return {
+        url: s.url,
+        source_name: s.source_name || `源${idx + 1}`,
+        latency: lat,
+        is_valid: s.is_valid,
+        recommended: idx === (item.recommended_source_idx ?? 0),
+      }
+    })
+    sourcesParam = `&sources=${encodeURIComponent(btoa(encodeURIComponent(JSON.stringify(sourcesList))))}`
+  }
+  window.open(`/player?url=${encoded}&name=${encodeURIComponent(item.name)}${radio}${region}${freq}${sourcesParam}`, '_blank')
 }
 
 async function doExport(format) {

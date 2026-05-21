@@ -23,6 +23,8 @@ export const useAppStore = defineStore('app', () => {
   const m3uState = ref({ running: false, url: '', file_exists: false, valid_channels: 0 })
   const mediaProbeStatus = ref({ enabled: false, ffmpeg_available: false, usable: false })
   const syncProgress = ref({ is_syncing: false, stage: '', current_url_index: 0, total_urls: 0, current_url_label: '', fetched_channel_count: 0, added: 0, updated: 0, elapsed_seconds: 0, eta_seconds: null })
+  const refreshLatencyProgress = ref({ checked: 0, total: 0, updated: 0 })
+  const isRefreshLatencyRunning = ref(false)
 
   let ispCheckTimeout = null
   const ISP_CHECK_TIMEOUT = 10000
@@ -147,6 +149,13 @@ export const useAppStore = defineStore('app', () => {
       if (msg.valid !== undefined) checkStore.validCount.value = msg.valid
       if (msg.invalid !== undefined) checkStore.invalidCount.value = msg.invalid
 
+      if (msg.refresh_latency_running !== undefined) {
+        isRefreshLatencyRunning.value = msg.refresh_latency_running
+      }
+      if (msg.refresh_latency_progress) {
+        refreshLatencyProgress.value = msg.refresh_latency_progress
+      }
+
       if (msg.local_isp === '未知' || msg.local_isp === '检测中...') {
         startIspCheckTimeout()
       } else {
@@ -213,6 +222,27 @@ export const useAppStore = defineStore('app', () => {
       toast.warning('源健康告警', `${unhealthy.length} 个源有效率低于阈值`)
     } else if (event === 'sync_progress') {
       syncProgress.value = { ...syncProgress.value, ...msg }
+    } else if (event === 'refresh_latency_progress') {
+      const incoming = msg.checked || 0
+      const current = refreshLatencyProgress.value.checked || 0
+      if (incoming >= current) {
+        refreshLatencyProgress.value = {
+          checked: msg.checked || 0,
+          total: msg.total || 0,
+          updated: msg.updated || 0,
+        }
+      }
+    } else if (event === 'refresh_latency_completed') {
+      refreshLatencyProgress.value = {
+        checked: msg.checked || 0,
+        total: msg.total || 0,
+        updated: msg.updated || 0,
+      }
+      isRefreshLatencyRunning.value = false
+    } else if (event === 'refresh_latency_failed') {
+      isRefreshLatencyRunning.value = false
+      const { toast } = useToast()
+      toast.error('全量刷新失败', msg.error || '未知错误')
     } else if (event === 'queue_overflow') {
       const { toast } = useToast()
       toast.warning('实时更新延迟', msg.message || '部分更新被跳过，数据将在轮询时自动修正')
@@ -283,6 +313,8 @@ export const useAppStore = defineStore('app', () => {
     m3uState,
     mediaProbeStatus,
     syncProgress,
+    refreshLatencyProgress,
+    isRefreshLatencyRunning,
     isChecking,
     onlineSources,
     checkResults,
