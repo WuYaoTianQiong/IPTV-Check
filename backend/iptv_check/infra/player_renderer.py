@@ -30,12 +30,13 @@ class PlayerRenderer:
         return self._template_dir / "player.html"
 
     def _read_template(self) -> str:
-        if self._cached_template is None:
-            tp = self.template_path
-            if not tp.is_file():
-                raise FileNotFoundError(f"Player template not found: {tp}")
+        tp = self.template_path
+        if not tp.is_file():
+            raise FileNotFoundError(f"Player template not found: {tp}")
+        mtime = tp.stat().st_mtime
+        if self._cached_template is None or getattr(self, '_cached_mtime', 0) != mtime:
             self._cached_template = tp.read_text(encoding="utf-8")
-            logger.info("Player template loaded from: %s", tp)
+            self._cached_mtime = mtime
         return self._cached_template
 
     def _encode_proxy_url(self, stream_url: str) -> str:
@@ -69,7 +70,7 @@ class PlayerRenderer:
         template = self._read_template()
         proxy_url = f"/proxy?url={self._encode_proxy_url(stream_url)}" if stream_url else ""
 
-        has_multi_sources = sources and len(sources) > 1
+        has_multi_sources = sources and len(sources) >= 1
 
         variables = {
             "stream_url": stream_url,

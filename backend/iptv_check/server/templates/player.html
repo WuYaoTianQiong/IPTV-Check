@@ -58,24 +58,27 @@ body{font-family:'Noto Sans SC','Inter',sans-serif;background:#f5f7fa;color:#1a1
   letter-spacing:0.03em;flex-shrink:0;
 }
 .spacer{flex:1}
+.source-selector{display:none;padding:3px 8px;border:1px solid rgba(0,0,0,0.12);border-radius:6px;font-size:12px;color:#333;cursor:pointer;max-width:180px;flex-shrink:0;background:#fff;outline:none}
+.source-selector.visible{display:block}
+.source-selector option{font-size:12px}
 
 .top-bar details{position:relative}
 .top-bar details summary{
-  padding:4px 8px;cursor:pointer;font-size:11px;color:#666;
-  list-style:none;border-radius:6px;
+  padding:6px 10px;cursor:pointer;font-size:16px;color:#333;
+  list-style:none;border-radius:6px;font-weight:600;
 }
 .top-bar details summary:hover{background:rgba(0,0,0,0.06);color:#1a1a1a}
 .top-bar details[open]{
   position:absolute;top:40px;right:0;
   background:rgba(255,255,255,0.96);backdrop-filter:blur(16px);
-  border-radius:10px;padding:12px 16px;min-width:180px;z-index:20;
+  border-radius:10px;padding:14px 20px;min-width:220px;z-index:20;
   border:1px solid rgba(0,0,0,0.08);
   box-shadow:0 8px 32px rgba(0,0,0,0.1);
 }
 .top-bar details[open] summary{display:none}
-.info-row{display:flex;justify-content:space-between;gap:12px;padding:3px 0;font-size:11px}
-.info-label{color:#666}
-.info-value{color:#444}
+.info-row{display:flex;justify-content:space-between;gap:12px;padding:4px 0;font-size:13px;font-weight:500}
+.info-label{color:#333;font-weight:600}
+.info-value{color:#222;font-weight:500}
 
 .video-area{flex:1;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;background:#eef2f7}
 .video-area video{width:100%;height:100%}
@@ -196,6 +199,7 @@ body{font-family:'Noto Sans SC','Inter',sans-serif;background:#f5f7fa;color:#1a1
     </button>
     <span class="badge" id="region-badge" style="display:none;background:rgba(99,102,241,0.12);color:#6366f1;font-size:11px"></span>
     <span class="channel-name">{{ channel_name }}</span>
+    <select id="source-selector" class="source-selector {{ source_selector_class }}" onchange="switchSource(this.value)"></select>
     <span class="badge" id="type-badge" style="background:rgba(231,76,60,0.12);color:#e74c3c">电台</span>
     <div class="spacer"></div>
     <details id="stream-info">
@@ -207,7 +211,8 @@ body{font-family:'Noto Sans SC','Inter',sans-serif;background:#f5f7fa;color:#1a1
   </div>
 
   <div class="video-area" id="video-area">
-    <video id="tv-video" controls playsinline preload="auto" style="width:100%;height:100%;background:#000"></video>
+    <video id="tv-video" controls playsinline preload="auto" autoplay muted style="width:100%;height:100%;background:#000"></video>
+    <div id="unmute-hint" style="display:none;position:absolute;bottom:60px;left:50%;transform:translateX(-50%);z-index:50;background:rgba(0,0,0,0.75);color:#fff;padding:8px 20px;border-radius:20px;font-size:14px;font-weight:600;cursor:pointer;align-items:center;gap:6px;transition:opacity .3s" onclick="var v=document.getElementById('tv-video');v.muted=false;v.volume=1;this.style.display='none'">&#x1f50a; 点击开启声音</div>
   </div>
 
   <div class="radio-view" id="radio-view">
@@ -281,6 +286,7 @@ var typeBadge = document.getElementById('type-badge');
 var videoArea = document.getElementById('video-area');
 var radioView = document.getElementById('radio-view');
 var fallback = document.getElementById('fallback');
+setTimeout(function(){if(loadingScreen)loadingScreen.classList.add('hidden')},300);
 
 var regionBadge=document.getElementById('region-badge');
 var CN_KW=['央视','卫视','CGTN','CRI','地方','北京','上海','天津','重庆','河北','河南','山东','山西','陕西','湖北','湖南','安徽','浙江','江苏','江西','广东','广西','福建','四川','贵州','云南','辽宁','吉林','黑龙江','内蒙古','新疆','西藏','青海','甘肃','宁夏','海南','香港','澳门','台湾','深圳','广州','杭州','南京','成都','武汉','长沙','苏州'];
@@ -318,6 +324,69 @@ function waitForLib(name,timeout){
     setTimeout(function(){clearInterval(ci);resolve(null)},timeout||6000);
   });
 }
+
+var sourcesList = {{ sources_json }};
+var recommendedIdx = {{ recommended_idx }};
+
+function encodeProxyUrl(url){
+  if(!url)return'';
+  return'/proxy?url='+encodeURIComponent(btoa(encodeURIComponent(url)));
+}
+
+var sourceSelector=document.getElementById('source-selector');
+if(sourcesList&&sourcesList.length>=1){
+  for(var si=0;si<sourcesList.length;si++){
+    var opt=document.createElement('option');
+    opt.value=si;
+    var src=sourcesList[si];
+    var label=src.source_name||('源'+(si+1));
+    if(typeof src.latency==='number'&&src.latency>=0){
+      label+=' ('+src.latency+'ms)';
+    }else if(src.is_valid===false){
+      label+=' 不可用';
+    }else{
+      label+=' 待检测';
+    }
+    if(src.recommended)label+=' ★';
+    if(src.is_valid===false)label+=' ✕';
+    opt.textContent=label;
+    sourceSelector.appendChild(opt);
+  }
+  sourceSelector.value=recommendedIdx>=0?recommendedIdx:0;
+}
+
+function switchSource(idx){
+  idx=parseInt(idx,10);
+  if(!sourcesList||!sourcesList[idx])return;
+  var src=sourcesList[idx];
+  var newUrl=encodeProxyUrl(src.url);
+  if(isRadio){
+    if(window._radioHls){try{window._radioHls.destroy()}catch(e){}window._radioHls=null}
+    var radioAudio=document.getElementById('radio-audio');
+    if(typeof Hls!=='undefined'&&Hls.isSupported()){
+      var rh=new Hls({enableWorker:true,lowLatencyMode:false,manifestLoadingTimeOut:15000,levelLoadingTimeOut:10000});
+      window._radioHls=rh;
+      rh.loadSource(newUrl);rh.attachMedia(radioAudio);
+      rh.on(Hls.Events.MANIFEST_PARSED,function(){radioAudio.play().catch(function(){})});
+      rh.on(Hls.Events.ERROR,function(e,d){if(d.fatal){if(d.type===Hls.ErrorTypes.NETWORK_ERROR)rh.startLoad();else if(d.type===Hls.ErrorTypes.MEDIA_ERROR)rh.recoverMediaError()}});
+    }else{radioAudio.src=newUrl;radioAudio.play().catch(function(){})}
+  }else{
+    if(window._tvHls){try{window._tvHls.destroy()}catch(e){}window._tvHls=null}
+    var tvVideo=document.getElementById('tv-video');
+    tvNetErrorCount=0;
+    if(typeof Hls!=='undefined'&&Hls.isSupported()){
+      var th=new Hls({enableWorker:true,lowLatencyMode:false,manifestLoadingTimeOut:15000,levelLoadingTimeOut:10000});
+      window._tvHls=th;
+      th.loadSource(newUrl);th.attachMedia(tvVideo);
+      th.on(Hls.Events.MANIFEST_PARSED,function(){tvNetErrorCount=0;tvVideo.play().catch(function(){})});
+      th.on(Hls.Events.ERROR,function(e,d){if(d.fatal){if(d.type===Hls.ErrorTypes.NETWORK_ERROR){tvNetErrorCount++;if(tvNetErrorCount>=3){hideLoading();document.getElementById('load-error').style.display='block';document.getElementById('loading-ring').style.display='none';document.getElementById('loading-text').style.display='none';return}th.startLoad()}else if(d.type===Hls.ErrorTypes.MEDIA_ERROR){th.recoverMediaError()}}});
+    }else{tvVideo.src=newUrl;tvVideo.play().catch(function(){})}
+    document.getElementById('load-error').style.display='none';
+  }
+  document.getElementById('info-stream-url').textContent=src.url;
+  document.getElementById('info-proxy-url').textContent=newUrl;
+}
+window.switchSource=switchSource;
 
 var validUrl = proxyUrl || streamUrl;
 if(!validUrl){showFallback();return}
@@ -415,7 +484,7 @@ if(isRadio){
     var hls=new HlsLib({enableWorker:true,lowLatencyMode:false,manifestLoadingTimeOut:15000,levelLoadingTimeOut:10000});
     window._tvHls=hls;
     hls.loadSource(validUrl);hls.attachMedia(tvVideo);
-    hls.on(HlsLib.Events.MANIFEST_PARSED,function(){tvNetErrorCount=0;tvVideo.play().catch(function(){})});
+    hls.on(HlsLib.Events.MANIFEST_PARSED,function(){tvNetErrorCount=0;tvVideo.muted=true;tvVideo.play().catch(function(){});var uel=document.getElementById('unmute-hint');if(uel)uel.style.display='flex'});
     hls.on(HlsLib.Events.ERROR,function(e,d){
       if(d.fatal){
         if(d.type===HlsLib.ErrorTypes.NETWORK_ERROR){
@@ -435,6 +504,22 @@ if(isRadio){
     });
     tvVideo.addEventListener('playing',function(){tvNetErrorCount=0;hideLoading()});
     setTimeout(function(){if(tvNetErrorCount===0)hideLoading()},4000);
+    setInterval(function(){
+      if(!hls||hls.currentLevel<0||!hls.levels)return;
+      var l=hls.levels[hls.currentLevel];
+      if(l){
+        if(l.bitrate>0)document.getElementById('info-bitrate').textContent=Math.round(l.bitrate/1000)+' kbps';
+        var parts=[];
+        if(l.videoCodec)parts.push(l.videoCodec);
+        if(l.audioCodec)parts.push(l.audioCodec);
+        if(parts.length)document.getElementById('info-codec').textContent=parts.join(' / ');
+      }
+      if(tvVideo.buffered&&tvVideo.buffered.length>0){
+        var bufEnd=tvVideo.buffered.end(tvVideo.buffered.length-1);
+        var bufLen=bufEnd-tvVideo.currentTime;
+        document.getElementById('info-buffer').textContent=Math.round(bufLen)+'s';
+      }
+    },2000);
   });
 }
 })();
