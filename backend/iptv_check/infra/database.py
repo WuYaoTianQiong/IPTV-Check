@@ -146,11 +146,13 @@ class DatabaseManager:
             cursor.execute("PRAGMA busy_timeout=30000")
             cursor.execute("PRAGMA temp_store=MEMORY")
             cursor.execute("PRAGMA foreign_keys=ON")
+            cursor.execute("PRAGMA wal_autocheckpoint=1000")
             cursor.close()
 
         with engine.connect() as conn:
             conn.execute(sa_text("PRAGMA journal_mode=WAL"))
             conn.execute(sa_text("PRAGMA synchronous=NORMAL"))
+            conn.execute(sa_text("PRAGMA wal_autocheckpoint=1000"))
             conn.execute(sa_text("PRAGMA busy_timeout=30000"))
             conn.commit()
 
