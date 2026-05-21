@@ -1378,7 +1378,7 @@ class ReadModel:
                     all_sources = session.exec(sa_text(f"""
                         SELECT name, url, is_valid, latency, speed, details, source_name, quality_tier, clean_name, resolution
                         FROM channel_results
-                        WHERE session_id = :sid AND name IN ({name_placeholders})
+                        WHERE session_id = :sid AND (name IN ({name_placeholders}) OR clean_name IN ({name_placeholders}))
                         ORDER BY name, CASE WHEN latency IS NULL THEN 1 ELSE 0 END, latency ASC
                     """).bindparams(sid=sid, **name_params)).all()
                 else:
@@ -1386,7 +1386,7 @@ class ReadModel:
 
                 sources_by_name = {}
                 for sr in all_sources:
-                    ch_name = sr[0]
+                    ch_name = (sr[8] or "") if (sr[8] or "") else ((sr[6] or sr[0]) if sr[0] == "N/A" else sr[0])
                     resolution = sr[9] or ""
                     group_key = f"{ch_name}@{resolution}" if resolution else ch_name
                     if group_key not in sources_by_name:
@@ -1411,7 +1411,6 @@ class ReadModel:
                         "resolution": resolution,
                         "_score": tier_score + max(0, 1000 - lat_val),
                     })
-
                 items = []
                 for idx, g in enumerate(groups):
                     name = g[0] or ""
@@ -1423,7 +1422,7 @@ class ReadModel:
                     frequency_val = g[7] or ""
 
                     group_key = f"{name}@{resolution}" if resolution else name
-                    sources = sources_by_name.get(group_key, []) if group_path else []
+                    sources = sources_by_name.get(group_key, [])
                     recommended_idx = -1
                     best_score = -1
                     if sources:
@@ -1433,20 +1432,21 @@ class ReadModel:
                                 best_score = score
                                 recommended_idx = si
 
-                    best_url = ""
-                    all_sources_for_url = sources_by_name.get(group_key, [])
-                    if all_sources_for_url:
-                        temp_idx = -1
-                        temp_score = -1
-                        for si, s in enumerate(all_sources_for_url):
-                            sc = s.get("_score", 0)
-                            if sc > temp_score:
-                                temp_score = sc
-                                temp_idx = si
-                        if 0 <= temp_idx < len(all_sources_for_url):
-                            best_url = all_sources_for_url[temp_idx].get("url", "")
-
                     display_name = f"{name} [{resolution}]" if resolution else name
+
+                    best_url = ""
+                    if name:
+                        best_row = session.exec(sa_text("""
+                            SELECT url FROM channel_results
+                            WHERE session_id = :sid
+                              AND (CASE WHEN clean_name != '' THEN clean_name
+                                        WHEN name = 'N/A' THEN COALESCE(source_name, name)
+                                        ELSE name END = :n)
+                              AND is_valid = 1 AND latency > 0
+                            ORDER BY latency ASC LIMIT 1
+                        """).bindparams(sid=sid, n=name)).first()
+                        if best_row:
+                            best_url = best_row[0]
 
                     items.append({
                         "index": offset + idx + 1,
@@ -1583,7 +1583,7 @@ class ReadModel:
                         json_extract(payload, '$.clean_name') as clean_name
                     FROM check_events
                     WHERE session_id = :sid AND event_type = 'channel_checked'
-                      AND json_extract(payload, '$.name') IN ({name_placeholders})
+                      AND (json_extract(payload, '$.name') IN ({name_placeholders}) OR json_extract(payload, '$.clean_name') IN ({name_placeholders}))
                     ORDER BY ch_name, CASE WHEN json_extract(payload, '$.latency') IS NULL THEN 1 ELSE 0 END, CAST(json_extract(payload, '$.latency') AS REAL) ASC
                 """).bindparams(sid=sid, **name_params)).all()
             else:
@@ -1591,7 +1591,9 @@ class ReadModel:
 
             sources_by_name = {}
             for sr in all_sources:
-                ch_name = sr[0]
+                raw_name = sr[0] or ""
+                raw_clean = sr[8] or ""
+                ch_name = raw_clean if raw_clean else ((sr[6] or raw_name) if raw_name == "N/A" else raw_name)
                 if ch_name not in sources_by_name:
                     sources_by_name[ch_name] = []
                 is_valid = bool(sr[2])
@@ -1622,7 +1624,7 @@ class ReadModel:
                 valid_count = g[3] or 0
                 best_latency = g[4]
 
-                sources = sources_by_name.get(name, []) if group_path else []
+                sources = sources_by_name.get(name, [])
                 recommended_idx = -1
                 best_score = -1
                 if sources:
@@ -1639,7 +1641,7 @@ class ReadModel:
                     temp_score = -1
                     for si, s in enumerate(all_sources_for_url):
                         sc = s.get("_score", 0)
-                        if sc > temp_score:
+                        if s.get("is_valid") and sc > temp_score:
                             temp_score = sc
                             temp_idx = si
                     if 0 <= temp_idx < len(all_sources_for_url):
