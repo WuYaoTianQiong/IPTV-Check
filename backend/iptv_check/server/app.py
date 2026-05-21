@@ -151,6 +151,11 @@ class AppState:
         self._source_sync_service: Optional[SourceSyncService] = None
         self._fetch_service = None
 
+        self._refresh_latency_task: Optional[asyncio.Task] = None
+        self._refresh_latency_task_id: Optional[str] = None
+        self._refresh_latency_progress: dict = {"checked": 0, "total": 0, "updated": 0}
+        self._refresh_latency_started_at: Optional[str] = None
+
         self._load_online_sources()
 
     @property
@@ -294,6 +299,7 @@ class AppState:
             await self._async_session.close()
             self._async_session = None
         self.cache.close()
+        self._wal_checkpoint()
         logger.info("服务已关闭")
 
     async def detect_isp(self):
@@ -309,6 +315,19 @@ class AppState:
     async def broadcast(self, event: str, data: dict):
         logger.info("[SSE-BROKER] 广播事件: %s, 数据: %s", event, data)
         await self._sse_broker.broadcast(event, data)
+
+    def _wal_checkpoint(self):
+        """关闭时执行WAL checkpoint，确保数据持久化"""
+        from sqlalchemy import text as sa_text
+        for store_name, store in [("event_store", self.event_store), ("database", self.database)]:
+            if store and hasattr(store, "_engine") and store._engine is not None:
+                try:
+                    with store._engine.connect() as conn:
+                        conn.execute(sa_text("PRAGMA wal_checkpoint(TRUNCATE)"))
+                        conn.commit()
+                    logger.info("WAL checkpoint 完成: %s", store_name)
+                except Exception as e:
+                    logger.warning("WAL checkpoint 失败 %s: %s", store_name, e)
 
     async def subscribe_sse(self):
         subscriber = await self._sse_broker.subscribe()
@@ -460,7 +479,8 @@ def create_app() -> FastAPI:
         source_list = None
         if sources:
             try:
-                source_list = json.loads(base64.b64decode(sources).decode("utf-8"))
+                decoded_sources = urllib.parse.unquote(base64.b64decode(sources).decode("utf-8"))
+                source_list = json.loads(urllib.parse.unquote(decoded_sources))
             except Exception:
                 pass
 
@@ -524,6 +544,11 @@ def create_app() -> FastAPI:
                 "local_isp": app_state.local_isp,
                 "is_checking": app_state.is_checking,
                 **progress,
+                "refresh_latency_running": (
+                    app_state._refresh_latency_task is not None
+                    and not app_state._refresh_latency_task.done()
+                ),
+                "refresh_latency_progress": app_state._refresh_latency_progress,
             }, ensure_ascii=False)
             yield f"event: init\ndata: {init_data}\n\n"
 
@@ -562,6 +587,12 @@ def create_app() -> FastAPI:
                 "_check_service": app_state._check_service is not None,
                 "session_id": app_state._check_service.session_id if app_state._check_service else None,
                 "read_model": app_state.read_model is not None,
+                "refresh_latency_task_running": (
+                    app_state._refresh_latency_task is not None
+                    and not app_state._refresh_latency_task.done()
+                ),
+                "refresh_latency_task_id": app_state._refresh_latency_task_id,
+                "refresh_latency_progress": app_state._refresh_latency_progress,
             }
         except Exception as e:
             return {"error": str(e), "traceback": traceback.format_exc()}
