@@ -306,43 +306,26 @@ async def refresh_results_latency(session_id: str = ""):
         session_id = state.event_store.current_session_id
     if not session_id:
         def _latest_session():
-            from sqlalchemy import text as sa_text
+            from iptv_check.infra.repository.results_repo import ResultsRepository
             with state.event_store.get_session() as s:
-                row = s.execute(
-                    sa_text("SELECT session_id FROM channel_results GROUP BY session_id ORDER BY MAX(created_at) DESC LIMIT 1")
-                ).first()
-                return row[0] if row else ""
+                return ResultsRepository(s).latest_session_id()
         session_id = await asyncio.to_thread(_latest_session)
 
     if not session_id:
         raise HTTPException(400, "没有检测结果可刷新")
 
     def _has_data():
-        from sqlalchemy import text as sa_text
+        from iptv_check.infra.repository.results_repo import ResultsRepository
         with state.event_store.get_session() as s:
-            cnt = s.execute(
-                sa_text("SELECT COUNT(*) FROM channel_results WHERE session_id = :sid"),
-                {"sid": session_id},
-            ).scalar() or 0
-            return cnt > 0
+            return ResultsRepository(s).has_session_data(session_id)
 
     if not await asyncio.to_thread(_has_data):
         raise HTTPException(400, "该 session 没有物化数据，无法刷新")
 
     def _fetch_urls():
-        from sqlalchemy import text as sa_text
+        from iptv_check.infra.repository.results_repo import ResultsRepository
         with state.event_store.get_session() as s:
-            rows = s.execute(
-                sa_text("SELECT DISTINCT url FROM channel_results WHERE session_id = :sid AND url != ''"),
-                {"sid": session_id},
-            ).fetchall()
-            mat_urls = set(r[0] for r in rows)
-            evt_rows = s.execute(
-                sa_text("SELECT DISTINCT json_extract(payload, '$.url') FROM check_events WHERE session_id = :sid AND event_type = 'channel_checked' AND json_extract(payload, '$.url') != ''"),
-                {"sid": session_id},
-            ).fetchall()
-            evt_urls = set(r[0] for r in evt_rows if r[0])
-            return list(mat_urls | evt_urls)
+            return ResultsRepository(s).fetch_session_urls(session_id)
 
     urls = await asyncio.to_thread(_fetch_urls)
     total = len(urls)
@@ -356,30 +339,9 @@ async def refresh_results_latency(session_id: str = ""):
     state._refresh_latency_started_at = datetime.datetime.now().isoformat()
 
     def _reset_latency():
-        from sqlalchemy import text as sa_text
-        import json as _json
+        from iptv_check.infra.repository.results_repo import ResultsRepository
         with state.event_store.get_session() as s:
-            s.execute(
-                sa_text("UPDATE channel_results SET latency = -1, is_valid = 0, quality_tier = 'invalid' WHERE session_id = :sid"),
-                {"sid": session_id},
-            )
-            rows = s.execute(
-                sa_text("SELECT id, payload FROM check_events WHERE session_id = :sid AND event_type = 'channel_checked'"),
-                {"sid": session_id},
-            ).fetchall()
-            for row in rows:
-                try:
-                    p = _json.loads(row[1]) if isinstance(row[1], str) else dict(row[1])
-                    p["latency"] = -1
-                    p["is_valid"] = False
-                    p["quality_tier"] = "invalid"
-                    s.execute(
-                        sa_text("UPDATE check_events SET payload = :p WHERE id = :eid"),
-                        {"p": _json.dumps(p, ensure_ascii=False), "eid": row[0]},
-                    )
-                except Exception:
-                    pass
-            s.commit()
+            ResultsRepository(s).reset_session_latency(session_id)
     await asyncio.to_thread(_reset_latency)
 
     state._refresh_latency_task = asyncio.create_task(
@@ -392,24 +354,6 @@ async def refresh_results_latency(session_id: str = ""):
 async def _run_refresh_latency_background(state, session_id, urls, task_id):
     """后台执行全量延迟检测，通过SSE推送进度"""
     import aiohttp, ssl, time
-
-    def _update_check_events_payload(s, sa_text, _json, sid, url, lat, is_valid, quality_tier):
-        rows = s.execute(
-            sa_text("SELECT id, payload FROM check_events WHERE session_id = :sid AND event_type = 'channel_checked' AND json_extract(payload, '$.url') = :url"),
-            {"sid": sid, "url": url},
-        ).fetchall()
-        for row in rows:
-            try:
-                p = _json.loads(row[1]) if isinstance(row[1], str) else dict(row[1])
-                p["latency"] = lat
-                p["is_valid"] = is_valid
-                p["quality_tier"] = quality_tier
-                s.execute(
-                    sa_text("UPDATE check_events SET payload = :p WHERE id = :eid"),
-                    {"p": _json.dumps(p, ensure_ascii=False), "eid": row[0]},
-                )
-            except Exception:
-                pass
 
     total = len(urls)
     checked = 0
@@ -474,15 +418,12 @@ async def _run_refresh_latency_background(state, session_id, urls, task_id):
                     batch = ok_urls[:]
                     ok_urls.clear()
                     def _write(batch):
-                        from sqlalchemy import text as sa_text
-                        import json as _json
+                        from iptv_check.infra.repository.results_repo import ResultsRepository
                         with state.event_store.get_session() as s:
+                            repo = ResultsRepository(s)
                             for lat, url in batch:
-                                s.execute(
-                                    sa_text("UPDATE channel_results SET latency = :lat, is_valid = 1, quality_tier = 'valid' WHERE session_id = :sid AND url = :url"),
-                                    {"lat": lat, "sid": session_id, "url": url},
-                                )
-                                _update_check_events_payload(s, sa_text, _json, session_id, url, lat, True, "valid")
+                                repo.update_channel_result(session_id, url, lat, True, "valid")
+                                repo.update_event_payload_latency(session_id, url, lat, True, "valid")
                             s.commit()
                     await asyncio.to_thread(_write, batch)
 
@@ -495,15 +436,12 @@ async def _run_refresh_latency_background(state, session_id, urls, task_id):
 
             if ok_urls:
                 def _write_last(batch):
-                    from sqlalchemy import text as sa_text
-                    import json as _json
+                    from iptv_check.infra.repository.results_repo import ResultsRepository
                     with state.event_store.get_session() as s:
+                        repo = ResultsRepository(s)
                         for lat, url in batch:
-                            s.execute(
-                                sa_text("UPDATE channel_results SET latency = :lat, is_valid = 1, quality_tier = 'valid' WHERE session_id = :sid AND url = :url"),
-                                {"lat": lat, "sid": session_id, "url": url},
-                            )
-                            _update_check_events_payload(s, sa_text, _json, session_id, url, lat, True, "valid")
+                            repo.update_channel_result(session_id, url, lat, True, "valid")
+                            repo.update_event_payload_latency(session_id, url, lat, True, "valid")
                         s.commit()
                 await asyncio.to_thread(_write_last, ok_urls)
 
@@ -540,43 +478,26 @@ async def thorough_check(session_id: str = "", urls: str = ""):
         session_id = state.event_store.current_session_id
     if not session_id:
         def _latest_session():
-            from sqlalchemy import text as sa_text
+            from iptv_check.infra.repository.results_repo import ResultsRepository
             with state.event_store.get_session() as s:
-                row = s.execute(
-                    sa_text("SELECT session_id FROM channel_results GROUP BY session_id ORDER BY MAX(created_at) DESC LIMIT 1")
-                ).first()
-                return row[0] if row else ""
+                return ResultsRepository(s).latest_session_id()
         session_id = await asyncio.to_thread(_latest_session)
 
     if not session_id:
         raise HTTPException(400, "没有检测结果可检测")
 
     def _has_data():
-        from sqlalchemy import text as sa_text
+        from iptv_check.infra.repository.results_repo import ResultsRepository
         with state.event_store.get_session() as s:
-            cnt = s.execute(
-                sa_text("SELECT COUNT(*) FROM channel_results WHERE session_id = :sid"),
-                {"sid": session_id},
-            ).scalar() or 0
-            return cnt > 0
+            return ResultsRepository(s).has_session_data(session_id)
 
     if not await asyncio.to_thread(_has_data):
         raise HTTPException(400, "该 session 没有物化数据，无法检测")
 
     def _fetch_urls():
-        from sqlalchemy import text as sa_text
+        from iptv_check.infra.repository.results_repo import ResultsRepository
         with state.event_store.get_session() as s:
-            rows = s.execute(
-                sa_text("SELECT DISTINCT url FROM channel_results WHERE session_id = :sid AND url != ''"),
-                {"sid": session_id},
-            ).fetchall()
-            mat_urls = set(r[0] for r in rows)
-            evt_rows = s.execute(
-                sa_text("SELECT DISTINCT json_extract(payload, '$.url') FROM check_events WHERE session_id = :sid AND event_type = 'channel_checked' AND json_extract(payload, '$.url') != ''"),
-                {"sid": session_id},
-            ).fetchall()
-            evt_urls = set(r[0] for r in evt_rows if r[0])
-            return list(mat_urls | evt_urls)
+            return ResultsRepository(s).fetch_session_urls(session_id)
 
     if urls:
         try:
@@ -607,42 +528,9 @@ async def thorough_check(session_id: str = "", urls: str = ""):
     state._refresh_latency_started_at = datetime.datetime.now().isoformat()
 
     def _reset_latency():
-        from sqlalchemy import text as sa_text
-        import json as _json
+        from iptv_check.infra.repository.results_repo import ResultsRepository
         with state.event_store.get_session() as s:
-            if urls:
-                url_placeholders = ",".join(f":u{i}" for i in range(len(urls)))
-                url_params = {f"u{i}": u for i, u in enumerate(urls)}
-                s.execute(
-                    sa_text(f"UPDATE channel_results SET latency = -1, is_valid = 0, quality_tier = 'invalid' WHERE session_id = :sid AND url IN ({url_placeholders})"),
-                    {"sid": session_id, **url_params},
-                )
-                reset_rows = s.execute(
-                    sa_text(f"SELECT id, payload FROM check_events WHERE session_id = :sid AND event_type = 'channel_checked' AND json_extract(payload, '$.url') IN ({url_placeholders})"),
-                    {"sid": session_id, **url_params},
-                ).fetchall()
-            else:
-                s.execute(
-                    sa_text("UPDATE channel_results SET latency = -1, is_valid = 0, quality_tier = 'invalid' WHERE session_id = :sid"),
-                    {"sid": session_id},
-                )
-                reset_rows = s.execute(
-                    sa_text("SELECT id, payload FROM check_events WHERE session_id = :sid AND event_type = 'channel_checked'"),
-                    {"sid": session_id},
-                ).fetchall()
-            for row in reset_rows:
-                try:
-                    p = _json.loads(row[1]) if isinstance(row[1], str) else dict(row[1])
-                    p["latency"] = -1
-                    p["is_valid"] = False
-                    p["quality_tier"] = "invalid"
-                    s.execute(
-                        sa_text("UPDATE check_events SET payload = :p WHERE id = :eid"),
-                        {"p": _json.dumps(p, ensure_ascii=False), "eid": row[0]},
-                    )
-                except Exception:
-                    pass
-            s.commit()
+            ResultsRepository(s).reset_session_latency(session_id, urls or None)
     await asyncio.to_thread(_reset_latency)
 
     state._refresh_latency_task = asyncio.create_task(
@@ -655,24 +543,6 @@ async def thorough_check(session_id: str = "", urls: str = ""):
 async def _run_thorough_check_background(state, session_id, urls, task_id):
     """后台执行彻底版检测(GET+Range)，通过SSE推送进度"""
     import aiohttp, ssl, time as _time
-
-    def _update_check_events_payload(s, sa_text, _json, sid, url, lat, is_valid, quality_tier):
-        rows = s.execute(
-            sa_text("SELECT id, payload FROM check_events WHERE session_id = :sid AND event_type = 'channel_checked' AND json_extract(payload, '$.url') = :url"),
-            {"sid": sid, "url": url},
-        ).fetchall()
-        for row in rows:
-            try:
-                p = _json.loads(row[1]) if isinstance(row[1], str) else dict(row[1])
-                p["latency"] = lat
-                p["is_valid"] = is_valid
-                p["quality_tier"] = quality_tier
-                s.execute(
-                    sa_text("UPDATE check_events SET payload = :p WHERE id = :eid"),
-                    {"p": _json.dumps(p, ensure_ascii=False), "eid": row[0]},
-                )
-            except Exception:
-                pass
 
     total = len(urls)
     checked = 0
@@ -739,15 +609,12 @@ async def _run_thorough_check_background(state, session_id, urls, task_id):
                     batch = ok_urls[:]
                     ok_urls.clear()
                     def _write(batch):
-                        from sqlalchemy import text as sa_text
-                        import json as _json
+                        from iptv_check.infra.repository.results_repo import ResultsRepository
                         with state.event_store.get_session() as s:
+                            repo = ResultsRepository(s)
                             for lat, url in batch:
-                                s.execute(
-                                    sa_text("UPDATE channel_results SET latency = :lat, is_valid = 1, quality_tier = 'valid' WHERE session_id = :sid AND url = :url"),
-                                    {"lat": lat, "sid": session_id, "url": url},
-                                )
-                                _update_check_events_payload(s, sa_text, _json, session_id, url, lat, True, "valid")
+                                repo.update_channel_result(session_id, url, lat, True, "valid")
+                                repo.update_event_payload_latency(session_id, url, lat, True, "valid")
                             s.commit()
                     await asyncio.to_thread(_write, batch)
 
@@ -760,15 +627,12 @@ async def _run_thorough_check_background(state, session_id, urls, task_id):
 
             if ok_urls:
                 def _write_last(batch):
-                    from sqlalchemy import text as sa_text
-                    import json as _json
+                    from iptv_check.infra.repository.results_repo import ResultsRepository
                     with state.event_store.get_session() as s:
+                        repo = ResultsRepository(s)
                         for lat, url in batch:
-                            s.execute(
-                                sa_text("UPDATE channel_results SET latency = :lat, is_valid = 1, quality_tier = 'valid' WHERE session_id = :sid AND url = :url"),
-                                {"lat": lat, "sid": session_id, "url": url},
-                            )
-                            _update_check_events_payload(s, sa_text, _json, session_id, url, lat, True, "valid")
+                            repo.update_channel_result(session_id, url, lat, True, "valid")
+                            repo.update_event_payload_latency(session_id, url, lat, True, "valid")
                         s.commit()
                 await asyncio.to_thread(_write_last, ok_urls)
 
