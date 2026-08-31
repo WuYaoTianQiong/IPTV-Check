@@ -136,6 +136,19 @@
         </div>
 
          <div v-else>
+           <!-- 聚合视图：按频道聚合展示多源 -->
+           <ResultGroupedView
+             v-if="viewMode === 'grouped'"
+             :items="resultStore.checkResults"
+             :expanded-channels="expandedChannels"
+             @toggle-expand="toggleExpanded"
+             @open-epg="openEpg"
+             @play-recommended="playRecommended"
+             @open-player="(name, url) => openPlayer({ name, url })"
+             @toggle-favorite="handleToggleFavoriteGrouped"
+           />
+           <!-- 平铺视图 -->
+           <template v-else>
            <div class="hidden sm:block rounded-lg border overflow-auto">
             <table class="text-sm table-fixed w-full">
               <thead>
@@ -315,6 +328,7 @@
               </div>
             </div>
           </div>
+          </template>
         </div>
 
         <ResultPagination
@@ -486,6 +500,7 @@ import { ref, computed, onMounted, watch, onBeforeUnmount, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { Wand2, Download, BarChart3, Play, Star, ChevronDown, Folder, Inbox, Check, Plus, RefreshCw, Search } from 'lucide-vue-next'
 import ResultPagination from '../components/result/ResultPagination.vue'
+import ResultGroupedView from '../components/result/ResultGroupedView.vue'
 import LatencyBadge from '../components/LatencyBadge.vue'
 import ResultFilterBar from '../components/result/ResultFilterBar.vue'
 import { useCheckStore } from '../stores/check'
@@ -531,6 +546,31 @@ try {
 watch(viewMode, (val) => {
   try { localStorage.setItem('iptv_result_view_mode', val) } catch {}
 })
+
+// ---------- 聚合视图（ResultGroupedView）交互 ----------
+const expandedChannels = ref(new Set())
+
+function toggleExpanded(name) {
+  const next = new Set(expandedChannels.value)
+  next.has(name) ? next.delete(name) : next.add(name)
+  expandedChannels.value = next
+}
+
+function handleToggleFavoriteGrouped(item) {
+  const url = item.url || (item.sources && item.sources[item.recommended_source_idx ?? 0]?.url) || ''
+  if (!url) return
+  return handleToggleFavorite({ ...item, url, group: item.channel_group || item.group || '' })
+}
+
+function playRecommended(item) {
+  const src = item.sources && item.sources[item.recommended_source_idx ?? 0]
+  if (src && src.url) openPlayer({ name: item.name, url: src.url })
+}
+
+function openEpg(item) {
+  const url = item.url || (item.sources && item.sources[0]?.url) || ''
+  toast.info('EPG 节目单', `${item.name || ''} · ${url.slice(0, 40) || '暂无地址'}`)
+}
 
 const showAdvancedFilter = ref(false)
 try {

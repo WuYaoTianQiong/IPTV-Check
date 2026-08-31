@@ -83,7 +83,7 @@
   <nav class="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-background">
     <div class="flex justify-around py-2">
       <RouterLink
-        v-for="item in navItems"
+        v-for="item in mobileNavItems"
         :key="item.id"
         :to="item.to"
         custom
@@ -108,7 +108,7 @@
 
 <script setup>
 import { computed, ref, onMounted, onUnmounted } from 'vue'
-import { Tv, Globe, RefreshCw, Sun, Moon, Radio, PlayCircle, BarChart3, Wrench, Star, Loader2 } from 'lucide-vue-next'
+import { Tv, Globe, RefreshCw, Sun, Moon, Radio, PlayCircle, BarChart3, FileBarChart2, TrendingUp, Wrench, Star, Loader2 } from 'lucide-vue-next'
 import { useAppStore } from '../../stores/app'
 import { useDarkMode } from '../../composables/useDarkMode'
 import { cn } from '../../lib/utils'
@@ -134,7 +134,18 @@ const navItems = computed(() => [
   { id: 'source', to: '/source', label: '源配置', icon: Radio },
   { id: 'checking', to: '/checking', label: store.isChecking ? '检测中' : '开始检测', icon: PlayCircle, badge: store.isChecking ? '进行中' : null },
   { id: 'result', to: '/result', label: '结果', icon: BarChart3 },
+  { id: 'report', to: '/report', label: '报告', icon: FileBarChart2 },
+  { id: 'trend', to: '/trend', label: '趋势', icon: TrendingUp },
   { id: 'toolbox', to: '/toolbox', label: '工具箱', icon: Wrench },
   { id: 'favorites', to: '/favorites', label: '收藏夹', icon: Star },
+])
+
+// 移动端底部导航保持精简（5 项），报告/趋势可从桌面顶栏或结果页进入
+const mobileNavItems = computed(() => [
+  { id: 'source', to: '/source', label: '源', icon: Radio },
+  { id: 'checking', to: '/checking', label: store.isChecking ? '检测中' : '检测', icon: PlayCircle },
+  { id: 'result', to: '/result', label: '结果', icon: BarChart3 },
+  { id: 'favorites', to: '/favorites', label: '收藏', icon: Star },
+  { id: 'toolbox', to: '/toolbox', label: '工具', icon: Wrench },
 ])
 </script>
