@@ -1514,6 +1514,7 @@ async function doBatchFavorite(folderId) {
   const folderName = favoriteStore.folders.find(f => f.id === folderId)?.name || '未分类'
   let added = 0
   let skipped = 0
+  let failed = 0
   for (const url of selectedItems.value) {
     const item = resultStore.checkResults.find(i => i.url === url)
     if (!item) continue
@@ -1527,13 +1528,18 @@ async function doBatchFavorite(folderId) {
         folderId
       )
       added++
-    } catch {}
+    } catch {
+      failed++
+    }
   }
   favoriteStore.setDefaultFolder(folderId)
   await favoriteStore.fetchFavorites()
   batchSelectMode.value = false
   selectedItems.value = new Set()
-  toast.success('批量收藏完成', `成功 ${added} 个${skipped > 0 ? `，跳过已收藏 ${skipped} 个` : ''}`)
+  const parts = [`成功 ${added} 个`]
+  if (skipped > 0) parts.push(`跳过已收藏 ${skipped} 个`)
+  if (failed > 0) parts.push(`失败 ${failed} 个`)
+  toast.success(`批量收藏完成${failed > 0 ? '（部分失败）' : ''}`, parts.join('，'))
 }
 
 async function handleBatchAddFolder() {

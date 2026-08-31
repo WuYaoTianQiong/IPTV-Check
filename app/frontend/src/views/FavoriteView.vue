@@ -709,7 +709,9 @@ async function handleRemoveFavorite(fav) {
     await removeFavoriteApi(fav.id)
     await favoriteStore.fetchFavorites()
     toast.success('已取消收藏', fav.name)
-  } catch {}
+  } catch (e) {
+    toast.error('取消收藏失败', e.response?.data?.detail || e.message)
+  }
 }
 
 async function handleBatchRemove() {
@@ -721,7 +723,9 @@ async function handleBatchRemove() {
     batchRemoveMode.value = false
     await favoriteStore.fetchFavorites()
     toast.success('批量删除完成')
-  } catch {}
+  } catch (e) {
+    toast.error('批量删除失败', e.response?.data?.detail || e.message)
+  }
 }
 
 // ---------- 刷新延迟 ----------

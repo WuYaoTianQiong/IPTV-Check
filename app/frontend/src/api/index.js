@@ -19,14 +19,22 @@ api.interceptors.response.use(
     const msg = err.response?.data?.error?.message || err.response?.data?.message || err.response?.data?.detail || err.message
     if (status === 400) {
       showToast(msg || '请求参数错误', 'warning')
+    } else if (status === 401) {
+      showToast('未授权访问，请刷新页面或重新登录', 'error')
+    } else if (status === 403) {
+      showToast('没有操作权限', 'error')
     } else if (status === 404) {
       showToast(msg || '资源不存在', 'warning')
+    } else if (status === 408) {
+      showToast('请求超时，请重试', 'warning')
     } else if (status === 429) {
       showToast('请求过于频繁，请稍后再试', 'warning')
     } else if (status === 502 || status === 503) {
       showToast('服务暂时不可用，请稍后重试', 'error')
     } else if (status === 500) {
       showToast(msg || '服务器内部错误', 'error')
+    } else if (status) {
+      showToast(msg || `请求失败（${status}）`, 'error')
     } else if (!err.response) {
       showToast('网络连接失败，请检查服务是否启动', 'error')
     }
