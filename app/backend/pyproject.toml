@@ -28,6 +28,7 @@ dependencies = [
     "aiosqlite>=0.19",
     "pycountry>=23.12",
     "pypinyin>=0.51",
+    "alembic>=1.12",
 ]
 
 [project.optional-dependencies]

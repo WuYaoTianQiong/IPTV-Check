@@ -3,20 +3,25 @@ from logging.config import fileConfig
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 from alembic import context
+from sqlmodel import SQLModel
 
 config = context.config
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-from iptv_check.infra.database import (
-    ChannelModel,
-    CheckResultModel,
-    CheckHistoryModel,
-    FavoriteModel,
-)
+# 允许通过环境变量覆盖数据库 URL（应用启动时 database.py 也会动态设置）
+import os
+_alembic_db_url = os.environ.get("ALEMBIC_DB_URL")
+if _alembic_db_url:
+    config.set_main_option("sqlalchemy.url", _alembic_db_url)
 
-target_metadata = None
+# 导入全部 model 模块，确保 target_metadata 覆盖所有表
+import iptv_check.infra.database  # noqa: F401
+import iptv_check.infra.persistence.event_store  # noqa: F401
+import iptv_check.application.services.fetch_service  # noqa: F401
+
+target_metadata = SQLModel.metadata
 
 
 def run_migrations_offline() -> None:

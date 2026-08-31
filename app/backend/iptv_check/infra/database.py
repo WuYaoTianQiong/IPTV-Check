@@ -129,8 +129,7 @@ class DatabaseManager:
                 connect_args={"timeout": 30},
             )
             self._configure_pragma(self._engine)
-            SQLModel.metadata.create_all(self._engine)
-            self._migrate_schema()
+            self._ensure_alembic_managed()
             logger.info("数据库初始化: %s", self._db_path)
         return self._engine
 
@@ -156,58 +155,37 @@ class DatabaseManager:
             conn.execute(sa_text("PRAGMA busy_timeout=30000"))
             conn.commit()
 
-    def _migrate_schema(self):
-        """增量迁移：为已有表添加新列"""
+    def _ensure_alembic_managed(self) -> None:
+        """用 alembic 版本化迁移管理 schema。
+
+        - 全新库：直接 upgrade 到 head（按迁移创建全部表）
+        - 已有 alembic_version 的库：upgrade 到 head（增量）
+        - 旧版库（表已存在但无 alembic_version）：stamp 为 head（视为 baseline）
+        """
+        from alembic import command
+        from alembic.config import Config
+
+        ini_path = os.path.join(os.path.dirname(__file__), "..", "..", "alembic.ini")
+        cfg = Config(ini_path)
+        cfg.set_main_option("sqlalchemy.url", f"sqlite:///{self._db_path}")
+        # script_location 按绝对路径解析，避免依赖进程工作目录
+        cfg.set_main_option("script_location", os.path.join(os.path.dirname(ini_path), "alembic"))
+
+        from sqlalchemy import text as sa_text
         with self._engine.connect() as conn:
-            from sqlalchemy import text as sa_text
-            try:
-                cols = [row[1] for row in conn.execute(sa_text("PRAGMA table_info(favorites)")).fetchall()]
-                if "folder_id" not in cols:
-                    conn.execute(sa_text("ALTER TABLE favorites ADD COLUMN folder_id INTEGER"))
-                    conn.commit()
-                    logger.info("迁移: favorites 增加 folder_id 列")
-                if "channel_group" not in cols:
-                    conn.execute(sa_text("ALTER TABLE favorites ADD COLUMN channel_group VARCHAR DEFAULT ''"))
-                    conn.commit()
-                    logger.info("迁移: favorites 增加 channel_group 列")
-                if "sort_order" not in cols:
-                    conn.execute(sa_text("ALTER TABLE favorites ADD COLUMN sort_order INTEGER DEFAULT 0"))
-                    conn.commit()
-                    logger.info("迁移: favorites 增加 sort_order 列")
-                cols_fav = [row[1] for row in conn.execute(sa_text("PRAGMA table_info(favorites)")).fetchall()]
-                if "channel_id" in cols_fav:
-                    fk_cols = conn.execute(sa_text("PRAGMA foreign_key_list(favorites)")).fetchall()
-                    if len(fk_cols) > 0:
-                        try:
-                            conn.execute(sa_text("CREATE TABLE IF NOT EXISTS favorites_new (id INTEGER PRIMARY KEY, channel_id INTEGER DEFAULT 0, name VARCHAR DEFAULT '', url VARCHAR DEFAULT '', folder_id INTEGER, channel_group VARCHAR DEFAULT '', sort_order INTEGER DEFAULT 0, created_at DATETIME)"))
-                            conn.execute(sa_text("INSERT INTO favorites_new (id, channel_id, name, url, folder_id, channel_group, sort_order, created_at) SELECT id, channel_id, name, url, folder_id, channel_group, sort_order, created_at FROM favorites"))
-                            conn.execute(sa_text("DROP TABLE favorites"))
-                            conn.execute(sa_text("ALTER TABLE favorites_new RENAME TO favorites"))
-                            conn.commit()
-                            logger.info("迁移: favorites 移除 FK 约束")
-                        except Exception as e:
-                            logger.warning("favorites FK 迁移跳过: %s", e)
-                hist_cols = [row[1] for row in conn.execute(sa_text("PRAGMA table_info(check_history)")).fetchall()]
-                if "session_id" not in hist_cols:
-                    conn.execute(sa_text("ALTER TABLE check_history ADD COLUMN session_id VARCHAR DEFAULT ''"))
-                    conn.commit()
-                    logger.info("迁移: check_history 增加 session_id 列")
-                ch_cols = [row[1] for row in conn.execute(sa_text("PRAGMA table_info(channels)")).fetchall()]
-                if "resolution" not in ch_cols:
-                    conn.execute(sa_text("ALTER TABLE channels ADD COLUMN resolution VARCHAR DEFAULT ''"))
-                    conn.commit()
-                    logger.info("迁移: channels 增加 resolution 列")
-                fav_cols = [row[1] for row in conn.execute(sa_text("PRAGMA table_info(favorites)")).fetchall()]
-                if "latency" not in fav_cols:
-                    conn.execute(sa_text("ALTER TABLE favorites ADD COLUMN latency FLOAT DEFAULT 0.0"))
-                    conn.commit()
-                    logger.info("迁移: favorites 增加 latency 列")
-                if "latency_updated_at" not in fav_cols:
-                    conn.execute(sa_text("ALTER TABLE favorites ADD COLUMN latency_updated_at DATETIME"))
-                    conn.commit()
-                    logger.info("迁移: favorites 增加 latency_updated_at 列")
-            except Exception as e:
-                logger.warning("迁移检查失败: %s", e)
+            has_version = conn.execute(
+                sa_text("SELECT name FROM sqlite_master WHERE type='table' AND name='alembic_version'")
+            ).first()
+            has_business_table = conn.execute(
+                sa_text("SELECT name FROM sqlite_master WHERE type='table' AND name='channels'")
+            ).first()
+        if has_version:
+            command.upgrade(cfg, "head")
+        elif has_business_table:
+            command.stamp(cfg, "head")
+            logger.info("数据库已存在（旧版），已 stamp 为 alembic baseline")
+        else:
+            command.upgrade(cfg, "head")
 
     def get_session(self) -> Session:
         return Session(self.engine)
