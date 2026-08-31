@@ -69,30 +69,6 @@ async def get_source_health():
     return state._health_checker.to_dict()
 
 
-@router.get("/results/stats")
-async def get_results_stats():
-    state = _get_state()
-    service = _get_check_service()
-    if service and service.session_id:
-        progress = service.get_progress()
-        return {
-            "total": progress["total"],
-            "checked": progress["checked"],
-            "valid": progress["valid"],
-            "likely_valid": progress.get("likely_valid", 0),
-            "invalid": progress["invalid"],
-            "is_running": progress["is_running"],
-        }
-    return {
-        "total": 0,
-        "checked": 0,
-        "valid": 0,
-        "likely_valid": 0,
-        "invalid": 0,
-        "is_running": False,
-    }
-
-
 @router.get("/settings/media-probe")
 async def get_media_probe_status():
     from iptv_check.infra.media_probe import MediaProbe

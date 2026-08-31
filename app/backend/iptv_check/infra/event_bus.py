@@ -9,6 +9,14 @@ from blinker import Namespace
 
 logger = logging.getLogger(__name__)
 
+# ============================================================
+# 职责说明：EventBus 是进程内 blinker 发布/订阅总线，用于模块间解耦与实时推送
+# （如 ISP 检测结果推送、源下载状态通知）。事件名使用冒号风格（如 "check:started"），
+# 请统一使用下方 Events 常量，不要手写字符串。
+# 注意：domain/events.py 的 DomainEvents/DomainEvent 是事件溯源持久化模型
+# （写入 EventStore 事件表），与 EventBus 职责不同、事件名格式不同（下划线风格），请勿混用。
+# ============================================================
+
 _events = Namespace()
 
 

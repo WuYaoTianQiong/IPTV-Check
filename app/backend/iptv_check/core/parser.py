@@ -27,8 +27,6 @@ _EXTINF_ATTR_PATTERNS = {
 _RADIO_KEYWORDS = {"广播", "电台", "radio", "fm", "am", "broadcast"}
 _RADIO_CATEGORY_KEYWORDS = {"广播电台", "广播", "radio"}
 _IPV6_PATTERN = re.compile(r"https?://\[?[0-9a-f]{4}:", re.IGNORECASE)
-_FM_FREQUENCY_PATTERN = re.compile(r'(?:^|[^a-zA-Z0-9])(?:FM\s*)?(\d{2,3}\.\d)\s*(?:MHz|FM|fm)?', re.IGNORECASE)
-_AM_FREQUENCY_PATTERN = re.compile(r'(?:^|[^a-zA-Z0-9])(?:AM\s*)?(\d{3,4})\s*(?:kHz|AM|am|KHz)', re.IGNORECASE)
 _CLEAN_NAME_PATTERN = re.compile(r'^["\',;]+|["\',;]+$')
 _CLEAN_GROUP_PATTERN = re.compile(r'^["\',;]+|["\',;]+$')
 _CHINESE_PATTERN = re.compile(r'[\u4e00-\u9fff]')
@@ -824,32 +822,6 @@ def _translate_channel_name(name: str, tvg_name: str = "") -> str:
     return ""
 
 
-def _extract_frequency(name: str, group: str) -> str:
-    text_to_search = f"{name} {group}"
-    
-    match = _FM_FREQUENCY_PATTERN.search(text_to_search)
-    if match:
-        freq = match.group(1)
-        try:
-            freq_val = float(freq)
-            if 70.0 <= freq_val <= 108.0:
-                return f"FM {freq}"
-        except ValueError:
-            pass
-    
-    match = _AM_FREQUENCY_PATTERN.search(text_to_search)
-    if match:
-        freq = match.group(1)
-        try:
-            freq_val = float(freq)
-            if 500 <= freq_val <= 1700:
-                return f"AM {freq}"
-        except ValueError:
-            pass
-    
-    return ""
-
-
 def _find_name_comma_pos(line: str) -> int:
     in_quotes = False
     last_comma = -1
@@ -888,7 +860,7 @@ def _parse_extinf_line(line: str, source_category: str = "") -> dict:
     tvg_name = attrs.get("tvg_name", "")
     attrs["clean_name"] = _translate_channel_name(name, tvg_name)
 
-    frequency = _extract_frequency(name, group)
+    frequency = Channel._extract_frequency(name, group)
     if frequency:
         attrs["frequency"] = frequency
 

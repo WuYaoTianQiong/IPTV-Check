@@ -9,7 +9,7 @@ import aiohttp
 
 from iptv_check.infra.config.settings import ISP_KEYWORDS, ISP_APIS, IP_PREFIXES
 from iptv_check.infra.network import HttpClient
-from iptv_check.infra.event_bus import event_bus
+from iptv_check.infra.event_bus import event_bus, Events
 
 logger = logging.getLogger(__name__)
 
@@ -70,7 +70,7 @@ class ISPDetector:
             detected_isp = await self._detect_by_ip_segment_async()
 
         result = detected_isp or "其他/未知"
-        event_bus.emit("isp:detected", isp=result)
+        event_bus.emit(Events.ISP_DETECTED, isp=result)
         return result
 
     async def _detect_by_ip_segment_async(self) -> Optional[str]:
@@ -147,7 +147,7 @@ class ISPDetector:
             detected_isp = self._detect_by_ip_segment()
 
         result = detected_isp or "其他/未知"
-        event_bus.emit("isp:detected", isp=result)
+        event_bus.emit(Events.ISP_DETECTED, isp=result)
         return result
 
     def _detect_by_ip_segment(self) -> Optional[str]:

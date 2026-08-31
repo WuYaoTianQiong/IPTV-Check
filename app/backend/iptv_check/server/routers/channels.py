@@ -10,6 +10,8 @@ from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 from sqlmodel import select
 
+from iptv_check.models.channel import Channel
+
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api", tags=["channels"])
 
@@ -58,7 +60,7 @@ def _get_state():
 
 def _get_check_service():
     state = _get_state()
-    return getattr(state, "check_service", None)
+    return getattr(state, "_check_service", None)
 
 
 from iptv_check.infra.persistence.read_model import _infer_region
@@ -864,54 +866,6 @@ async def get_favorites(folder_id: Optional[int] = None, page: int = 1, per_page
         text = f"{name or ''} {group or ''} {url or ''}".lower()
         url_lower = (url or "").lower()
         return any(kw in text for kw in _RADIO_KW) or any(kw in url_lower for kw in _RADIO_URL_KW)
-    def _extract_frequency(name, group):
-        import re
-        text_to_search = f"{name or ''} {group or ''}"
-        match = re.search(r'(?:^|[^a-zA-Z0-9])(?:FM\s*)?(\d{2,3}\.\d)\s*(?:MHz|FM|fm)?', text_to_search, re.IGNORECASE)
-        if match:
-            try:
-                freq_val = float(match.group(1))
-                if 70.0 <= freq_val <= 108.0:
-                    return f"FM {match.group(1)}"
-            except ValueError:
-                pass
-        match = re.search(r'(?:^|[^a-zA-Z0-9])FM\s*(\d{2,3})(?:\s*(?:MHz|FM|fm))?(?:$|[^a-zA-Z0-9.])', text_to_search, re.IGNORECASE)
-        if match:
-            try:
-                freq_val = int(match.group(1))
-                if 87 <= freq_val <= 108:
-                    return f"FM {match.group(1)}"
-            except ValueError:
-                pass
-        match = re.search(r'(?:^|[^a-zA-Z0-9.])(\d{2,3})\s*FM(?:\s*(?:MHz))?(?:$|[^a-zA-Z0-9.])', text_to_search, re.IGNORECASE)
-        if match:
-            try:
-                freq_val = int(match.group(1))
-                if 87 <= freq_val <= 108:
-                    return f"FM {match.group(1)}"
-            except ValueError:
-                pass
-        match = re.search(r'(?:^|[^a-zA-Z0-9])(?:AM\s*)?(\d{3,4})\s*(?:kHz|AM|am|KHz)', text_to_search, re.IGNORECASE)
-        if match:
-            try:
-                freq_val = float(match.group(1))
-                if 500 <= freq_val <= 1700:
-                    return f"AM {match.group(1)}"
-            except ValueError:
-                pass
-        _radio_kw = ['广播', '电台', 'radio', 'fm', 'am', 'broadcast']
-        text_lower = text_to_search.lower()
-        if any(kw in text_lower for kw in _radio_kw):
-            match = re.search(r'(?:^|[^a-zA-Z0-9.])(\d{2,3}\.\d)(?:$|[^a-zA-Z0-9.])', text_to_search)
-            if match:
-                try:
-                    freq_val = float(match.group(1))
-                    if 70.0 <= freq_val <= 108.0:
-                        return f"FM {match.group(1)}"
-                except ValueError:
-                    pass
-        return ""
-
     LAG_SECONDS = 6 * 3600  # 超过 6 小时未更新的延迟重新查询
 
     def _query():
@@ -957,7 +911,7 @@ async def get_favorites(folder_id: Optional[int] = None, page: int = 1, per_page
                  "region": _infer_region(r.name, r.channel_group, _infer_country_code(r.name, r.channel_group)),
                  "is_radio": _is_radio(r.name, r.channel_group, r.url),
                  "country": _infer_country_code(r.name, r.channel_group),
-                 "frequency": _extract_frequency(r.name, r.channel_group),
+                 "frequency": Channel._extract_frequency(r.name, r.channel_group),
                  "created_at": r.created_at.isoformat() if hasattr(r.created_at, 'isoformat') else str(r.created_at)}
                 for r in rows
             ]

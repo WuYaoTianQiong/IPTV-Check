@@ -15,7 +15,7 @@ from iptv_check.models.check_result import CheckResult
 from iptv_check.models.settings import CheckConfig
 from iptv_check.infra.check_engine.base import CheckEngineProtocol
 from iptv_check.core.m3u8_validator import M3U8Validator
-from iptv_check.infra.event_bus import event_bus
+from iptv_check.infra.event_bus import event_bus, Events
 
 logger = logging.getLogger(__name__)
 
@@ -73,7 +73,7 @@ class StreamCheckEngine:
         self._semaphore = asyncio.Semaphore(config.max_threads)
         self._worker_tasks = []
 
-        event_bus.emit("check:started")
+        event_bus.emit(Events.CHECK_STARTED)
         logger.info("[StreamEngine] 启动检测, 初始频道=%d", len(channels))
 
         self._consumer_task = asyncio.create_task(self._consumer_loop())
@@ -133,7 +133,7 @@ class StreamCheckEngine:
             result.details = f"检测异常: {str(e)[:30]}"
 
         self._cache.set(channel.url_key, result.to_cache_dict())
-        event_bus.emit("channel:checked", result=result)
+        event_bus.emit(Events.CHANNEL_CHECKED, result=result)
         if self._on_result:
             self._on_result(result)
 
@@ -265,7 +265,7 @@ class StreamCheckEngine:
         """停止检测"""
         self._stop_event.set()
         self._running = False
-        event_bus.emit("check:stopped")
+        event_bus.emit(Events.CHECK_STOPPED)
         logger.info("[StreamEngine] 停止请求已发送")
 
     async def wait_complete(self):
@@ -280,7 +280,7 @@ class StreamCheckEngine:
                     logger.warning("[StreamEngine] 检测任务异常: %s", r)
 
         self._running = False
-        event_bus.emit("check:completed")
+        event_bus.emit(Events.CHECK_COMPLETED)
         logger.info("[StreamEngine] 所有检测完成")
 
         if self._on_complete:

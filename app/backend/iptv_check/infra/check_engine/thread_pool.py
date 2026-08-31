@@ -10,7 +10,7 @@ from iptv_check.models.check_result import CheckResult
 from iptv_check.models.settings import CheckConfig
 from iptv_check.infra.network import ResilientHttpClient
 from iptv_check.infra.disk_cache import DiskCacheManager
-from iptv_check.infra.event_bus import event_bus
+from iptv_check.infra.event_bus import event_bus, Events
 from iptv_check.core.m3u8_validator import M3U8Validator
 from iptv_check.infra.config.settings import settings
 
@@ -86,7 +86,7 @@ class ThreadPoolCheckEngine:
             self._stop_requested = False
             self._current_workers = config.max_threads
 
-        event_bus.emit("check:started")
+        event_bus.emit(Events.CHECK_STARTED)
 
         def worker():
             with ThreadPoolExecutor(max_workers=config.max_threads) as executor:
@@ -113,7 +113,7 @@ class ThreadPoolCheckEngine:
 
             with self._lock:
                 self._running = False
-            event_bus.emit("check:completed")
+            event_bus.emit(Events.CHECK_COMPLETED)
             if on_complete:
                 on_complete()
 
@@ -145,7 +145,7 @@ class ThreadPoolCheckEngine:
                 self._executor.shutdown(wait=False, cancel_futures=True)
             except Exception:
                 pass
-        event_bus.emit("check:stopped")
+        event_bus.emit(Events.CHECK_STOPPED)
 
     def _check_and_callback(self, channel: Channel, config: CheckConfig,
                             on_result: Optional[Callable[[CheckResult], None]]):
@@ -154,7 +154,7 @@ class ThreadPoolCheckEngine:
         result = self.check_channel(channel, config)
         url_key = channel.url_key
         self._cache.set(url_key, result.to_cache_dict())
-        event_bus.emit("channel:checked", result=result)
+        event_bus.emit(Events.CHANNEL_CHECKED, result=result)
         if on_result:
             on_result(result)
 

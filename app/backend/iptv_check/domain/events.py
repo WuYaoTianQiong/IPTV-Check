@@ -4,6 +4,13 @@ from datetime import datetime
 
 from iptv_check.infra.cn_time import cn_now
 
+# ============================================================
+# 职责说明：本模块是事件溯源持久化模型（DomainEvent/DomainEvents），
+# 用于将检测生命周期事件（check_started/channel_checked 等）写入 EventStore 事件表。
+# 进程内发布/订阅请使用 infra/event_bus.py 的 EventBus（blinker），
+# 两者职责不同、事件名格式不同（下划线 vs 冒号），请勿混用。
+# ============================================================
+
 
 @dataclass(frozen=True)
 class DomainEvent:
