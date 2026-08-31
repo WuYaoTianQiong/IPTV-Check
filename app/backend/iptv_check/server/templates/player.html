@@ -223,6 +223,7 @@ body{font-family:'Noto Sans SC','Inter',sans-serif;background:#f5f7fa;color:#1a1
       <span class="hint">调至此频率收听</span>
     </div>
     <div class="radio-status"><span class="green" id="play-status">加载中...</span></div>
+    <button id="radio-retry" style="display:none;margin-bottom:16px;padding:6px 16px;border-radius:20px;border:1px solid rgba(231,76,60,0.4);background:rgba(231,76,60,0.08);color:#e74c3c;font-size:13px;cursor:pointer" onclick="retryRadio()">🔄 重试播放</button>
     <div class="radio-controls">
       <button id="btn-prev" title="后退10秒">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12.5 8.14v7.72L6.28 12 12.5 8.14M14 4l-10 8 10 8V4zm5 0v16h-2V4h2z"/></svg>
@@ -442,7 +443,23 @@ if(isRadio){
   radioAudio.addEventListener('playing',function(){updatePlayUI(true);hideLoading()});
   radioAudio.addEventListener('pause',function(){updatePlayUI(false)});
   radioAudio.addEventListener('timeupdate',function(){timeText.textContent=formatTime(radioAudio.currentTime)});
-  radioAudio.addEventListener('error',function(){playStatus.textContent='播放出错';playStatus.classList.remove('green');hideLoading()});
+  radioAudio.addEventListener('error',function(){
+    playStatus.textContent='播放出错';
+    playStatus.classList.remove('green');
+    hideLoading();
+    var reBtn=document.getElementById('radio-retry');
+    if(reBtn)reBtn.style.display='inline-flex';
+  });
+  window.retryRadio=function(){
+    var reBtn=document.getElementById('radio-retry');
+    if(reBtn)reBtn.style.display='none';
+    var ps=document.getElementById('play-status');
+    ps.textContent='加载中...';ps.classList.add('green');
+    var ra=document.getElementById('radio-audio');
+    if(ra){ra.src='';ra.load()}
+    if(typeof switchSource==='function'&&sourceSelector){switchSource(sourceSelector.value)}
+    else{ra.src=validUrl;ra.play().catch(function(){})}
+  };
 
   waitForLib('Hls',6000).then(function(HlsLib){
     if(!HlsLib){radioAudio.src=validUrl;radioAudio.play().catch(function(){});return}
@@ -503,7 +520,20 @@ if(isRadio){
       }
     });
     tvVideo.addEventListener('playing',function(){tvNetErrorCount=0;hideLoading()});
-    setTimeout(function(){if(tvNetErrorCount===0)hideLoading()},4000);
+    setTimeout(function(){
+      if(tvNetErrorCount===0&&tvVideo.paused){
+        var lt=document.getElementById('loading-text');
+        if(lt)lt.textContent='缓冲中，请稍候...';
+      }
+    },4000);
+    setTimeout(function(){
+      if(tvNetErrorCount===0&&tvVideo.paused){
+        hideLoading();
+        document.getElementById('load-error').style.display='block';
+        document.getElementById('loading-ring').style.display='none';
+        document.getElementById('loading-text').style.display='none';
+      }
+    },15000);
     setInterval(function(){
       if(!hls||hls.currentLevel<0||!hls.levels)return;
       var l=hls.levels[hls.currentLevel];
