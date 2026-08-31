@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""合并 江苏移动.m3u 与 电视直播源.m3u，生成去重、带分组和台标的整合播放列表。
+"""合并 江苏移动.m3u 与 电视直播源.m3u，生成去重、带分组和台标的播放列表。
 
 用法:
-    python app/tools/build_playlist.py            # 生成 live.m3u（仓库根目录）
+    python app/tools/build_playlist.py            # 生成 live.m3u（外网通用）+ jiangsu-mobile.m3u（江苏移动专版）
     python app/tools/build_playlist.py --check-logo   # 额外联网校验每个台标 URL 可达性
 
 设计要点:
@@ -11,6 +11,8 @@
     ghproxy.cc / ghfast.top 已 403，台标全部失效）。
   * 去重分两级：URL 完全相同只保留一条；同一频道的内网源与外网备源都保留，
     用名称后缀区分（超清/高清/标清 = 江苏移动内网，备用 = 外网第三方）。
+  * 输出两份：live.m3u 仅含公网可播的外网源；jiangsu-mobile.m3u 含内网源+备源
+    （适配江苏移动网络，本项目主推版本）。
 """
 
 from __future__ import annotations
@@ -29,8 +31,8 @@ from urllib.request import Request, urlopen
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 SRC_A = os.path.join(ROOT, "app", "tools", "sources", "江苏移动.m3u")          # 第三方 OTT 聚合源（外网可播）
 SRC_B = os.path.join(ROOT, "app", "tools", "sources", "电视直播源.m3u")         # 江苏移动内网源 + 少量第三方补录
-OUT_DIR = ROOT
-OUT_FILE = os.path.join(OUT_DIR, "live.m3u")
+OUT_LIVE = os.path.join(ROOT, "live.m3u")
+OUT_MOBILE = os.path.join(ROOT, "jiangsu-mobile.m3u")
 
 LOGO_BASE = "https://cdn.jsdelivr.net/gh/fanmingming/live@main/tv/"
 EPG_URL = "https://cdn.jsdelivr.net/gh/fanmingming/live@main/e.xml"
@@ -334,46 +336,66 @@ def main(argv=None):
                 if e["logo"] in bad:
                     e["logo"] = ""
 
-    # 7) 输出
-    os.makedirs(OUT_DIR, exist_ok=True)
-    lines = [
-        "#EXTM3U x-tvg-url=\"%s\"" % EPG_URL,
+    # 7) 输出两份列表
+    os.makedirs(ROOT, exist_ok=True)
+
+    def render(entries):
+        lines = []
+        cur_group = None
+        for e in entries:
+            if e["group"] != cur_group:
+                cur_group = e["group"]
+                lines.append("#")
+                lines.append("# ===== %s =====" % cur_group)
+            attrs = ['tvg-name="%s"' % e["tvg"]]
+            if e["logo"]:
+                # 中文文件名一律百分号编码，避免部分播放器不自动编码导致台标 404
+                attrs.append('tvg-logo="%s%s"' % (LOGO_BASE, quote(e["logo"])))
+            attrs.append('group-title="%s"' % e["group"])
+            lines.append("#EXTINF:-1 %s,%s" % (" ".join(attrs), e["name"]))
+            lines.append(e["url"])
+        lines.append("")
+        return lines
+
+    live_entries = [e for e in entries if not e["official"]]
+    mobile_entries = entries
+
+    header_live = [
         "#",
-        "# 整合播放列表 | 由 tools/build_playlist.py 自动生成，请勿手工编辑",
+        "# 外网通用版 | 仅含公网可播的外网第三方源（不含运营商内网源）",
+        "# 由 tools/build_playlist.py 自动生成，请勿手工编辑",
+        "# 来源：江苏移动.m3u + 电视直播源.m3u 中的外网源",
+        "# 适用：任意公网播放器 / 非江苏移动网络",
+        "# 台标 / EPG：fanmingming/live，经 jsDelivr CDN 加速",
+    ]
+    header_mobile = [
+        "#",
+        "# 江苏移动电视直播源（内网+备用）",
+        "# 由 tools/build_playlist.py 自动生成，请勿手工编辑",
         "# 来源：江苏移动.m3u（第三方 OTT 外网源） + 电视直播源.m3u（江苏移动内网源 + 补录）",
-        "# 命名规则：超清/高清/标清 = 江苏移动内网源（需对应运营商网络）；备用 = 外网第三方源；无后缀 = 仅此一路源",
+        "# 命名规则：超清/高清/标清 = 江苏移动内网源；备用 = 外网第三方源；无后缀 = 仅此一路源",
         "# 命名纠正：%s" % "；".join("%s 实为 %s" % (k, v) for k, v in RENAME.items()),
         "# 台标 / EPG：fanmingming/live，经 jsDelivr CDN 加速",
     ]
-    cur_group = None
-    for e in entries:
-        if e["group"] != cur_group:
-            cur_group = e["group"]
-            lines.append("#")
-            lines.append("# ===== %s =====" % cur_group)
-        attrs = ['tvg-name="%s"' % e["tvg"]]
-        if e["logo"]:
-            # 中文文件名一律百分号编码，避免部分播放器不自动编码导致台标 404
-            attrs.append('tvg-logo="%s%s"' % (LOGO_BASE, quote(e["logo"])))
-        attrs.append('group-title="%s"' % e["group"])
-        lines.append("#EXTINF:-1 %s,%s" % (" ".join(attrs), e["name"]))
-        lines.append(e["url"])
-    lines.append("")
 
-    with io.open(OUT_FILE, "w", encoding="utf-8", newline="\n") as fp:
-        fp.write("\n".join(lines))
+    with io.open(OUT_LIVE, "w", encoding="utf-8", newline="\n") as fp:
+        fp.write("\n".join(["#EXTM3U x-tvg-url=\"%s\"" % EPG_URL] + header_live + render(live_entries)))
+    with io.open(OUT_MOBILE, "w", encoding="utf-8", newline="\n") as fp:
+        fp.write("\n".join(["#EXTM3U x-tvg-url=\"%s\"" % EPG_URL] + header_mobile + render(mobile_entries)))
 
     stat = OrderedDict([
-        ("频道总数", len(entries)),
-        ("内网源", sum(1 for e in entries if e["official"])),
-        ("外网第三方源", sum(1 for e in entries if not e["official"])),
+        ("live.m3u（外网通用）", len(live_entries)),
+        ("jiangsu-mobile.m3u（江苏移动专版）", len(mobile_entries)),
+        ("其中内网源", sum(1 for e in entries if e["official"])),
+        ("其中外网第三方源", sum(1 for e in entries if not e["official"])),
         ("仅IPv6可达", sum(1 for e in entries if e["ipv6"])),
         ("已有台标", sum(1 for e in entries if e["logo"])),
         ("缺台标", [e["name"] for e in entries if not e["logo"]]),
         ("分组明细", OrderedDict((g, sum(1 for e in entries if e["group"] == g)) for g in GROUP_ORDER)),
     ])
     print(json.dumps(stat, ensure_ascii=False, indent=2))
-    print("输出: %s" % OUT_FILE)
+    print("输出: %s" % OUT_LIVE)
+    print("输出: %s" % OUT_MOBILE)
     return 0
 
 
