@@ -69,7 +69,8 @@ if ($Mode -eq "prod") {
 
     Write-Host "[$(Get-Date -Format 'HH:mm:ss')] Building frontend..." -ForegroundColor Yellow
     Push-Location $frontendDir
-    npx vite build --outDir dist
+    # 构建产物按 vite.config.js 输出到 backend/iptv_check/static（后端 serve 的目录）
+    npx vite build
     if ($LASTEXITCODE -ne 0) {
         Write-Host "[$(Get-Date -Format 'HH:mm:ss')] Frontend build FAILED!" -ForegroundColor Red
         Pop-Location

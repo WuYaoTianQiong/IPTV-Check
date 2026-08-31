@@ -13,5 +13,3 @@ data/
 cache_store/
 exports/
 uploads/
-iptv_check/frontend/dist/
-iptv_check/frontend/node_modules/

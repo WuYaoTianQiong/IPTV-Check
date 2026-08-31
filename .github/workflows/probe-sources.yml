@@ -1,0 +1,29 @@
+name: 源可达性探测
+
+# 一次性验证：判断江苏移动内网源是否仅限移动网内访问。
+# 验证通过后，本工作流可改造成正式的定时检测任务（届时启用 schedule）。
+on:
+  workflow_dispatch:
+    inputs:
+      timeout:
+        description: 单条探测超时（秒）
+        required: false
+        default: '10'
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: 探测源可达性
+        env:
+          PROBE_TIMEOUT: ${{ github.event.inputs.timeout || '10' }}
+        run: python .github/scripts/probe_sources.py >> "$GITHUB_STEP_SUMMARY"

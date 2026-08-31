@@ -38,21 +38,19 @@ _npm_cache/
 *.tmp
 *.log
 
-# Backend runtime data
-backend/iptv_check/data/
+# App runtime data
+app/backend/iptv_check/data/
 cache_store/
-data/
 data/
 
 # Frontend build output
-frontend/dist/
+app/frontend/dist/
 
 # Testing
 .pytest_cache/
 .coverage
 htmlcov/
 .tox/
-backend/pytest-of-*/
 
 # Build artifacts
 *.pyc
@@ -64,7 +62,6 @@ backend/pytest-of-*/
 
 # OS
 Thumbs.db
-.DS_Store
 
 # Art / IDE tools
 .arts/
@@ -81,31 +78,18 @@ _cp.py
 批量检测_*.m3u
 批量检测_*.csv
 批量检测_*.xlsx
-*.m3u
 
-# Temporary scripts in root
-_check_*.py
-_diag_*.py
-run_full_check.py
+# 播放列表（live.m3u / jiangsu-mobile.m3u / 源素材）纳入版本库随仓库发布
+# 构建/运行时产物的临时 m3u 由 app/backend/iptv_check/data/ 与 data/ 规则覆盖
 
 # Database files
 *.db
 _events_*.db
 
-# Backend temporary scripts
-backend/check_*.py
-backend/final_check.py
-backend/fix_*.py
-backend/test_*.py
-backend/verify.py
-backend/monitor.py
-backend/restart.py
-
 # Frontend temporary files
-frontend/src/_verify.cjs
+app/frontend/src/_verify.cjs
 
 # Other temp files
-nul
 pytest-of-*/
 scripts/
 sdd/

@@ -1,6 +1,6 @@
 # IPTV-Check 电视直播源检测与管理平台
 
-![Version](https://img.shields.io/badge/Version-6.0-blue.svg)
+![Version](https://img.shields.io/badge/Version-4.2.0-blue.svg)
 ![Python](https://img.shields.io/badge/Python-3.9+-blue.svg)
 ![License](https://img.shields.io/badge/License-MIT-yellow.svg)
 
@@ -148,74 +148,13 @@
 
 ---
 
-## 桌面 GUI 功能
-
-### 📡 在线直播源库（新功能）
-- **精选源库**：内置多个知名IPTV直播源（vbskycn、范明明、Kimentanm等）
-- **运营商自动匹配**：根据您本地宽带的运营商（移动/电信/联通/广电），自动标识兼容的源
-- **协议类型标识**：自动区分IPv4/IPv6源，显示兼容性提示
-- **一键检测**：勾选需要的源 → 点击"一键检测选中源"，自动下载并检测
-
-### 🔄 格式转换工具（新功能）
-- **M3U ↔ TXT互转**：支持直播源文件格式转换
-- **批量处理**：可同时转换多个文件
-- **保留频道信息**：转换过程不丢失频道名称和URL
-
-### 🌐 在线M3U服务（新功能）
-- **一键启动HTTP服务**：将检测结果生成为在线M3U播放列表
-- **局域网访问**：手机/电视/平板等设备输入URL即可直接使用
-- **多格式支持**：提供M3U和TXT两种格式的下载链接
-
-### 一键检测
-- **图形化操作**：点击"浏览"选择文件 → 点击"开始检测"，无需任何命令
-- **多文件支持**：可同时导入多个直播源文件，自动合并去重
-- **点击输入框**：直接点击"源文件"输入框即可选择文件
-- **缓存加速**：自动缓存检测结果，24小时内重复检测秒出结果
-
-### 智能检测引擎
-- **M3U8 递归验证**：自动追踪 HLS 流的多级嵌套（最多 5 层），确保最终视频分片可达
-- **分离超时策略**：连接超时（默认 3 秒）+ 读取超时（默认 8 秒），快速拒绝不可达 IP
-- **动态线程调整**：网络良好自动提速，失败过多自动降速保护
-- **精确错误分类**：DNS 失败 / 连接拒绝 / SSL 错误 / HTTP 403/404/500 等
-
-### 运营商智能感知
-- **自动检测本地宽带**：启动时通过 IP API 自动识别您的宽带运营商（移动/电信/联通/广电）
-- **直播源运营商识别**：从文件名和 URL 特征自动推断直播源的运营商归属
-- **实时兼容性提示**：界面醒目位置显示匹配状态，不匹配时黄色警告条提醒
-- **检测结果标注**：失败的源自动标注"可能为 XX 专属源"，帮助您判断失败原因
-
-### 灵活导出
-- **导出选项对话框**：点击"导出结果"后弹出选项面板，所见即所得
-- **四种格式任选**：
-  - **M3U**：仅有效源，可直接导入 IPTV 播放器
-  - **TXT**：仅无效源，附带错误原因，方便后续处理
-  - **CSV**：完整明细表格，包含所有频道的延迟、速度等信息
-  - **Excel**：带颜色标注和自动筛选的 `.xlsx` 文件
-- **合并/分别模式**：可选择将所有数据合并到一个文件，或按有效/无效分别生成文件
-- **IPv4/IPv6分类导出**：支持按网络协议类型分别导出，生成 `_IPv4` 和 `_IPv6` 文件
-- **运营商说明**：导出文件自动附加本地网络和直播源运营商信息
-
-### 结果展示
-- **三标签页视图**：全部 / 有效源 / 无效源，分类清晰
-- **详细信息列**：原始序号、来源文件、频道名称、URL、状态、延迟、速度、错误信息
-- **实时搜索过滤**：输入关键词立即过滤，支持搜索任意列
-- **右键批量操作**：选中多个频道，右键复制 URL / 名称 / 整行数据
-- **列点击排序**：点击任意列标题即可排序
-
-### 美观界面
-- **现代化 UI**：基于 `ttkbootstrap`，提供流畅的视觉体验
-- **明暗主题切换**：一键切换亮色/暗色主题
-- **实时进度反馈**：进度条 + 统计数字 + 当前线程数，检测状态一目了然
-
----
-
 ## 快速开始
 
 ### Web 模式（推荐）
 
 ```bash
 # 安装依赖
-cd iptv_check
+cd app/backend
 pip install -e .
 
 # 启动服务
@@ -224,45 +163,6 @@ python -m iptv_check.server.main
 # 浏览器访问
 # http://127.0.0.1:9528
 ```
-
-### 桌面 GUI 模式
-
-### 环境准备
-
-```bash
-# 安装核心依赖
-pip install ttkbootstrap requests
-
-# 如需 Excel 导出（可选）
-pip install openpyxl
-```
-
-### 运行程序
-
-```bash
-python IPTV-Check.py
-```
-
-### 操作步骤
-
-**方式一：检测本地文件**
-1. **选择文件**：点击"源文件"输入框或"浏览(可多选)"按钮，选择 `.m3u` 或 `.txt` 文件
-2. **调整配置**（可选）：设置连接超时、读取超时、线程数，勾选速度测试
-3. **开始检测**：点击"开始检测"按钮
-4. **查看结果**：检测完成后在"全部"、"有效源"、"无效源"标签页查看
-5. **导出结果**：点击"导出结果"，在弹出的对话框中选择需要的格式和模式
-
-**方式二：使用在线直播源库**
-1. **打开源库**：点击"📡 在线源库"按钮
-2. **选择源**：勾选需要的直播源（自动匹配您的宽带运营商）
-3. **一键检测**：点击"一键检测选中源"，自动下载并检测
-4. **导出结果**：检测完成后导出有效源
-
-**方式三：使用在线M3U服务**
-1. **先检测源**：检测完直播源并获取有效源列表
-2. **启动服务**：点击"🌐 在线服务"按钮
-3. **复制URL**：复制生成的URL到手机/电视播放器
-4. **开始观看**：其他设备输入URL即可直接使用
 
 ---
 
@@ -332,19 +232,20 @@ python IPTV-Check.py
 
 ---
 
-## 打包 EXE
+## 整合播放列表
+
+仓库内置一份整合好的播放列表：根目录 [`live.m3u`](live.m3u)，由 `app/tools/sources/江苏移动.m3u`（外网第三方源）与 `app/tools/sources/电视直播源.m3u`（江苏移动内网源）合并去重而来，带分组、台标与 EPG。
 
 ```bash
-# 安装打包工具
-pip install pyinstaller
-
-# 开始打包
-pyinstaller --name "IPTV-Check" --onefile --windowed --add-data "assets;assets" --add-data "local_sources.json;." --icon="assets/icon.ico" IPTV-Check.py
+python app/tools/build_playlist.py               # 重新生成
+python app/tools/build_playlist.py --check-logo  # 生成并校验台标可达性
 ```
 
-打包后的可执行文件位于 `dist/` 目录下。
+推送到 GitHub 后可直接用 raw 直链订阅：
 
----
+```
+https://raw.githubusercontent.com/<用户名>/<仓库名>/main/live.m3u
+```
 
 ## 技术栈
 
@@ -360,21 +261,12 @@ pyinstaller --name "IPTV-Check" --onefile --windowed --add-data "assets;assets" 
 - **EPG 解析**：xml.etree.ElementTree (XMLTV 标准)
 - **架构模式**：Repository + Service Layer + Event Bus + DI Container
 
-### 桌面端
-- **GUI 框架**：ttkbootstrap (基于 tkinter)
-- **HTTP 请求**：requests
-- **表格导出**：openpyxl (可选)
-- **并发模型**：ThreadPoolExecutor + queue
-
 ---
 
 ## GitHub Actions 自动化
 
-本项目支持 GitHub Actions 自动同步更新：
-
-- Fork 本项目后，在 GitHub Actions 页面启用 "Sync with Upstream Repository" 工作流
-- 工作流每6小时自动运行一次，同步上游更新
-- 自动更新 `local_sources.json` 文件时间戳
+- `ci.yml`：backend 单元测试（Python 3.11/3.12 + ruff）+ frontend 构建与单测
+- `probe-sources.yml`：手动触发的直播源可达性探测
 
 ---
 
