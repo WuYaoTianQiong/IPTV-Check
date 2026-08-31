@@ -342,16 +342,11 @@
       </CardContent>
     </Card>
 
-    <Dialog v-model:open="showExport">
-      <DialogHeader><DialogTitle>导出检测结果</DialogTitle></DialogHeader>
-      <div class="p-6 pt-0 space-y-3">
-        <p class="text-sm text-muted-foreground">选择导出格式</p>
-        <div class="flex gap-2">
-          <Button class="flex-1 gap-2" @click="doExport('m3u')"><Download class="h-4 w-4" /> M3U</Button>
-          <Button variant="outline" class="flex-1 gap-2" @click="doExport('txt')"><Download class="h-4 w-4" /> TXT</Button>
-        </div>
-      </div>
-    </Dialog>
+    <ExportDialog
+      :open="showExport"
+      :selected-urls="Array.from(selectedItems)"
+      @update:open="showExport = $event"
+    />
 
     <AlertDialog v-model:open="showOptimizeDialog">
       <AlertDialogHeader>智能优选并去重</AlertDialogHeader>
@@ -501,13 +496,14 @@ import { useRouter, useRoute } from 'vue-router'
 import { Wand2, Download, BarChart3, Play, Star, ChevronDown, Folder, Inbox, Check, Plus, RefreshCw, Search } from 'lucide-vue-next'
 import ResultPagination from '../components/result/ResultPagination.vue'
 import ResultGroupedView from '../components/result/ResultGroupedView.vue'
+import ExportDialog from '../components/ExportDialog.vue'
 import LatencyBadge from '../components/LatencyBadge.vue'
 import ResultFilterBar from '../components/result/ResultFilterBar.vue'
 import { useCheckStore } from '../stores/check'
 import { useResultStore } from '../stores/result'
 import { useFavoriteStore } from '../stores/favorite'
 import { useAppStore } from '../stores/app'
-import { smartOptimize, exportResults, getAvailableCountries, getAvailableRegions, getCategoryTree, quickCheckResults, refreshResultsLatency, thoroughCheck, stopRefreshLatency } from '../api'
+import { smartOptimize, getAvailableCountries, getAvailableRegions, getCategoryTree, quickCheckResults, refreshResultsLatency, thoroughCheck, stopRefreshLatency } from '../api'
 import { useToast } from '../composables/useToast'
 import { cn, countryCodeToName } from '../lib/utils'
 import { Card, CardContent } from '../components/ui/card'
@@ -1382,28 +1378,6 @@ async function handleCopyUrl(url) {
     document.body.removeChild(ta)
   }
   toast.success('已复制 URL', url.length > 48 ? url.slice(0, 48) + '…' : url)
-}
-
-async function doExport(format) {
-  showExport.value = false
-  try {
-    const { data } = await exportResults({ format })
-    const filename = format === 'm3u' ? 'results.m3u' : 'results.txt'
-    downloadBlob(data, filename, format === 'm3u' ? 'audio/x-mpegurl' : 'text/plain')
-    toast.success('导出成功')
-  } catch (e) {
-    toast.error('导出失败')
-  }
-}
-
-function downloadBlob(data, filename, mimeType) {
-  const blob = data instanceof Blob ? data : new Blob([data], { type: mimeType })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = filename
-  a.click()
-  URL.revokeObjectURL(url)
 }
 
 function getItemQualityTier(item) {

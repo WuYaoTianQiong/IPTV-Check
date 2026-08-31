@@ -125,15 +125,35 @@ async function doExport() {
     if (props.selectedGroups.length > 0) {
       payload.groups = props.selectedGroups
     }
+    const files = []
     for (const format of selectedFormats.value) {
       payload.format = format
-      await exportResults(payload)
+      const { data } = await exportResults(payload)
+      if (data && Array.isArray(data.exported)) {
+        files.push(...data.exported)
+      }
     }
-    toast.success('导出成功')
+    if (files.length > 0) {
+      files.forEach(f => downloadExported(typeof f === 'string' ? f : (f?.filename || '')))
+      toast.success(`导出成功，已开始下载 ${files.length} 个文件`)
+    } else {
+      toast.success('导出成功')
+    }
   } catch (e) {
     toast.error('导出失败', e.response?.data?.detail || e.message)
   } finally {
     exporting.value = false
   }
+}
+
+function downloadExported(filename) {
+  if (!filename) return
+  const name = String(filename).split(/[\\/]/).pop()
+  const a = document.createElement('a')
+  a.href = `/api/export/download?filename=${encodeURIComponent(name)}`
+  a.download = name
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
 }
 </script>

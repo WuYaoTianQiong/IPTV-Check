@@ -141,6 +141,20 @@ async def export_results(req: ExportRequest):
         raise HTTPException(500, f"导出失败: {e}")
 
 
+@router.get("/export/download")
+async def download_exported(filename: str):
+    """下载已导出到服务器的文件（export_dir 下）。"""
+    import os
+    from fastapi.responses import FileResponse
+    from iptv_check.server.app import DATA_DIR
+    export_dir = os.path.join(DATA_DIR, "exports")
+    safe_name = os.path.basename(filename)
+    path = os.path.join(export_dir, safe_name)
+    if not os.path.isfile(path):
+        raise HTTPException(404, f"导出文件不存在: {safe_name}")
+    return FileResponse(path, filename=safe_name)
+
+
 @router.post("/convert")
 async def convert_format(req: ConvertRequest):
     from iptv_check.core.converter import FormatConverter
