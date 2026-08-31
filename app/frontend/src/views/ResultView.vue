@@ -255,15 +255,15 @@
                   </td>
                   <td class="px-3 py-2.5 text-center">
                     <div class="flex items-center justify-center gap-1">
-                      <Button variant="ghost" size="icon" class="h-7 w-7" @click="openPlayer(item)" title="播放">
+                      <Button variant="ghost" size="icon" class="h-7 w-7" @click="openPlayer(item)" title="播放" aria-label="播放">
                         <Play class="h-4 w-4" />
                       </Button>
                       <div class="relative inline-flex">
-                        <Button variant="ghost" size="icon" class="h-7 w-7" @click="handleToggleFavorite(item)" :title="favoriteStore.isFavorite(item.url) ? '取消收藏' : '收藏'">
+                        <Button variant="ghost" size="icon" class="h-7 w-7" @click="handleToggleFavorite(item)" :title="favoriteStore.isFavorite(item.url) ? '取消收藏' : '收藏'" :aria-label="favoriteStore.isFavorite(item.url) ? '取消收藏' : '收藏'">
                           <Star v-if="favoriteStore.isFavorite(item.url)" class="h-4 w-4 fill-primary text-primary" />
                           <Star v-else class="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" class="h-7 w-3 px-0 -ml-1" @click="openFavoriteDropdown(item, $event.target.closest('button'))" title="选择收藏夹">
+                        <Button variant="ghost" size="icon" class="h-7 w-3 px-0 -ml-1" @click="openFavoriteDropdown(item, $event.target.closest('button'))" title="选择收藏夹" aria-label="选择收藏夹">
                           <ChevronDown class="h-3 w-3" />
                         </Button>
                       </div>

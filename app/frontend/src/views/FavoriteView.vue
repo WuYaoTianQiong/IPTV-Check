@@ -5,23 +5,24 @@
         class="absolute -right-3 top-2 z-20 h-6 w-6 rounded-full bg-background border border-border/60 shadow-sm flex items-center justify-center hover:bg-accent transition-colors"
         @click="toggleSidebar"
         title="折叠侧边栏"
+        aria-label="折叠侧边栏"
       >
         <ChevronLeft class="h-3.5 w-3.5 text-muted-foreground" />
       </button>
       <div class="flex items-center justify-between shrink-0 px-3 py-2.5 border-b border-border/40">
         <h3 class="font-semibold text-sm">收藏夹</h3>
         <div class="flex items-center gap-1">
-          <Button variant="ghost" size="icon" class="h-6 w-6" @click="showAddFolder = true" title="新建文件夹">
+          <Button variant="ghost" size="icon" class="h-6 w-6" @click="showAddFolder = true" title="新建文件夹" aria-label="新建文件夹">
             <Plus class="h-3.5 w-3.5" />
           </Button>
           <Button variant="outline" size="sm" class="h-7 px-2 gap-1 text-xs" @click="showExportDialog = true">
             <Download class="h-3 w-3" />
             导出
           </Button>
-          <Button variant="ghost" size="icon" class="h-6 w-6" @click="handleRefreshLatency" :disabled="isRefreshingLatency" title="刷新延迟">
+          <Button variant="ghost" size="icon" class="h-6 w-6" @click="handleRefreshLatency" :disabled="isRefreshingLatency" title="刷新延迟" aria-label="刷新延迟">
             <RefreshCw class="h-3.5 w-3.5" :class="{ 'animate-spin': isRefreshingLatency }" />
           </Button>
-          <Button variant="ghost" size="icon" class="h-6 w-6" :class="batchRemoveMode ? 'text-destructive' : ''" @click="batchRemoveMode = !batchRemoveMode" title="批量管理">
+          <Button variant="ghost" size="icon" class="h-6 w-6" :class="batchRemoveMode ? 'text-destructive' : ''" @click="batchRemoveMode = !batchRemoveMode" title="批量管理" aria-label="批量管理">
             <Move class="h-3.5 w-3.5" />
           </Button>
         </div>
@@ -33,6 +34,7 @@
         <select
           :value="favoriteStore.sortOrder"
           class="h-7 rounded-md border border-input bg-background px-2 text-[11px] flex-1 min-w-0"
+          aria-label="收藏排序"
           @change="onFavSortChange($event.target.value)"
         >
           <option value="default">默认顺序</option>
