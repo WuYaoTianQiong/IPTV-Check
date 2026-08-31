@@ -40,10 +40,11 @@ class FetchedChannelModel(SQLModel, table=True):
 
 
 class FetchService:
-    def __init__(self, event_store, broadcast_fn: Callable, session_factory):
+    def __init__(self, event_store, broadcast_fn: Callable, session_factory, app_state=None):
         self._event_store = event_store
         self._broadcast_fn = broadcast_fn
         self._session_factory = session_factory
+        self._app_state = app_state
         self._is_fetching = False
         self._fetched_count = 0
         self._total_sources = 0
@@ -121,7 +122,6 @@ class FetchService:
             session.commit()
 
     async def start_fetch(self, online_source_ids: List[str], use_cache: bool = True, min_valid_rate: float = 0):
-        from iptv_check.server.app import app_state
         from iptv_check.infra.config.settings import settings
         import aiohttp
 
@@ -132,7 +132,7 @@ class FetchService:
         self._fetched_count = 0
         self._done_sources = 0
 
-        sources_to_fetch = [src for src in app_state.online_sources if src.id in online_source_ids]
+        sources_to_fetch = [src for src in self._app_state.online_sources if src.id in online_source_ids]
 
         if min_valid_rate > 0:
             from iptv_check.infra.persistence.event_store import EventStore
@@ -164,7 +164,7 @@ class FetchService:
         direct_count = 0
         for src in channel_sources:
             url = src.url
-            if src.mirror_url and app_state.local_isp not in src.isp:
+            if src.mirror_url and self._app_state.local_isp not in src.isp:
                 url = src.mirror_url
             is_radio = src.category.endswith("电台") or "广播" in src.category or "radio" in src.category.lower()
             group = src.category
@@ -208,11 +208,11 @@ class FetchService:
                 fresh: List[Channel] = []
                 try:
                     url = src.url
-                    if src.mirror_url and app_state.local_isp not in src.isp:
+                    if src.mirror_url and self._app_state.local_isp not in src.isp:
                         url = src.mirror_url
 
                     cache_key = f"source:{src.id}"
-                    cache = getattr(app_state, 'cache', None)
+                    cache = getattr(self._app_state, 'cache', None)
 
                     if use_cache and cache and cache.has(cache_key):
                         cached = cache.get(cache_key)
@@ -246,7 +246,7 @@ class FetchService:
                         connect=10,
                         sock_read=settings.download_timeout,
                     )
-                    async with app_state._async_session.get(url, timeout=timeout, ssl=False) as resp:
+                    async with self._app_state._async_session.get(url, timeout=timeout, ssl=False) as resp:
                         if resp.status == 200:
                             text = await resp.text()
                             new_channels = PlaylistParser.parse_m3u_content(text, src.name, src.category or "")
@@ -335,10 +335,9 @@ class FetchService:
             session.commit()
 
     def _get_source_health_map(self) -> dict:
-        from iptv_check.server.app import app_state
         health = {}
         try:
-            health_data = app_state._health_checker.to_dict()
+            health_data = self._app_state._health_checker.to_dict()
             for src_id, info in health_data.get("sources", {}).items():
                 health[src_id] = info.get("valid_rate", 0)
         except Exception:

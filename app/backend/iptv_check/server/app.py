@@ -225,6 +225,7 @@ class AppState:
             read_model=self.read_model,
             check_engine=check_engine,
             broadcast_fn=self.broadcast,
+            app_state=self,
         )
 
         from iptv_check.application.services.fetch_service import FetchService
@@ -232,6 +233,7 @@ class AppState:
             event_store=self.event_store,
             broadcast_fn=self.broadcast,
             session_factory=lambda: self.event_store.get_session(),
+            app_state=self,
         )
 
         logger.info("检测服务初始化完成，FFmpeg: %s", "可用" if self._ffmpeg_available else "不可用")

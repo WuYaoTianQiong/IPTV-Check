@@ -27,11 +27,13 @@ class CheckService:
         read_model: ReadModel,
         check_engine: CheckEngineProtocol,
         broadcast_fn: Callable,
+        app_state=None,
     ):
         self._event_store = event_store
         self._read_model = read_model
         self._check_engine = check_engine
         self._broadcast_fn = broadcast_fn
+        self._app_state = app_state
         self._lock = threading.Lock()
         self._is_running = False
         self._check_total: int = 0
@@ -144,8 +146,6 @@ class CheckService:
         await self._broadcast_fn("check_stopped", {})
 
     async def _run_check_from_channels(self, channels: List[Channel], config: CheckConfig):
-        from iptv_check.server.app import app_state
-
         t0 = time.time()
         logger.info("[检测] 从已拉取频道启动检测, session=%s, 频道数=%d", self._session_id, len(channels))
 
@@ -202,7 +202,6 @@ class CheckService:
 
     async def _run_check(self, req):
         from iptv_check.core.parser import PlaylistParser
-        from iptv_check.server.app import app_state
 
         t0 = time.time()
         logger.info("[检测] 检测任务启动, session=%s", self._session_id)
@@ -262,7 +261,7 @@ class CheckService:
 
         # Phase 2: 加载在线源频道
         if req.online_source_ids:
-            fetch_svc = getattr(app_state, '_fetch_service', None)
+            fetch_svc = getattr(self._app_state, '_fetch_service', None)
             use_fetched = False
             if fetch_svc:
                 use_fetched = await asyncio.to_thread(fetch_svc.has_fetched_channels)
@@ -280,7 +279,7 @@ class CheckService:
                 logger.info("[检测] 从数据库加载频道完成, 频道数=%d", len(all_channels))
             else:
                 await self._broadcast_stage("downloading", f"正在下载在线源 (0/{len(req.online_source_ids)})...")
-                online_channels = await self._download_sources(req, seen, app_state, on_channels_ready=_emit_channel_submitted)
+                online_channels = await self._download_sources(req, seen, self._app_state, on_channels_ready=_emit_channel_submitted)
                 all_channels.extend(online_channels)
 
         self._check_total = len(all_channels)
@@ -329,9 +328,9 @@ class CheckService:
             from iptv_check.core.m3u8_validator import M3U8Validator
 
             recheck_engine = AsyncCheckEngine(
-                http_session=app_state._async_session,
+                http_session=self._app_state._async_session,
                 cache=self._check_engine._cache,
-                m3u8_validator=M3U8Validator(app_state.http_client),
+                m3u8_validator=M3U8Validator(self._app_state.http_client),
                 proxy_base=getattr(settings, 'stream_proxy_base', ''),
             )
 
@@ -409,9 +408,8 @@ class CheckService:
     async def _materialize_results(self) -> None:
         """Materialize check results to channel_results table for fast reads"""
         try:
-            from iptv_check.server.app import app_state
-            if app_state and hasattr(app_state, 'materialization'):
-                count = await app_state.materialization.materialize_session_async(self._session_id)
+            if self._app_state and hasattr(self._app_state, 'materialization'):
+                count = await self._app_state.materialization.materialize_session_async(self._session_id)
                 if count > 0:
                     logger.info("[检测] 物化完成: %d 条结果", count)
         except Exception as e:
