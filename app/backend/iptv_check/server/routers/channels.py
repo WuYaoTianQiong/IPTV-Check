@@ -869,51 +869,24 @@ async def get_favorites(folder_id: Optional[int] = None, page: int = 1, per_page
     LAG_SECONDS = 6 * 3600  # 超过 6 小时未更新的延迟重新查询
 
     def _query():
-        from iptv_check.infra.cn_time import cn_now
-        from sqlalchemy import text as sa_text
+        from iptv_check.infra.repository.favorite_repo import FavoriteRepository
         with state.database.get_session() as session:
-            cols = "id,channel_id,name,url,folder_id,channel_group,sort_order,latency,latency_updated_at,created_at"
-            where_clause = ""
-            params = {}
-            if folder_id is not None:
-                where_clause = "WHERE folder_id = :fid"
-                params["fid"] = folder_id
-
-            # 查询总数
-            count_sql = f"SELECT COUNT(*) FROM favorites {where_clause}"
-            total = session.execute(sa_text(count_sql), params).scalar() or 0
-
-            # 排序映射（收藏表无 speed 列，仅支持名称和延迟排序）
-            _fav_sort = {
-                "default":     "sort_order ASC, created_at DESC",
-                "name_asc":    "name ASC",
-                "name_desc":   "name DESC",
-                "latency_asc": "CASE WHEN latency IS NULL OR latency < 0 THEN 999999 ELSE latency END ASC",
-                "latency_desc": "latency DESC",
-            }
-            _fav_order = _fav_sort.get(sort, _fav_sort["default"])
-
-            # 分页查询
-            offset = (page - 1) * per_page
-            data_sql = f"SELECT {cols} FROM favorites {where_clause} ORDER BY {_fav_order} LIMIT :lim OFFSET :off"
-            data_params = {**params, "lim": per_page, "off": offset}
-            rows = session.execute(sa_text(data_sql), data_params).fetchall()
-
+            rows, total = FavoriteRepository(session).list_paginated(folder_id, page, per_page, sort)
             items = [
-                {"id": r.id, "channel_id": r.channel_id,
-                 "name": r.name,
-                 "name_cn": _translate_channel_name(r.name) or "",
-                 "url": r.url,
-                 "folder_id": r.folder_id,
-                 "sort_order": r.sort_order,
-                 "latency": r.latency,
-                 "channel_group": _map_group_name(r.channel_group),
-                 "region": _infer_region(r.name, r.channel_group, _infer_country_code(r.name, r.channel_group)),
-                 "is_radio": _is_radio(r.name, r.channel_group, r.url),
-                 "country": _infer_country_code(r.name, r.channel_group),
-                 "frequency": Channel._extract_frequency(r.name, r.channel_group),
-                 "created_at": r.created_at.isoformat() if hasattr(r.created_at, 'isoformat') else str(r.created_at)}
-                for r in rows
+                {"id": f.id, "channel_id": f.channel_id,
+                 "name": f.name,
+                 "name_cn": _translate_channel_name(f.name) or "",
+                 "url": f.url,
+                 "folder_id": f.folder_id,
+                 "sort_order": f.sort_order,
+                 "latency": f.latency,
+                 "channel_group": _map_group_name(f.channel_group),
+                 "region": _infer_region(f.name, f.channel_group, _infer_country_code(f.name, f.channel_group)),
+                 "is_radio": _is_radio(f.name, f.channel_group, f.url),
+                 "country": _infer_country_code(f.name, f.channel_group),
+                 "frequency": Channel._extract_frequency(f.name, f.channel_group),
+                 "created_at": f.created_at.isoformat() if hasattr(f.created_at, 'isoformat') else str(f.created_at)}
+                for f in rows
             ]
             return items, total
     favorites, total = await asyncio.to_thread(_query)
@@ -928,10 +901,9 @@ async def refresh_favorites_latency():
     import ssl
 
     def _fetch_favorites():
-        from sqlalchemy import text as sa_text
+        from iptv_check.infra.repository.favorite_repo import FavoriteRepository
         with state.database.get_session() as session:
-            rows = session.exec(sa_text("SELECT id, url, name FROM favorites WHERE url != ''")).all()
-            return [{"id": r[0], "url": r[1], "name": r[2]} for r in rows]
+            return FavoriteRepository(session).fetch_all_urls()
 
     favs_data = await asyncio.to_thread(_fetch_favorites)
 
@@ -973,18 +945,10 @@ async def refresh_favorites_latency():
     # Update database
     now = cn_now().isoformat()
     def _update(results):
-        from sqlalchemy import text as sa_text
-        count = 0
+        from iptv_check.infra.repository.favorite_repo import FavoriteRepository
+        updates = [(res["id"], res["latency"]) for res in results if res["ok"] and res["latency"] > 0]
         with state.database.get_session() as session:
-            for res in results:
-                if res["ok"] and res["latency"] > 0:
-                    session.execute(
-                        sa_text("UPDATE favorites SET latency = :lat, latency_updated_at = :ts WHERE id = :fid"),
-                        {"lat": res["latency"], "ts": now, "fid": res["id"]}
-                    )
-                    count += 1
-            session.commit()
-        return count
+            return FavoriteRepository(session).update_latency_batch(updates, now)
 
     update_count = await asyncio.to_thread(_update, processed_results)
 
@@ -1084,17 +1048,9 @@ async def export_favorites_m3u(folder_id: str = None):
 async def get_favorite_folders():
     state = _get_state()
     def _query():
-        from sqlalchemy import text as sa_text
+        from iptv_check.infra.repository.favorite_repo import FavoriteRepository
         with state.database.get_session() as session:
-            folders = session.exec(
-                sa_text("SELECT id, name, icon, sort_order FROM favorite_folders ORDER BY sort_order")
-            ).all()
-            # 一条 SQL 查全部文件夹的收藏数
-            count_map = {}
-            for row in session.exec(
-                sa_text("SELECT folder_id, COUNT(*) as cnt FROM favorites GROUP BY folder_id")
-            ).all():
-                count_map[row.folder_id] = row.cnt
+            folders, count_map = FavoriteRepository(session).list_folders_with_counts()
             result = []
             for folder in folders:
                 result.append({
