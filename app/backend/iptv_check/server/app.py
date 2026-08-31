@@ -54,6 +54,8 @@ from iptv_check.infra.metrics import metrics
 from iptv_check.infra.sse_broker import SSEBroker
 from iptv_check.server.middleware import register_exception_handlers, register_middleware
 from iptv_check.server.routers.channels import router as channels_router
+from iptv_check.server.routers.favorites import router as favorites_router
+from iptv_check.server.routers.insights import router as insights_router
 from iptv_check.server.routers.sources import router as sources_router
 from iptv_check.server.routers.check import router as check_router
 from iptv_check.server.routers.export import router as export_router
@@ -397,6 +399,8 @@ def create_app() -> FastAPI:
     register_exception_handlers(app)
 
     app.include_router(channels_router)
+    app.include_router(favorites_router)
+    app.include_router(insights_router)
     app.include_router(sources_router)
     app.include_router(check_router)
     app.include_router(export_router)
