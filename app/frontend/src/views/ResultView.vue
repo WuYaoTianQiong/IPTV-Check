@@ -229,7 +229,7 @@
                         </Badge>
                       </div>
                       <div v-if="(item.name_cn && item.name_cn !== item.name) || (item.clean_name && item.clean_name !== item.name)" class="text-xs text-muted-foreground truncate mt-0.5">{{ item.name_cn || item.clean_name }}</div>
-                      <span class="text-xs text-muted-foreground truncate block" :title="item.url" @click="$emit('copy-url', item.url)">{{ item.url }}</span>
+                      <span class="text-xs text-muted-foreground truncate block cursor-pointer hover:text-foreground" :title="item.url" @click="handleCopyUrl(item.url)">{{ item.url }}</span>
                     </div>
                   </td>
                   <td v-if="isWideScreen" class="px-3 py-2.5 text-xs text-muted-foreground">
@@ -1365,6 +1365,23 @@ function openPlayer(item) {
     sourcesParam = `&sources=${encodeURIComponent(btoa(encodeURIComponent(JSON.stringify(sourcesList))))}`
   }
   window.open(`/player?url=${encoded}&name=${encodeURIComponent(item.name)}${radio}${region}${freq}${sourcesParam}`, '_blank')
+}
+
+async function handleCopyUrl(url) {
+  if (!url) return
+  try {
+    await navigator.clipboard.writeText(url)
+  } catch {
+    const ta = document.createElement('textarea')
+    ta.value = url
+    ta.style.position = 'fixed'
+    ta.style.opacity = '0'
+    document.body.appendChild(ta)
+    ta.select()
+    document.execCommand('copy')
+    document.body.removeChild(ta)
+  }
+  toast.success('已复制 URL', url.length > 48 ? url.slice(0, 48) + '…' : url)
 }
 
 async function doExport(format) {
