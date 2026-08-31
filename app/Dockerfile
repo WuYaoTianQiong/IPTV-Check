@@ -19,7 +19,9 @@ RUN pip install --no-cache-dir ".[dev]" 2>/dev/null || pip install --no-cache-di
 
 COPY backend/ ./
 
-COPY --from=frontend-builder /build/dist /app/iptv_check/static
+# vite.config.js 的 build.outDir 为 ../backend/iptv_check/static（相对 /build），
+# 故 frontend-builder stage 的产物落在 /backend/iptv_check/static
+COPY --from=frontend-builder /backend/iptv_check/static /app/iptv_check/static
 
 RUN mkdir -p /app/iptv_check/data /app/iptv_check/data/cache_store /app/iptv_check/data/exports /app/iptv_check/data/uploads /app/iptv_check/static
 

@@ -13,3 +13,4 @@ data/
 cache_store/
 exports/
 uploads/
+backend/iptv_check/static/
