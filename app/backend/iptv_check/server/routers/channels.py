@@ -51,6 +51,7 @@ async def get_results(
     category: str = "",
     quality: str = "",
     protocol: str = "",
+    source: str = "",
     latency_min: float = -1,
     latency_max: float = -1,
     speed_min: float = -1,
@@ -75,6 +76,7 @@ async def get_results(
                         tab=tab, group_path=group_path, page=page, per_page=per_page,
                         search=search, sort=sort, media_type=media_type, language=language,
                         country=country, region=region, category=category, quality=quality, protocol=protocol,
+                        source=source,
                         latency_min=latency_min, latency_max=latency_max,
                         speed_min=speed_min, speed_max=speed_max,
                     )
@@ -84,6 +86,7 @@ async def get_results(
                     tab=tab, page=page, per_page=per_page, search=search, sort=sort,
                     media_type=media_type, language=language,
                     country=country, region=region, category=category, quality=quality, protocol=protocol,
+                    source=source,
                     latency_min=latency_min, latency_max=latency_max,
                     speed_min=speed_min, speed_max=speed_max,
                 )
@@ -288,8 +291,24 @@ async def quick_check_latency(items: list[QuickCheckItem]):
 
 
 @router.post("/results/refresh-latency", status_code=202)
-async def refresh_results_latency(session_id: str = ""):
-    """触发异步全量延迟刷新，立即返回202"""
+async def refresh_results_latency(
+    session_id: str = "",
+    tab: str = "all",
+    media_type: str = "all",
+    country: str = "",
+    region: str = "",
+    category: str = "",
+    quality: str = "",
+    protocol: str = "",
+    source: str = "",
+    search: str = "",
+    latency_min: float = -1,
+    latency_max: float = -1,
+    speed_min: float = -1,
+    speed_max: float = -1,
+):
+    """触发异步全量延迟刷新（HEAD 探测），立即返回202。
+    传入 tab/country 等筛选参数时仅刷新符合条件子集，否则刷新整个 session。"""
     state = _get_state()
 
     if state._refresh_latency_task is not None and not state._refresh_latency_task.done():
@@ -327,7 +346,20 @@ async def refresh_results_latency(session_id: str = ""):
         with state.event_store.get_session() as s:
             return ResultsRepository(s).fetch_session_urls(session_id)
 
-    urls = await asyncio.to_thread(_fetch_urls)
+    def _fetch_filtered_urls():
+        if state.read_model:
+            return state.read_model.fetch_filtered_urls(
+                session_id, tab, media_type, "", country, region, category,
+                quality, protocol, source, latency_min, latency_max, speed_min, speed_max, search,
+            )
+        return []
+
+    _has_filter = (
+        tab != "all" or media_type != "all" or country or region or category
+        or quality or protocol or source or search
+        or latency_min >= 0 or latency_max >= 0 or speed_min >= 0 or speed_max >= 0
+    )
+    urls = await asyncio.to_thread(_fetch_filtered_urls if _has_filter else _fetch_urls)
     total = len(urls)
     if total == 0:
         return {"total": 0, "checked": 0, "updated": 0}
@@ -459,9 +491,76 @@ async def _run_refresh_latency_background(state, session_id, urls, task_id):
         state._refresh_latency_task_id = None
 
 
+@router.get("/results/filtered-urls")
+async def get_filtered_urls(
+    session_id: str = "",
+    tab: str = "all",
+    media_type: str = "all",
+    country: str = "",
+    region: str = "",
+    category: str = "",
+    quality: str = "",
+    protocol: str = "",
+    source: str = "",
+    search: str = "",
+    latency_min: float = -1,
+    latency_max: float = -1,
+    speed_min: float = -1,
+    speed_max: float = -1,
+):
+    """返回符合当前筛选条件的全部频道 URL（跨页全集），供前端跨页全选用。"""
+    state = _get_state()
+    sid = session_id or (state.event_store.current_session_id if state else "")
+    if not sid or not state.read_model:
+        return {"urls": [], "total": 0}
+    urls = await asyncio.to_thread(
+        state.read_model.fetch_filtered_urls,
+        sid, tab, media_type, "", country, region, category,
+        quality, protocol, source, latency_min, latency_max, speed_min, speed_max, search,
+    )
+    return {"urls": urls, "total": len(urls)}
+
+
+@router.get("/results/sources")
+async def get_available_sources():
+    """返回当前 session 数据中出现过的来源源列表"""
+    state = _get_state()
+    service = _get_check_service()
+    session_id = ""
+    if service and service.session_id:
+        session_id = service.session_id
+    elif state and state.event_store:
+        session_id = state.event_store.current_session_id
+    if not session_id:
+        return []
+    try:
+        return await asyncio.to_thread(state.read_model.get_available_sources, session_id)
+    except Exception as e:
+        logger.error("获取来源列表失败: %s", e, exc_info=True)
+        return []
+
+
 @router.post("/results/thorough-check", status_code=202)
-async def thorough_check(session_id: str = "", urls: str = ""):
-    """触发彻底版检测(GET+Range)，urls为逗号分隔的base64编码URL列表，空则全量"""
+async def thorough_check(
+    session_id: str = "",
+    urls: str = "",
+    tab: str = "all",
+    media_type: str = "all",
+    country: str = "",
+    region: str = "",
+    category: str = "",
+    quality: str = "",
+    protocol: str = "",
+    source: str = "",
+    search: str = "",
+    latency_min: float = -1,
+    latency_max: float = -1,
+    speed_min: float = -1,
+    speed_max: float = -1,
+):
+    """触发彻底版检测(GET+Range)。
+    urls 为逗号分隔的 base64 编码 URL 列表；为空时按 tab/country 等筛选条件取子集，
+    无任何筛选则取整个 session 全量。"""
     state = _get_state()
 
     if state._refresh_latency_task is not None and not state._refresh_latency_task.done():
@@ -499,6 +598,14 @@ async def thorough_check(session_id: str = "", urls: str = ""):
         with state.event_store.get_session() as s:
             return ResultsRepository(s).fetch_session_urls(session_id)
 
+    def _fetch_filtered_urls():
+        if state.read_model:
+            return state.read_model.fetch_filtered_urls(
+                session_id, tab, media_type, "", country, region, category,
+                quality, protocol, source, latency_min, latency_max, speed_min, speed_max, search,
+            )
+        return []
+
     if urls:
         try:
             import base64 as _b64
@@ -515,9 +622,9 @@ async def thorough_check(session_id: str = "", urls: str = ""):
             logger.info(f"thorough_check: {len(selected_urls)} selected, {len(all_urls)} total, {len(matched)} matched")
             urls = matched if matched else selected_urls
         else:
-            urls = await asyncio.to_thread(_fetch_urls)
+            urls = await asyncio.to_thread(_fetch_filtered_urls)
     else:
-        urls = await asyncio.to_thread(_fetch_urls)
+        urls = await asyncio.to_thread(_fetch_filtered_urls)
     total = len(urls)
     if total == 0:
         return {"total": 0, "checked": 0, "updated": 0}

@@ -835,6 +835,54 @@ class ReadModel:
                 for r in results
             ]
 
+    def get_available_sources(self, session_id: str = None) -> list:
+        """返回当前 session 数据中出现过的来源源列表（去重）"""
+        sid = session_id or self._store.current_session_id
+        if not sid:
+            return []
+        try:
+            with self._session() as session:
+                use_mat = self._has_materialized(session, sid)
+                sources: set = set()
+                if use_mat:
+                    rows = session.exec(sa_text(
+                        "SELECT DISTINCT sources FROM channel_results "
+                        "WHERE session_id = :sid AND sources IS NOT NULL AND sources != ''"
+                    ).bindparams(sid=sid)).all()
+                    for (raw,) in rows:
+                        self._extract_sources(raw, sources)
+                else:
+                    rows = session.exec(sa_text(
+                        "SELECT DISTINCT json_extract(payload, '$.sources') AS sources FROM check_events "
+                        "WHERE session_id = :sid AND json_extract(payload, '$.sources') IS NOT NULL"
+                    ).bindparams(sid=sid)).all()
+                    for (raw,) in rows:
+                        self._extract_sources(raw, sources)
+                return sorted(sources)
+        except Exception:
+            return []
+
+    @staticmethod
+    def _extract_sources(raw, out: set):
+        if not raw or raw in ("N/A", "[]"):
+            return
+        try:
+            lst = json.loads(raw)
+            if isinstance(lst, list):
+                for item in lst:
+                    if item and item != "N/A":
+                        out.add(str(item))
+                return
+        except (json.JSONDecodeError, TypeError):
+            pass
+        if "," in str(raw):
+            for item in str(raw).split(","):
+                item = item.strip()
+                if item and item != "N/A":
+                    out.add(item)
+        else:
+            out.add(str(raw))
+
     def get_full_state(self, session_id: str = None) -> dict:
         progress = self.get_check_progress(session_id)
         phase = self.get_phase(session_id)
@@ -845,12 +893,114 @@ class ReadModel:
             "sources": sources,
         }
 
+    @staticmethod
+    def _build_source_condition(column: str, source: str):
+        """构造来源源筛选条件（channel_results.sources 为 JSON 数组字符串）"""
+        sources_list = [s.strip() for s in source.split(",") if s.strip()]
+        if not sources_list:
+            return "", {}
+        clauses = []
+        params = {}
+        for i, s in enumerate(sources_list):
+            p = f"source_like_{i}"
+            clauses.append(f"{column} LIKE :{p}")
+            params[p] = f"%{s}%"
+        return "(" + " OR ".join(clauses) + ")", params
+
+    def _build_mat_conditions(self, tab: str, media_type: str, language: str,
+                               country: str, region: str, category: str,
+                               quality: str, protocol: str, source: str,
+                               latency_min: float, latency_max: float,
+                               speed_min: float, speed_max: float,
+                               params: dict) -> list:
+        """构建物化表 channel_results 的筛选 WHERE 条件（不含 search，供查询与取 URL 复用）"""
+        conditions = ["session_id = :sid"]
+        if tab == "valid":
+            conditions.append("is_valid = 1 AND quality_tier = 'valid'")
+        elif tab == "invalid":
+            conditions.append("COALESCE(quality_tier, CASE WHEN is_valid = 1 THEN 'valid' ELSE 'invalid' END) = 'invalid'")
+        elif tab == "likely_valid":
+            conditions.append("quality_tier = 'likely_valid'")
+        conditions.append(_junk_name_exclude_condition("name"))
+        if media_type == "tv":
+            conditions.append("is_radio = 0")
+        elif media_type == "radio":
+            conditions.append("is_radio = 1")
+        if language:
+            conditions.append("LOWER(language) = LOWER(:language)")
+            params["language"] = language
+        if country:
+            countries = [c.strip() for c in country.split(",") if c.strip()]
+            if countries:
+                country_condition = self._get_country_condition(countries)
+                if country_condition:
+                    conditions.append(country_condition)
+        if region:
+            region_condition = self._get_region_condition(region)
+            if region_condition:
+                conditions.append(region_condition)
+        if category:
+            cat_condition = self._get_category_condition(category)
+            if cat_condition:
+                conditions.append(cat_condition)
+        if quality:
+            q_condition = self._get_quality_condition(quality)
+            if q_condition:
+                conditions.append(q_condition)
+        if protocol:
+            p_condition = self._get_protocol_condition(protocol)
+            if p_condition:
+                conditions.append(p_condition)
+        if source:
+            src_condition, src_params = self._build_source_condition("sources", source)
+            if src_condition:
+                conditions.append(src_condition)
+                params.update(src_params)
+        if latency_min >= 0:
+            conditions.append("latency >= :latency_min")
+            params["latency_min"] = latency_min
+        if latency_max >= 0 and latency_max >= latency_min:
+            conditions.append("latency <= :latency_max")
+            params["latency_max"] = latency_max
+        if speed_min >= 0:
+            conditions.append("speed != '-'")
+            params["speed_min"] = speed_min
+        if speed_max >= 0 and speed_max >= speed_min:
+            conditions.append("speed != '-'")
+            params["speed_max"] = speed_max
+        return conditions
+
+    def fetch_filtered_urls(self, session_id: str = None, tab: str = "all",
+                            media_type: str = "all", language: str = "",
+                            country: str = "", region: str = "",
+                            category: str = "", quality: str = "", protocol: str = "",
+                            source: str = "",
+                            latency_min: float = -1, latency_max: float = -1,
+                            speed_min: float = -1, speed_max: float = -1,
+                            search: str = "") -> list:
+        """返回符合筛选条件的全部频道 URL（跨页全集），供彻底版检测/跨页全选使用。
+        复用 get_checked_channels 的筛选逻辑（兼容物化表与 check_events 两条路径）。
+        注：始终走平铺(flat)路径——分组(get_grouped_channels)路径的分页无法覆盖全集（既有 bug），
+        而 flat 路径对任意筛选条件/规模都准确，且返回的每个 URL 都是可独立检测的流地址。"""
+        sid = session_id or self._store.current_session_id
+        if not sid:
+            return []
+        result = self.get_checked_channels(
+            session_id=sid, tab=tab, page=1, per_page=1_000_000, search=search, sort="best",
+            media_type=media_type, language=language, country=country, region=region,
+            category=category, quality=quality, protocol=protocol, source=source,
+            latency_min=latency_min, latency_max=latency_max,
+            speed_min=speed_min, speed_max=speed_max,
+        )
+        return [item["url"] for item in result.get("items", []) if item.get("url")]
+
     def get_checked_channels(self, session_id: str = None, tab: str = "all",
                              page: int = 1, per_page: int = 50, search: str = "",
                              sort: str = "best",
                              media_type: str = "all", language: str = "",
                              country: str = "", region: str = "",
                              category: str = "", quality: str = "", protocol: str = "",
+                             source: str = "",
                              latency_min: float = -1, latency_max: float = -1,
                              speed_min: float = -1, speed_max: float = -1) -> dict:
         sid = session_id or self._store.current_session_id
@@ -862,55 +1012,10 @@ class ReadModel:
             params = {"sid": sid}
 
             if use_mat:
-                conditions = ["session_id = :sid"]
-                if tab == "valid":
-                    conditions.append("is_valid = 1 AND quality_tier = 'valid'")
-                elif tab == "invalid":
-                    conditions.append("COALESCE(quality_tier, CASE WHEN is_valid = 1 THEN 'valid' ELSE 'invalid' END) = 'invalid'")
-                elif tab == "likely_valid":
-                    conditions.append("quality_tier = 'likely_valid'")
-                conditions.append(_junk_name_exclude_condition("name"))
-                if media_type == "tv":
-                    conditions.append("is_radio = 0")
-                elif media_type == "radio":
-                    conditions.append("is_radio = 1")
-                if language:
-                    conditions.append("LOWER(language) = LOWER(:language)")
-                    params["language"] = language
-                if country:
-                    countries = [c.strip() for c in country.split(",") if c.strip()]
-                    if countries:
-                        country_condition = self._get_country_condition(countries)
-                        if country_condition:
-                            conditions.append(country_condition)
-                if region:
-                    region_condition = self._get_region_condition(region)
-                    if region_condition:
-                        conditions.append(region_condition)
-                if category:
-                    cat_condition = self._get_category_condition(category)
-                    if cat_condition:
-                        conditions.append(cat_condition)
-                if quality:
-                    q_condition = self._get_quality_condition(quality)
-                    if q_condition:
-                        conditions.append(q_condition)
-                if protocol:
-                    p_condition = self._get_protocol_condition(protocol)
-                    if p_condition:
-                        conditions.append(p_condition)
-                if latency_min >= 0:
-                    conditions.append("latency >= :latency_min")
-                    params["latency_min"] = latency_min
-                if latency_max >= 0 and latency_max >= latency_min:
-                    conditions.append("latency <= :latency_max")
-                    params["latency_max"] = latency_max
-                if speed_min >= 0:
-                    conditions.append("speed != '-'")
-                    params["speed_min"] = speed_min
-                if speed_max >= 0 and speed_max >= speed_min:
-                    conditions.append("speed != '-'")
-                    params["speed_max"] = speed_max
+                conditions = self._build_mat_conditions(
+                    tab, media_type, language, country, region, category,
+                    quality, protocol, source, latency_min, latency_max, speed_min, speed_max, params,
+                )
 
                 where_sql = " AND ".join(conditions)
                 total = _scalar(session,
@@ -1044,6 +1149,11 @@ class ReadModel:
                 p_condition = self._get_protocol_condition_for_json(protocol)
                 if p_condition:
                     conditions.append(p_condition)
+            if source:
+                src_condition, src_params = self._build_source_condition("json_extract(payload, '$.sources')", source)
+                if src_condition:
+                    conditions.append(src_condition)
+                    params.update(src_params)
             if latency_min >= 0:
                 conditions.append("CAST(json_extract(payload, '$.latency') AS REAL) >= :latency_min")
                 params["latency_min"] = latency_min
@@ -1193,7 +1303,8 @@ class ReadModel:
                 results = session.exec(
                     sa_text("""
                         SELECT name, url, is_valid, latency, speed, details,
-                               channel_group, sources, url_key, quality_tier
+                               channel_group, sources, url_key, quality_tier,
+                               is_radio, tvg_id, tvg_name, country, resolution
                         FROM channel_results
                         WHERE session_id = :sid
                         ORDER BY created_at ASC
@@ -1208,6 +1319,11 @@ class ReadModel:
                             "group": r[6] or "",
                             "sources": [r[7]] if r[7] else [],
                             "url_key": r[8] or "",
+                            "is_radio": bool(r[10]),
+                            "tvg_id": r[11] or "",
+                            "tvg_name": r[12] or "",
+                            "country": r[13] or "",
+                            "resolution": r[14] or "",
                         },
                         "is_valid": bool(r[2]),
                         "quality_tier": r[9] or ("valid" if bool(r[2]) else "invalid"),
@@ -1231,7 +1347,11 @@ class ReadModel:
                         json_extract(payload, '$.sources'),
                         json_extract(payload, '$.url_key'),
                         json_extract(payload, '$.quality_tier'),
-                        json_extract(payload, '$.resolution')
+                        json_extract(payload, '$.resolution'),
+                        json_extract(payload, '$.is_radio'),
+                        json_extract(payload, '$.tvg_id'),
+                        json_extract(payload, '$.tvg_name'),
+                        json_extract(payload, '$.country')
                     FROM check_events
                     WHERE session_id = :sid AND event_type = 'channel_checked'
                     ORDER BY created_at ASC
@@ -1247,6 +1367,10 @@ class ReadModel:
                         "sources": [r[7]] if r[7] else [],
                         "url_key": r[8] or "",
                         "resolution": r[10] or "",
+                        "is_radio": bool(r[11]),
+                        "tvg_id": r[12] or "",
+                        "tvg_name": r[13] or "",
+                        "country": r[14] or "",
                     },
                     "is_valid": bool(r[2]),
                     "quality_tier": r[9] or ("valid" if bool(r[2]) else "invalid"),
@@ -1262,6 +1386,7 @@ class ReadModel:
                              search: str = "", sort: str = "best", media_type: str = "all",
                              language: str = "", country: str = "", region: str = "",
                              category: str = "", quality: str = "", protocol: str = "",
+                             source: str = "",
                              latency_min: float = -1, latency_max: float = -1,
                              speed_min: float = -1, speed_max: float = -1) -> dict:
         sid = session_id or self._store.current_session_id
@@ -1274,7 +1399,9 @@ class ReadModel:
             if tab == "valid":
                 having_clauses.append("valid_count > 0")
             elif tab == "invalid":
-                having_clauses.append("valid_count = 0")
+                having_clauses.append("valid_count = 0 AND likely_valid_count = 0")
+            elif tab == "likely_valid":
+                having_clauses.append("valid_count = 0 AND likely_valid_count > 0")
 
             params = {"sid": sid}
 
@@ -1316,6 +1443,11 @@ class ReadModel:
                     p_condition = self._get_protocol_condition(protocol)
                     if p_condition:
                         filters.append(p_condition)
+                if source:
+                    src_condition, src_params = self._build_source_condition("sources", source)
+                    if src_condition:
+                        filters.append(src_condition)
+                        params.update(src_params)
                 if latency_min >= 0:
                     filters.append("latency >= :latency_min")
                     params["latency_min"] = latency_min
@@ -1340,6 +1472,7 @@ class ReadModel:
                         channel_group as ch_group,
                         COUNT(*) as source_count,
                         SUM(is_valid) as valid_count,
+                        SUM(CASE WHEN quality_tier = 'likely_valid' THEN 1 ELSE 0 END) as likely_valid_count,
                         MIN(CASE WHEN is_valid = 1 AND latency > 0 THEN latency END) as best_latency,
                         MAX(is_radio) as is_radio,
                         MAX(resolution) as resolution,
@@ -1366,7 +1499,7 @@ class ReadModel:
                 page_params = {**params, "limit": per_page, "offset": offset}
 
                 groups = session.exec(sa_text(f"""
-                    SELECT ch_name, ch_group, source_count, valid_count, best_latency, is_radio, resolution, frequency FROM ({base}) sub
+                    SELECT ch_name, ch_group, source_count, valid_count, likely_valid_count, best_latency, is_radio, resolution, frequency FROM ({base}) sub
                     ORDER BY {order_sql}
                     LIMIT :limit OFFSET :offset
                 """).bindparams(**page_params)).all()
@@ -1417,9 +1550,10 @@ class ReadModel:
                     grp = g[1] or ""
                     source_count = g[2] or 0
                     valid_count = g[3] or 0
-                    best_latency = g[4]
-                    resolution = g[6] or ""
-                    frequency_val = g[7] or ""
+                    likely_valid_count = g[4] or 0
+                    best_latency = g[5]
+                    resolution = g[7] or ""
+                    frequency_val = g[8] or ""
 
                     group_key = f"{name}@{resolution}" if resolution else name
                     sources = sources_by_name.get(group_key, [])
@@ -1459,11 +1593,11 @@ class ReadModel:
                         "best_latency": str(int(best_latency)) if best_latency and str(best_latency) != "-" and best_latency > 0 else "-",
                         "has_valid": valid_count > 0,
                         "is_valid": valid_count > 0,
-                        "quality_tier": "valid" if valid_count > 0 else "invalid",
+                        "quality_tier": "valid" if valid_count > 0 else ("likely_valid" if likely_valid_count > 0 else "invalid"),
                         "latency": str(int(best_latency)) if best_latency and str(best_latency) != "-" and best_latency > 0 else "-",
                         "sources": sources,
                         "recommended_source_idx": recommended_idx,
-                        "is_radio": bool(g[5]),
+                        "is_radio": bool(g[6]),
                         "frequency": frequency_val,
                     })
 
@@ -1510,6 +1644,11 @@ class ReadModel:
                 p_condition = self._get_protocol_condition_for_json(protocol)
                 if p_condition:
                     filters.append(p_condition)
+            if source:
+                src_condition, src_params = self._build_source_condition("json_extract(payload, '$.sources')", source)
+                if src_condition:
+                    filters.append(src_condition)
+                    params.update(src_params)
             if latency_min >= 0:
                 filters.append("CAST(json_extract(payload, '$.latency') AS REAL) >= :latency_min")
                 params["latency_min"] = latency_min
@@ -1536,6 +1675,7 @@ class ReadModel:
                     json_extract(payload, '$.group') as ch_group,
                     COUNT(*) as source_count,
                     SUM(CASE WHEN json_extract(payload, '$.is_valid') = 1 THEN 1 ELSE 0 END) as valid_count,
+                    SUM(CASE WHEN json_extract(payload, '$.quality_tier') = 'likely_valid' THEN 1 ELSE 0 END) as likely_valid_count,
                     MIN(CASE WHEN json_extract(payload, '$.is_valid') = 1 AND CAST(json_extract(payload, '$.latency') AS REAL) > 0 THEN CAST(json_extract(payload, '$.latency') AS REAL) END) as best_latency,
                     MAX(COALESCE(json_extract(payload, '$.is_radio'), 0)) as is_radio,
                     MAX(COALESCE(json_extract(payload, '$.frequency'), '')) as frequency
@@ -1561,7 +1701,7 @@ class ReadModel:
             page_params = {**params, "limit": per_page, "offset": offset}
 
             groups = session.exec(sa_text(f"""
-                SELECT ch_name, ch_group, source_count, valid_count, best_latency, is_radio, frequency FROM ({base}) sub
+                SELECT ch_name, ch_group, source_count, valid_count, likely_valid_count, best_latency, is_radio, frequency FROM ({base}) sub
                 ORDER BY {order_sql}
                 LIMIT :limit OFFSET :offset
             """).bindparams(**page_params)).all()
@@ -1622,7 +1762,8 @@ class ReadModel:
                 grp = g[1] or ""
                 source_count = g[2] or 0
                 valid_count = g[3] or 0
-                best_latency = g[4]
+                likely_valid_count = g[4] or 0
+                best_latency = g[5]
 
                 sources = sources_by_name.get(name, [])
                 recommended_idx = -1
@@ -1657,12 +1798,12 @@ class ReadModel:
                     "best_latency": str(int(best_latency)) if best_latency and str(best_latency) != "-" and best_latency > 0 else "-",
                     "has_valid": valid_count > 0,
                     "is_valid": valid_count > 0,
-                    "quality_tier": "valid" if valid_count > 0 else "invalid",
+                    "quality_tier": "valid" if valid_count > 0 else ("likely_valid" if likely_valid_count > 0 else "invalid"),
                     "latency": str(int(best_latency)) if best_latency and str(best_latency) != "-" and best_latency > 0 else "-",
                     "sources": sources,
                     "recommended_source_idx": recommended_idx,
-                    "is_radio": bool(g[5]),
-                    "frequency": g[6] or "",
+                    "is_radio": bool(g[6]),
+                    "frequency": g[7] or "",
                 })
 
             return {"total": total, "page": page, "per_page": per_page, "items": items}

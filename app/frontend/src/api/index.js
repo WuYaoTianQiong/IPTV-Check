@@ -46,8 +46,11 @@ export const getInfo = () => api.get('/info')
 export const getIsp = () => api.get('/isp')
 export const refreshIsp = () => api.post('/isp/refresh')
 export const getOnlineSources = () => api.get('/online-sources')
+export const getSubscriptions = () => api.get('/subscriptions')
+export const addSubscription = (data) => api.post('/subscriptions', data)
+export const deleteSubscription = (id) => api.delete(`/subscriptions/${id}`)
+export const syncSubscriptions = () => api.post('/subscriptions/sync', {}, { timeout: 60000 })
 export const startCheck = (data) => api.post('/check/start', data)
-export const checkFromFetched = (data) => api.post('/check/from-fetched', data)
 export const stopCheck = () => api.post('/check/stop')
 export const getCheckState = () => api.get('/check/state')
 export const getResults = (params) => api.get('/results', { params })
@@ -55,20 +58,32 @@ export const getCategoryTree = (params = {}) => api.get('/results/category-tree'
 export const getAvailableLanguages = () => api.get('/results/languages')
 export const getAvailableCountries = () => api.get('/results/countries')
 export const getAvailableRegions = () => api.get('/results/regions')
+export const getAvailableSources = () => api.get('/results/sources')
 export const getSourceHealth = () => api.get('/results/source-health')
 export const getResultsStats = () => api.get('/results/stats')
 export const getCheckHistory = (limit = 20) => api.get('/results/history', { params: { limit } })
 export const quickCheckResults = (items) => api.post('/results/quick-check', items)
-export const refreshResultsLatency = (sessionId) => api.post(`/results/refresh-latency?session_id=${encodeURIComponent(sessionId || '')}`, {}, { timeout: 10000 })
-export const thoroughCheck = (sessionId, urls = []) => {
+export const refreshResultsLatency = (sessionId, filters = {}) => {
+  const params = [`session_id=${encodeURIComponent(sessionId || '')}`]
+  for (const [k, v] of Object.entries(filters || {})) {
+    if (v !== '' && v !== undefined && v !== null) params.push(`${k}=${encodeURIComponent(v)}`)
+  }
+  return api.post(`/results/refresh-latency?${params.join('&')}`, {}, { timeout: 10000 })
+}
+export const thoroughCheck = (sessionId, urls = [], filters = {}) => {
   const params = [`session_id=${encodeURIComponent(sessionId || '')}`]
   if (urls.length > 0) params.push(`urls=${encodeURIComponent(urls.join(','))}`)
+  for (const [k, v] of Object.entries(filters || {})) {
+    if (v !== '' && v !== undefined && v !== null) params.push(`${k}=${encodeURIComponent(v)}`)
+  }
   return api.post(`/results/thorough-check?${params.join('&')}`, {}, { timeout: 10000 })
 }
+export const getFilteredUrls = (params = {}) => api.get('/results/filtered-urls', { params })
 export const getRefreshLatencyStatus = () => api.get('/results/refresh-latency/status')
 export const stopRefreshLatency = () => api.post('/results/refresh-latency/stop')
 export const saveResults = () => api.post('/results/save')
 export const exportResults = (data) => api.post('/export', data)
+export const exportPlaylistEpg = (data) => api.post('/export/playlist-epg', data, { responseType: 'blob' })
 export const convertFormat = (data) => api.post('/convert', data)
 export const convertText = (data) => api.post('/convert-text', data)
 export const smartOptimize = () => api.post('/optimize')

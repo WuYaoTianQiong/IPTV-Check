@@ -31,6 +31,10 @@
       :selected-quality="selectedQuality"
       :selected-protocol="selectedProtocol"
       :selected-region="selectedRegion"
+      :selected-sources="selectedSources"
+      :available-sources="availableSources"
+      :selected-language="selectedLanguage"
+      :available-languages="availableLanguages"
       :latency-min="latencyMin"
       :latency-max="latencyMax"
       :speed-min="speedMin"
@@ -52,6 +56,8 @@
       @toggle-batch-select="toggleBatchSelectMode"
       @toggle-country="toggleCountry"
       @toggle-region="toggleRegion"
+      @toggle-source="toggleSource"
+      @toggle-language="toggleLanguage"
       @update:selected-category="selectedCategory = $event"
       @update:selected-quality="selectedQuality = $event"
       @update:selected-protocol="selectedProtocol = $event"
@@ -73,19 +79,9 @@
         </p>
       </div>
       <div class="flex gap-2">
-        <div class="relative">
-          <Button variant="outline" class="gap-2" @click="handleRefreshLatency" :disabled="isRefreshingLatency">
-            <RefreshCw class="h-4 w-4" :class="{ 'animate-spin': isRefreshingLatency }" />
-            {{ isRefreshingLatency ? '当前页检测中...' : '实时检测延迟' }}
-          </Button>
-        </div>
-        <Button variant="outline" class="gap-2" @click="handleFullRefreshLatency" :disabled="isFullRefreshing">
-          <RefreshCw class="h-4 w-4" :class="{ 'animate-spin': isFullRefreshing }" />
-          {{ isFullRefreshing ? '全量检测中...' : '⚡ 全量刷新延迟' }}
-        </Button>
-        <Button variant="outline" class="gap-2" @click="handleThoroughCheck" :disabled="isFullRefreshing" :title="selectedItems.size > 0 ? `仅检测已选${selectedItems.size}个频道` : 'GET下载验证，更准确但更慢'">
-          <Search class="h-4 w-4" />
-          {{ isFullRefreshing ? '彻底版检测中...' : `彻底版检测${selectedItems.size > 0 ? `(${selectedItems.size}个)` : ''}` }}
+        <Button variant="outline" class="gap-2" @click="openRecheckDialog" :disabled="isRefreshingLatency || isFullRefreshing" :title="selectedItems.size > 0 ? `当前选中 ${selectedItems.size} 个频道` : '选择复检方案与范围'">
+          <RefreshCw class="h-4 w-4" :class="{ 'animate-spin': isRefreshingLatency || isFullRefreshing }" />
+          {{ isRefreshingLatency || isFullRefreshing ? '复检中...' : '复检' }}
         </Button>
         <div v-if="appStore.isRefreshLatencyRunning" class="flex items-center gap-3 ml-1 min-w-[280px]">
           <Progress :model-value="fullRefreshPercent" class="flex-1 h-2" />
@@ -114,7 +110,7 @@
             <!-- 批量操作栏 -->
             <div v-if="batchSelectMode" class="flex items-center gap-3 p-3 rounded-lg bg-primary/5 border border-primary/20">
               <Button variant="outline" size="sm" @click="selectAllItems">
-                {{ resultStore.checkResults.length > 0 && resultStore.checkResults.every(item => selectedItems.has(item.url)) ? '取消全选' : '全选' }}
+                {{ allFilteredSelected ? '取消全选' : '全选' }}
               </Button>
               <span class="text-sm text-muted-foreground">已选 {{ selectedItems.size }} 个</span>
               <div class="flex-1" />
@@ -155,7 +151,7 @@
                 <tr class="border-b bg-muted/50">
                   <th class="h-10 px-3 text-center font-medium text-muted-foreground whitespace-nowrap" style="width: 40px">
                     <Checkbox
-                      :model-value="resultStore.checkResults.length > 0 && resultStore.checkResults.every(item => selectedItems.has(item.url))"
+                      :model-value="allFilteredSelected"
                       @update:model-value="selectAllItems"
                     />
                   </th>
@@ -359,16 +355,41 @@
       </AlertDialogFooter>
     </AlertDialog>
 
-    <AlertDialog v-model:open="showThoroughConfirmDialog">
-      <AlertDialogHeader>彻底版全量检测</AlertDialogHeader>
-      <AlertDialogDescription>
-        未勾选频道，将检测全部 {{ resultStore.checkResults.length }} 个频道（GET下载验证，较慢）。确认继续？
-      </AlertDialogDescription>
-      <AlertDialogFooter>
-        <Button variant="outline" @click="showThoroughConfirmDialog = false">取消</Button>
-        <Button @click="runThoroughCheck()">确认全量检测</Button>
-      </AlertDialogFooter>
-    </AlertDialog>
+    <Dialog v-model:open="showRecheckDialog">
+      <DialogHeader><DialogTitle>复检频道</DialogTitle></DialogHeader>
+      <div class="p-6 pt-0 space-y-5">
+        <div>
+          <div class="text-sm font-medium mb-2">检测方案</div>
+          <Tabs class="w-full">
+            <TabButton class="flex-1" :active="recheckMethod === 'quick'" @click="recheckMethod = 'quick'">快速</TabButton>
+            <TabButton class="flex-1" :active="recheckMethod === 'thorough'" @click="recheckMethod = 'thorough'">彻底</TabButton>
+          </Tabs>
+          <div class="text-xs text-muted-foreground mt-1.5">
+            <template v-if="recheckMethod === 'quick'">HEAD 探测，只判可达性 + 延迟，速度快</template>
+            <template v-else>GET 下载验证，判定更准确，较慢</template>
+          </div>
+        </div>
+        <div>
+          <div class="text-sm font-medium mb-2">检测范围</div>
+          <Tabs class="w-full">
+            <TabButton class="flex-1" :active="recheckScope === 'page'" @click="recheckScope = 'page'">当前页</TabButton>
+            <TabButton class="flex-1" :active="recheckScope === 'filter'" @click="recheckScope = 'filter'">当前筛选</TabButton>
+            <TabButton class="flex-1" :active="recheckScope === 'all'" @click="recheckScope = 'all'">全部</TabButton>
+            <TabButton v-if="selectedItems.size > 0" class="flex-1" :active="recheckScope === 'selected'" @click="recheckScope = 'selected'">已选 {{ selectedItems.size }}</TabButton>
+          </Tabs>
+          <div class="text-xs text-muted-foreground mt-1.5">
+            <template v-if="recheckScope === 'page'">仅当前页展示的 {{ resultStore.checkResults.length }} 个频道</template>
+            <template v-else-if="recheckScope === 'filter'">当前筛选条件下的全部频道</template>
+            <template v-else-if="recheckScope === 'selected'">仅已选中的 {{ selectedItems.size }} 个频道</template>
+            <template v-else>整个检测会话的全部频道</template>
+          </div>
+        </div>
+        <div class="flex justify-end gap-2">
+          <Button variant="outline" @click="showRecheckDialog = false">取消</Button>
+          <Button @click="runRecheck">开始复检</Button>
+        </div>
+      </div>
+    </Dialog>
 
     <Dialog v-model:open="showBatchFavoriteDialog">
       <DialogHeader><DialogTitle>批量收藏到文件夹</DialogTitle></DialogHeader>
@@ -420,7 +441,7 @@
         <div class="border-t pt-3 flex items-center justify-between">
           <label class="flex items-center gap-2 cursor-pointer select-none">
             <Checkbox
-              :model-value="resultStore.checkResults.length > 0 && resultStore.checkResults.every(item => selectedItems.has(item.url))"
+              :model-value="allFilteredSelected"
               @update:model-value="selectAllItems"
             />
             <span class="text-sm">全选</span>
@@ -487,14 +508,17 @@
         </div>
       </div>
     </Teleport>
+
+    <EpgDialog v-model:open="showEpgDialog" :channel-name="epgChannelName" />
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted, watch, onBeforeUnmount, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { Wand2, Download, BarChart3, Play, Star, ChevronDown, Folder, Inbox, Check, Plus, RefreshCw, Search } from 'lucide-vue-next'
+import { Wand2, Download, BarChart3, Play, Star, ChevronDown, Folder, Inbox, Check, Plus, RefreshCw } from 'lucide-vue-next'
 import ResultPagination from '../components/result/ResultPagination.vue'
+import EpgDialog from '../components/EpgDialog.vue'
 import ResultGroupedView from '../components/result/ResultGroupedView.vue'
 import ExportDialog from '../components/ExportDialog.vue'
 import LatencyBadge from '../components/LatencyBadge.vue'
@@ -503,7 +527,7 @@ import { useCheckStore } from '../stores/check'
 import { useResultStore } from '../stores/result'
 import { useFavoriteStore } from '../stores/favorite'
 import { useAppStore } from '../stores/app'
-import { smartOptimize, getAvailableCountries, getAvailableRegions, getCategoryTree, quickCheckResults, refreshResultsLatency, thoroughCheck, stopRefreshLatency } from '../api'
+import { smartOptimize, getAvailableCountries, getAvailableRegions, getAvailableSources, getAvailableLanguages, getCategoryTree, quickCheckResults, refreshResultsLatency, thoroughCheck, getFilteredUrls, stopRefreshLatency } from '../api'
 import { useToast } from '../composables/useToast'
 import { cn, countryCodeToName } from '../lib/utils'
 import { Card, CardContent } from '../components/ui/card'
@@ -513,6 +537,7 @@ import { Dialog, DialogHeader, DialogTitle } from '../components/ui/dialog'
 import { Checkbox } from '../components/ui/checkbox'
 import { AlertDialog, AlertDialogHeader, AlertDialogDescription, AlertDialogFooter } from '../components/ui/alert-dialog'
 import Progress from '../components/ui/progress/Progress.vue'
+import { Tabs, TabButton } from '../components/ui/tabs'
 
 const checkStore = useCheckStore()
 const resultStore = useResultStore()
@@ -524,7 +549,11 @@ const { toast } = useToast()
 
 const showExport = ref(false)
 const showOptimizeDialog = ref(false)
-const showThoroughConfirmDialog = ref(false)
+const showRecheckDialog = ref(false)
+const recheckMethod = ref('quick')
+const recheckScope = ref('page')
+const showEpgDialog = ref(false)
+const epgChannelName = ref('')
 const mediaType = ref('all')
 try {
   const saved = localStorage.getItem('iptv_result_media_type')
@@ -564,8 +593,8 @@ function playRecommended(item) {
 }
 
 function openEpg(item) {
-  const url = item.url || (item.sources && item.sources[0]?.url) || ''
-  toast.info('EPG 节目单', `${item.name || ''} · ${url.slice(0, 40) || '暂无地址'}`)
+  epgChannelName.value = item.tvg_name || item.name || ''
+  showEpgDialog.value = true
 }
 
 const showAdvancedFilter = ref(false)
@@ -613,6 +642,18 @@ try {
 watch(selectedProtocol, (val) => {
   try { localStorage.setItem('iptv_result_selected_protocol', val) } catch {}
 })
+
+const selectedSources = ref([])
+try {
+  const saved = localStorage.getItem('iptv_result_selected_sources')
+  if (saved) selectedSources.value = JSON.parse(saved)
+} catch {}
+watch(selectedSources, (val) => {
+  try { localStorage.setItem('iptv_result_selected_sources', JSON.stringify(val)) } catch {}
+}, { deep: true })
+const availableSources = ref([])
+const selectedLanguage = ref('')
+const availableLanguages = ref([])
 
 const latencyMin = ref('')
 try {
@@ -819,6 +860,8 @@ const activeFilterCount = computed(() => {
   if (selectedCategory.value !== '') count++
   if (selectedQuality.value !== '') count++
   if (selectedProtocol.value !== '') count++
+  if (selectedSources.value.length > 0) count++
+  if (selectedLanguage.value !== '') count++
   if (latencyMin.value !== '' || latencyMax.value !== '') count++
   if (speedMin.value !== '' || speedMax.value !== '') count++
   return count
@@ -830,6 +873,34 @@ const filterTabs = computed(() => [
   { value: 'likely_valid', label: '疑似有效', count: checkStore.likelyValidCount },
   { value: 'invalid', label: '无效', count: checkStore.invalidCount },
 ])
+
+// 当前初筛全集是否已被全部选中（用于全选/取消全选文案）
+const allFilteredSelected = computed(() =>
+  resultStore.resultsTotal > 0 &&
+  selectedItems.value.size > 0 &&
+  selectedItems.value.size >= resultStore.resultsTotal
+)
+
+// 收集当前初筛条件，传给后端（彻底版检测作用域 / 跨页全选）
+function currentFilterParams() {
+  const p = {
+    tab: resultStore.currentTab,
+    media_type: mediaType.value,
+    search: resultStore.searchQuery,
+  }
+  if (selectedCountries.value.length > 0) p.country = selectedCountries.value.join(',')
+  if (selectedRegion.value) p.region = selectedRegion.value
+  if (selectedCategory.value) p.category = selectedCategory.value
+  if (selectedQuality.value) p.quality = selectedQuality.value
+  if (selectedProtocol.value) p.protocol = selectedProtocol.value
+  if (selectedSources.value.length > 0) p.source = selectedSources.value.join(',')
+  if (selectedLanguage.value) p.language = selectedLanguage.value
+  if (latencyMin.value !== '' && !isNaN(latencyMin.value)) p.latency_min = parseFloat(latencyMin.value)
+  if (latencyMax.value !== '' && !isNaN(latencyMax.value)) p.latency_max = parseFloat(latencyMax.value)
+  if (speedMin.value !== '' && !isNaN(speedMin.value)) p.speed_min = parseFloat(speedMin.value)
+  if (speedMax.value !== '' && !isNaN(speedMax.value)) p.speed_max = parseFloat(speedMax.value)
+  return p
+}
 
 const mediaTypes = [
   { value: 'all', label: '全部' },
@@ -888,6 +959,8 @@ onMounted(async () => {
     startRefreshTimer()
   }
   await resultStore.fetchHistory()
+  loadAvailableSources()
+  loadAvailableLanguages()
   try {
     await favoriteStore.fetchFavorites()
     await favoriteStore.fetchFolders()
@@ -983,16 +1056,51 @@ const isRefreshingLatency = ref(false)
 const liveLatencyMap = ref({})
 const hasLiveLatency = computed(() => Object.keys(liveLatencyMap.value).length > 0)
 
-async function handleRefreshLatency() {
-  const items = resultStore.checkResults
-  if (!items || items.length === 0) {
-    toast.info('提示', '当前页面没有可检测的频道')
+function openRecheckDialog() {
+  if (selectedItems.value.size > 0) recheckScope.value = 'selected'
+  showRecheckDialog.value = true
+}
+
+async function runRecheck() {
+  showRecheckDialog.value = false
+  const scope = recheckScope.value
+  const method = recheckMethod.value
+
+  // 快速 + 当前页 / 已选：同步 HEAD 探测（不写库，实时更新表格延迟）
+  if (method === 'quick' && (scope === 'page' || scope === 'selected')) {
+    const items = scope === 'selected'
+      ? Array.from(selectedItems.value).map(url => ({ url, name: '' }))
+      : resultStore.checkResults
+    await handleRefreshLatency(items)
+    return
+  }
+
+  // 快速 + 当前筛选 / 全部：异步全量 HEAD（写库 + SSE 进度）
+  if (method === 'quick') {
+    const filters = scope === 'filter' ? currentFilterParams() : {}
+    await handleFullRefreshLatency(filters)
+    return
+  }
+
+  // 彻底：GET 下载验证
+  let urls = []
+  let filters = {}
+  if (scope === 'page') urls = resultStore.checkResults.map(i => i.url)
+  else if (scope === 'filter') filters = currentFilterParams()
+  else if (scope === 'selected') urls = Array.from(selectedItems.value)
+  await runThoroughCheck(urls, filters)
+}
+
+async function handleRefreshLatency(items = null) {
+  const target = items || resultStore.checkResults
+  if (!target || target.length === 0) {
+    toast.info('提示', '当前范围内没有可检测的频道')
     return
   }
   isRefreshingLatency.value = true
   liveLatencyMap.value = {}
   try {
-    const payload = items.map(item => ({ url: item.url, name: item.name }))
+    const payload = target.map(item => ({ url: item.url, name: item.name || '' }))
     const { data } = await quickCheckResults(payload)
     const map = {}
     for (const r of data.results) {
@@ -1001,10 +1109,10 @@ async function handleRefreshLatency() {
     liveLatencyMap.value = map
     const okCount = data.results.filter(r => r.ok).length
     const failCount = data.results.filter(r => !r.ok).length
-    toast.success(`实时检测完成`, `${okCount} 个可达，${failCount} 个不可达`)
+    toast.success('复检完成', `${okCount} 个可达，${failCount} 个不可达`)
   } catch (e) {
-    const msg = e.response?.data?.error?.message || e.response?.data?.detail || e?.message || '实时检测失败'
-    toast.error('实时检测失败', msg)
+    const msg = e.response?.data?.error?.message || e.response?.data?.detail || e?.message || '复检失败'
+    toast.error('复检失败', msg)
   } finally {
     isRefreshingLatency.value = false
   }
@@ -1036,14 +1144,14 @@ function stopRefreshTimer() {
   if (refreshTimer) { clearInterval(refreshTimer); refreshTimer = null }
 }
 
-async function handleFullRefreshLatency() {
+async function handleFullRefreshLatency(filters = {}) {
   if (isFullRefreshing.value) return
   isFullRefreshing.value = true
   appStore.isRefreshLatencyRunning = true
   startRefreshTimer()
   try {
     const sid = resultStore.selectedSessionId || ''
-    const { data } = await refreshResultsLatency(sid)
+    const { data } = await refreshResultsLatency(sid, filters)
     if (data && data.total) {
       appStore.refreshLatencyProgress = { checked: 0, total: data.total, updated: 0 }
     }
@@ -1060,24 +1168,14 @@ async function handleFullRefreshLatency() {
   }
 }
 
-function handleThoroughCheck() {
-  if (isFullRefreshing.value) return
-  if (selectedItems.value.size === 0) {
-    showThoroughConfirmDialog.value = true
-    return
-  }
-  runThoroughCheck()
-}
-
-async function runThoroughCheck() {
-  showThoroughConfirmDialog.value = false
+async function runThoroughCheck(urls = [], filters = {}) {
   isFullRefreshing.value = true
   appStore.isRefreshLatencyRunning = true
   startRefreshTimer()
   try {
     const sid = resultStore.selectedSessionId || ''
-    const selectedUrls = Array.from(selectedItems.value).map(url => btoa(encodeURIComponent(url)))
-    const { data } = await thoroughCheck(sid, selectedUrls)
+    const selectedUrls = urls.map(url => btoa(encodeURIComponent(url)))
+    const { data } = await thoroughCheck(sid, selectedUrls, filters)
     if (data && data.total) {
       appStore.refreshLatencyProgress = { checked: 0, total: data.total, updated: 0 }
     }
@@ -1124,6 +1222,8 @@ function onSessionChange() {
   resultStore.selectSession(selectedSessionId.value)
   resultStore.setPage(1)
   applyAdvancedFilters()
+  loadAvailableSources()
+  loadAvailableLanguages()
 }
 
 function onSessionChangeId(id) {
@@ -1231,6 +1331,30 @@ function clearLatency() {
   latencyMax.value = ''
 }
 
+function toggleSource(src) {
+  const index = selectedSources.value.indexOf(src)
+  if (index > -1) selectedSources.value.splice(index, 1)
+  else selectedSources.value.push(src)
+}
+
+function toggleLanguage(lang) {
+  selectedLanguage.value = selectedLanguage.value === lang ? '' : lang
+}
+
+async function loadAvailableLanguages() {
+  try {
+    const { data } = await getAvailableLanguages()
+    availableLanguages.value = data || []
+  } catch {}
+}
+
+async function loadAvailableSources() {
+  try {
+    const { data } = await getAvailableSources()
+    availableSources.value = data || []
+  } catch {}
+}
+
 function clearSpeed() {
   speedMin.value = ''
   speedMax.value = ''
@@ -1243,6 +1367,8 @@ function clearAllFilters() {
   selectedCategory.value = ''
   selectedQuality.value = ''
   selectedProtocol.value = ''
+  selectedSources.value = []
+  selectedLanguage.value = ''
   latencyMin.value = ''
   latencyMax.value = ''
   speedMin.value = ''
@@ -1283,6 +1409,16 @@ function applyAdvancedFilters(resetPage = true) {
   // 协议筛选
   if (selectedProtocol.value !== '') {
     filters.protocol = selectedProtocol.value
+  }
+  
+  // 来源源筛选
+  if (selectedSources.value.length > 0) {
+    filters.source = selectedSources.value.join(',')
+  }
+  
+  // 语言筛选
+  if (selectedLanguage.value !== '') {
+    filters.language = selectedLanguage.value
   }
   
   // 延迟范围筛选
@@ -1494,13 +1630,23 @@ function toggleItemSelection(itemUrl) {
   selectedItems.value = s
 }
 
-function selectAllItems() {
-  const urls = resultStore.checkResults.map(item => item.url)
-  const allSelected = urls.every(url => selectedItems.value.has(url))
-  if (allSelected) {
+async function selectAllItems() {
+  // 已全选（含跨页全集）→ 取消全选；否则拉取初筛全集 URL 并选中
+  if (allFilteredSelected.value) {
     selectedItems.value = new Set()
-  } else {
-    selectedItems.value = new Set(urls)
+    return
+  }
+  try {
+    const { data } = await getFilteredUrls(currentFilterParams())
+    if (data && data.urls && data.urls.length > 0) {
+      selectedItems.value = new Set(data.urls)
+    } else {
+      // 兜底：仅选当前页
+      selectedItems.value = new Set(resultStore.checkResults.map(item => item.url))
+    }
+  } catch (e) {
+    selectedItems.value = new Set(resultStore.checkResults.map(item => item.url))
+    toast.warning('跨页全选失败', '已选中当前页')
   }
 }
 

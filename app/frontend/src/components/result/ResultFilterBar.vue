@@ -176,6 +176,36 @@
         </div>
       </div>
 
+      <!-- 语言 -->
+      <div class="space-y-2">
+        <label class="text-xs font-medium text-muted-foreground">语言</label>
+        <div v-if="availableLanguages.length > 0" class="flex flex-wrap gap-1.5">
+          <Badge
+            v-for="lang in availableLanguages"
+            :key="lang.language"
+            :variant="selectedLanguage === lang.language ? 'default' : 'outline'"
+            class="cursor-pointer text-xs"
+            @click="$emit('toggle-language', lang.language)"
+          >{{ lang.language }}<span v-if="lang.count" class="ml-1 opacity-60">({{ lang.count }})</span></Badge>
+        </div>
+        <div v-else class="text-xs text-muted-foreground">暂无语言数据</div>
+      </div>
+
+      <!-- 来源源 -->
+      <div class="space-y-2">
+        <label class="text-xs font-medium text-muted-foreground">来源源</label>
+        <div v-if="availableSources.length > 0" class="flex flex-wrap gap-1.5">
+          <Badge
+            v-for="src in availableSources"
+            :key="src"
+            :variant="selectedSources.includes(src) ? 'default' : 'outline'"
+            class="cursor-pointer text-xs"
+            @click="$emit('toggle-source', src)"
+          >{{ src }}</Badge>
+        </div>
+        <div v-else class="text-xs text-muted-foreground">暂无来源数据</div>
+      </div>
+
       <!-- 延迟 + 速度 -->
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div class="space-y-1.5">
@@ -238,6 +268,10 @@ defineProps({
   selectedQuality: { type: String, default: '' },
   selectedProtocol: { type: String, default: '' },
   selectedRegion: { type: String, default: '' },
+  selectedSources: { type: Array, default: () => [] },
+  availableSources: { type: Array, default: () => [] },
+  selectedLanguage: { type: String, default: '' },
+  availableLanguages: { type: Array, default: () => [] },
   latencyMin: { type: [String, Number], default: '' },
   latencyMax: { type: [String, Number], default: '' },
   speedMin: { type: [String, Number], default: '' },
@@ -261,6 +295,8 @@ defineEmits([
   'toggle-batch-select',
   'toggle-country',
   'toggle-region',
+  'toggle-source',
+  'toggle-language',
   'update:selectedCategory',
   'update:selectedQuality',
   'update:selectedProtocol',
