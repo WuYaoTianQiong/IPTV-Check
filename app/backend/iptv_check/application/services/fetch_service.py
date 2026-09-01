@@ -63,15 +63,15 @@ class FetchService:
             "fetched_channels": self._fetched_count,
         }
 
-    def get_fetched_channels(self, source_ids: Optional[List[str]] = None) -> List[Channel]:
+    def get_fetched_channels(self, source_ids: Optional[List[str]] = None, limit: Optional[int] = None) -> List[Channel]:
         from iptv_check.core.parser import _translate_channel_name, _clean_name
         with self._session_factory() as session:
+            stmt = select(FetchedChannelModel)
             if source_ids:
-                rows = session.exec(
-                    select(FetchedChannelModel).where(FetchedChannelModel.source_id.in_(source_ids))
-                ).all()
-            else:
-                rows = session.exec(select(FetchedChannelModel)).all()
+                stmt = stmt.where(FetchedChannelModel.source_id.in_(source_ids))
+            if limit:
+                stmt = stmt.limit(limit)
+            rows = session.exec(stmt).all()
             channels = []
             for row in rows:
                 cleaned = _clean_name(row.name) if row.name else row.name
@@ -80,6 +80,7 @@ class FetchService:
                     name=cleaned,
                     url=row.url,
                     group=row.channel_group,
+                    sources=[row.source_name] if row.source_name else [],
                     tvg_id=row.tvg_id,
                     tvg_name=row.tvg_name,
                     logo_url=row.logo_url,
@@ -217,7 +218,7 @@ class FetchService:
                     if use_cache and cache and cache.has(cache_key):
                         cached = cache.get(cache_key)
                         if cached:
-                            new_channels = PlaylistParser.parse_m3u_content(cached, src.name, src.category or "")
+                            new_channels = await asyncio.to_thread(PlaylistParser.parse_m3u_content, cached, src.name, src.category or "")
                             async with lock:
                                 raw_counts.append(len(new_channels))
                             for ch in new_channels:
@@ -236,7 +237,7 @@ class FetchService:
                                     results.extend(fresh)
                                     self._fetched_count += len(fresh)
                                     self._done_sources += 1
-                                    await self._persist_batch(fresh, src)
+                                    await asyncio.to_thread(self._persist_batch, fresh, src)
                                     await self._broadcast_fn("stage_changed", {"stage": "fetching", "message": f"正在拉取在线源 ({self._done_sources}/{self._total_sources})... 已获取 {self._fetched_count} 个频道"})
                                     await self._broadcast_fn("fetch_progress", self.fetch_progress)
                                 return
@@ -249,9 +250,9 @@ class FetchService:
                     async with self._app_state._async_session.get(url, timeout=timeout, ssl=False) as resp:
                         if resp.status == 200:
                             text = await resp.text()
-                            new_channels = PlaylistParser.parse_m3u_content(text, src.name, src.category or "")
+                            new_channels = await asyncio.to_thread(PlaylistParser.parse_m3u_content, text, src.name, src.category or "")
                             if use_cache and text and cache:
-                                cache.set(cache_key, text, ttl=6 * 3600)
+                                await asyncio.to_thread(cache.set, cache_key, text, 6 * 3600)
                             async with lock:
                                 raw_counts.append(len(new_channels))
                             for ch in new_channels:
@@ -271,7 +272,7 @@ class FetchService:
                     async with lock:
                         results.extend(fresh)
                         self._fetched_count += len(fresh)
-                        self._persist_batch(fresh, src)
+                        await asyncio.to_thread(self._persist_batch, fresh, src)
 
                 async with lock:
                     self._done_sources += 1
