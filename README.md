@@ -10,15 +10,13 @@
 
 | 列表 | 适用场景 | jsDelivr（国内推荐） | GitHub raw |
 |------|----------|----------------------|------------|
-| **jiangsu-mobile.m3u** | 江苏移动宽带（内网源 + 外网备源，推荐） | `https://cdn.jsdelivr.net/gh/<用户名>/IPTV-Check@main/jiangsu-mobile.m3u` | `https://raw.githubusercontent.com/<用户名>/IPTV-Check/main/jiangsu-mobile.m3u` |
-| **live.m3u** | 任意公网（仅含外网可播源） | `https://cdn.jsdelivr.net/gh/<用户名>/IPTV-Check@main/live.m3u` | `https://raw.githubusercontent.com/<用户名>/IPTV-Check/main/live.m3u` |
+| **电视-国内-江苏移动.m3u** | 江苏移动宽带（内网源 + 外网备源，推荐） | `https://cdn.jsdelivr.net/gh/WuYaoTianQiong/IPTV-Check@main/电视-国内-江苏移动.m3u` | `https://raw.githubusercontent.com/WuYaoTianQiong/IPTV-Check/main/电视-国内-江苏移动.m3u` |
 
 > 国内网络推荐用 jsDelivr 链接；GitHub raw 直链在部分地区访问较慢。
 
-- `jiangsu-mobile.m3u`：项目主推版本，含江苏移动内网源（命名带 `超清/高清/标清` 后缀）和公网备源（`备用` 后缀），内网不可用时自动回退。
-- `live.m3u`：纯公网版本，剔除所有运营商内网 IP，适合非江苏移动网络。
+- `电视-国内-江苏移动.m3u`：项目主推版本，以江苏移动内网源（命名带 `超清/高清/标清` 后缀）为主；无内网源的频道才保留外部公网源，每频道仅一条、已去重，均为国内频道。
 
-列表含央视 / 卫视 / 江苏地方台 / 少儿 / NEWTV / 港澳台等分组，台标与 EPG 来自 [fanmingming/live](https://github.com/fanmingming/live)（jsDelivr CDN 加速）。
+列表含央视 / 卫视 / 江苏地方台 / 少儿 / NEWTV / 港澳台等分组。**默认不含台标**——远程台标会让 Kodi 等播放器开机逐个下载、启动极慢（一直 loading），普通用户开箱即用优先；EPG 来自 [fanmingming/live](https://github.com/fanmingming/live)（jsDelivr CDN 加速），仓库提交版已瘦身并指向同目录本地 `*.epg.xml`。需要台标时可本地跑 `python app/tools/build_playlist.py --with-logo` 生成带台标版（自行评估 Kodi 启动速度）。
 
 ---
 
@@ -79,9 +77,26 @@ python -m iptv_check.server.main
 ### 播放列表生成
 
 ```bash
-python app/tools/build_playlist.py               # 重新生成 live.m3u + jiangsu-mobile.m3u
-python app/tools/build_playlist.py --check-logo  # 生成并校验台标可达性
+python app/tools/build_playlist.py               # 重新生成 电视-国内-江苏移动.m3u（默认无台标，避免 Kodi 开机卡死）
+python app/tools/build_playlist.py --with-logo   # 生成并写入远程台标（会拖慢 Kodi 启动，谨慎）
+python app/tools/build_playlist.py --check-logo  # 生成并联网校验台标可达性（隐含 --with-logo）
+python app/tools/build_playlist.py --prune-dead  # 生成并联网剔除外部公网死链（运营商内网源始终保留）
+python app/tools/build_playlist.py --epg         # 生成瘦身本地 EPG，x-tvg-url 指向同目录 *.epg.xml（本地拷贝用）
 ```
+
+> 可用性探测仅做「HTTP 能否连通」的烟雾测试（返回 2xx 即视为可达），**不校验响应内容是否为合法媒体流、不测响应时延与播放质量**。需要更严格的播放级验证请用 `app/tools/probe_playlist.py`（可加 `--include-internal` 在对应运营商网络下实测内网源）。
+
+### 命名规范
+
+仓库根目录的订阅文件统一采用 `介质-区域-网络.m3u` 三段式命名，与电台、国外源并列时一眼可区分：
+
+| 片段 | 取值示例 | 说明 |
+|------|----------|------|
+| 介质 | `电视` / `电台` | 内容类型，固定置于最前 |
+| 区域 | `国内`(含港澳台) / `含国外` / `国际` | 是否含国外源，固定第二位 |
+| 网络 | `公网` / `江苏移动` | 适用网络或运营商，置末位 |
+
+示例：`电视-国内-江苏移动.m3u`（江苏移动内网 + 外网备源，国内频道）。将来含国外的版本可命名为 `电视-含国外-公网.m3u` / `电视-国际-公网.m3u`，广播类则为 `电台-国内-公网.m3u`。新增源请沿用此前缀约定，保持整份仓库命名成体系。
 
 ### 技术栈
 
