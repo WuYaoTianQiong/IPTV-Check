@@ -14,6 +14,7 @@ class CheckRequest(BaseModel):
     timeout_connect: int = 5
     timeout_read: int = 8
     max_threads: int = 120
+    check_mode: str = "standard"  # quick | standard | deep
     run_speed_test: bool = False
     use_cache: bool = True
     max_latency_ms: int = 10000

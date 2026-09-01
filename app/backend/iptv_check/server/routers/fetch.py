@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from typing import List
 
@@ -12,16 +13,6 @@ class FetchRequest(BaseModel):
     online_source_ids: List[str] = []
     use_cache: bool = True
     min_valid_rate: float = 0
-
-
-class CheckFromFetchedRequest(BaseModel):
-    timeout_connect: int = 5
-    timeout_read: int = 15
-    max_threads: int = 80
-    run_speed_test: bool = False
-    use_cache: bool = True
-    max_latency_ms: int = 10000
-    enable_recheck: bool = False
 
 
 def _get_state():
@@ -62,12 +53,14 @@ async def get_fetched_channels():
     fetch_svc = state._fetch_service
     if not fetch_svc:
         return {"channels": [], "count": 0}
-    channels = fetch_svc.get_fetched_channels()
+    # get_fetched_channels 会对每条频道做名称翻译（拼音/城市/正则），
+    # 全量执行可阻塞事件循环达 20s+；丢到线程池执行并只翻译前 200 条
+    channels = await asyncio.to_thread(fetch_svc.get_fetched_channels, None, 200)
     return {
         "count": len(channels),
         "channels": [
             {"name": ch.name, "url": ch.url, "group": ch.group, "url_key": ch.url_key}
-            for ch in channels[:200]
+            for ch in channels
         ],
     }
 
@@ -82,34 +75,3 @@ async def clear_fetched_channels():
         raise HTTPException(400, "拉取正在进行中")
     fetch_svc.clear_fetched_channels()
     return {"status": "cleared"}
-
-
-@router.post("/check/from-fetched")
-async def check_from_fetched(req: CheckFromFetchedRequest):
-    state = _get_state()
-    fetch_svc = state._fetch_service
-    check_svc = state._check_service
-    if not fetch_svc or not check_svc:
-        raise HTTPException(500, "服务未初始化")
-    if check_svc.is_running:
-        raise HTTPException(400, "检测正在进行中")
-    if not fetch_svc.has_fetched_channels():
-        raise HTTPException(400, "没有已拉取的频道数据，请先执行拉取")
-
-    channels = fetch_svc.get_fetched_channels()
-    if not channels:
-        raise HTTPException(400, "已拉取的频道列表为空")
-
-    from iptv_check.models.settings import CheckConfig
-    config = CheckConfig(
-        timeout_connect=req.timeout_connect,
-        timeout_read=req.timeout_read,
-        max_threads=req.max_threads,
-        run_speed_test=req.run_speed_test,
-        use_cache=req.use_cache,
-        max_latency_ms=req.max_latency_ms,
-        enable_recheck=req.enable_recheck,
-    )
-
-    await check_svc.start_check_from_channels(channels, config)
-    return {"status": "started", "session_id": check_svc.session_id, "channel_count": len(channels)}

@@ -1,36 +1,41 @@
 <template>
   <div class="space-y-6">
-    <div class="p-6 rounded-xl border border-primary/20 bg-primary/5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shadow-sm">
-      <div class="flex items-start gap-4">
-        <div class="p-3 bg-primary rounded-lg text-primary-foreground">
-          <Sparkles class="w-6 h-6 animate-pulse" />
+    <div class="rounded-2xl border bg-gradient-to-br from-primary/10 via-background to-background p-8">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+        <div class="space-y-1.5">
+          <h1 class="text-2xl md:text-3xl font-bold tracking-tight">电视直播源检测</h1>
+          <p class="text-sm text-muted-foreground">
+            <span v-if="matchedSourceCount > 0">已为您匹配 {{ matchedSourceCount }} 条 {{ ispLabel }}线路，共 {{ matchedChannelCount }} 个频道</span>
+            <span v-else>从下方选择检测源开始 · 系统将智能并发测速并生成可订阅的 M3U</span>
+          </p>
         </div>
-        <div>
-          <h3 class="font-bold text-lg text-foreground">✨ 智能推荐 (已匹配{{ ispLabel }})</h3>
-          <p class="text-sm text-muted-foreground mt-1">系统已为您智能同步 {{ matchedSourceCount }} 个最适配的专属极速线路，包含 {{ matchedChannelCount }} 个高清源。</p>
-        </div>
+        <Button
+          size="lg"
+          class="gap-2 px-8 shadow-sm"
+          :disabled="!canStart || starting || fetching"
+          @click="doStart"
+        >
+          <Loader2 v-if="starting" class="h-5 w-5 animate-spin" />
+          <Rocket v-else class="h-5 w-5" />
+          {{ starting ? '启动中...' : '一键开始检测' }}
+        </Button>
       </div>
-      <Button
-        class="px-6 py-3 gap-2 shadow-sm"
-        @click="handleStartCheck"
-      >
-        <Rocket class="w-4 h-4" />
-        一键开始检测
-      </Button>
     </div>
 
     <div class="grid gap-6 lg:grid-cols-2">
       <Card>
-        <CardHeader>
-          <CardTitle class="flex items-center gap-2">
-            <CloudDownload class="h-5 w-5 text-primary" />
-            在线直播源
-          </CardTitle>
-          <CardDescription>
-            从在线源库选择，已根据您的运营商自动匹配推荐
-            <span v-if="totalSourceCount > 0" class="ml-2 font-semibold text-primary">共 {{ totalSourceCount }} 个源（含 {{ totalChannelCount }} 个频道，检测时自动去重）</span>
-          </CardDescription>
-          <div class="flex items-center gap-2 mt-1">
+        <CardHeader class="flex flex-row items-start justify-between gap-4 space-y-0">
+          <div class="space-y-1.5 min-w-0">
+            <CardTitle class="flex items-center gap-2">
+              <CloudDownload class="h-5 w-5 text-primary" />
+              在线直播源
+            </CardTitle>
+            <CardDescription>
+              从在线源库选择，已根据您的运营商自动匹配推荐
+              <span v-if="totalSourceCount > 0" class="ml-2 font-semibold text-primary">{{ totalSourceCount }} 个源 / {{ totalChannelCount }} 个频道</span>
+            </CardDescription>
+          </div>
+          <div class="flex flex-col items-end gap-1 shrink-0">
             <Button variant="outline" size="sm" @click="handleSync" :disabled="syncing" class="gap-1.5">
               <RefreshCw v-if="syncing" class="h-3.5 w-3.5 animate-spin" />
               <RefreshCw v-else class="h-3.5 w-3.5" />
@@ -38,7 +43,7 @@
             </Button>
             <span v-if="syncStatus?.last_sync" class="text-xs text-muted-foreground flex items-center gap-1">
               <Clock class="h-3 w-3" />
-              上次同步: {{ formatSyncTime(syncStatus.last_sync.synced_at) }}
+              {{ formatSyncTime(syncStatus.last_sync.synced_at) }}
             </span>
           </div>
         </CardHeader>
@@ -73,51 +78,56 @@
                 class="rounded-lg bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 dark:from-gray-700 dark:via-gray-600 dark:to-gray-700 animate-pulse"
                 style="height:52px"
               />
-              <p class="text-xs text-center text-muted-foreground mt-2">正在加载在线源列表...</p>
+              <p class="text-xs text-center text-muted-foreground mt-2">加载源中...</p>
             </div>
             <div v-else-if="loadError" class="text-center py-8">
               <p class="text-sm text-destructive mb-3">{{ loadError }}</p>
               <Button variant="outline" size="sm" @click="sourceStore.fetchOnlineSources()">重新加载</Button>
             </div>
-            <div v-else-if="categorizedSources.length === 0" class="text-sm text-muted-foreground py-8 text-center">
+            <div v-else-if="totalSourceCount === 0" class="text-sm text-muted-foreground py-8 text-center">
               <p>暂无在线源数据</p>
             </div>
             <template v-else>
-              <div class="flex items-center justify-between mb-2">
-                <span class="text-xs text-muted-foreground">共 {{ categorizedSources.length }} 个分类</span>
-                <Button variant="ghost" size="sm" class="h-6 text-xs gap-1" @click="toggleAllCategories">
-                  <ChevronsUpDown class="h-3.5 w-3.5" />
-                  全部{{ allCollapsed ? '展开' : '折叠' }}
-                </Button>
+              <div class="mb-2 flex items-center justify-between text-xs text-muted-foreground">
+                <span>共 {{ categorizedSources.length }} 个分类</span>
+                <span class="hidden sm:inline">勾选=全选该分类 · 横杠=部分选中</span>
               </div>
-              <div class="category-columns">
-                <div v-for="cat in categorizedSources" :key="cat.category" class="category-column-item space-y-1">
-                  <h4 class="text-xs font-semibold tracking-wider px-2 flex items-center gap-1.5 cursor-pointer hover:text-primary transition-colors" :class="getCategoryStyle(cat.category)" @click="toggleCategory(cat.category)">
-                    <ChevronDown v-if="!isCategoryCollapsed(cat.category)" class="h-3 w-3" />
-                    <ChevronRight v-else class="h-3 w-3" />
-                    <span>{{ getCategoryIcon(cat.category) }}</span>
-                    {{ cat.category }}
-                    <span class="text-muted-foreground font-normal">({{ cat.sources.length }}个源)</span>
-                  </h4>
-                  <div v-if="!isCategoryCollapsed(cat.category)">
-                    <VirtualList
-                      :key="cat.category"
-                      :items="cat.sources"
-                      :item-height="36"
-                      :visible-count="14"
-                      :selected-ids="selectedOnlineIds"
-                      :expanded-id="expandedSourceId"
-                      @toggle-online="toggleOnline"
-                      @toggle-expand="toggleExpand"
-                    />
-                  </div>
+              <div class="grid gap-1.5 sm:grid-cols-2">
+                <div
+                  v-for="cat in categorizedSources"
+                  :key="cat.category"
+                  class="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-accent transition-colors group"
+                  :title="`勾选=全选${cat.category}，取消=清空；横杠=部分选中`"
+                >
+                  <Checkbox
+                    :model-value="isCategoryFullySelected(cat.category)"
+                    :indeterminate="isCategoryPartiallySelected(cat.category)"
+                    @update:model-value="toggleCategorySelect(cat.category)"
+                    @click.stop
+                    class="shrink-0"
+                  />
+                  <button
+                    class="flex items-center gap-2 flex-1 min-w-0 text-left"
+                    @click="openCategory(cat.category)"
+                  >
+                    <span class="text-base leading-none">{{ getCategoryIcon(cat.category) }}</span>
+                    <span class="text-sm font-medium truncate">{{ cat.category }}</span>
+                    <span class="text-xs text-muted-foreground shrink-0 ml-auto">{{ cat.sources.length }}</span>
+                    <ChevronRight class="h-3.5 w-3.5 text-muted-foreground shrink-0 transition-transform group-hover:translate-x-0.5" />
+                  </button>
                 </div>
               </div>
             </template>
           </div>
-          <div class="flex gap-2 mt-4">
-            <Button variant="outline" size="sm" @click="selectAllMatched">全选匹配</Button>
-            <Button variant="outline" size="sm" @click="clearOnline">取消全选</Button>
+          <div class="flex items-center justify-between mt-4">
+            <span class="text-xs text-muted-foreground">
+              已选 <span class="font-semibold text-foreground">{{ selectedOnlineIds.length }}</span> 个源<template v-if="selectedOnlineIds.length"> / {{ selectedChannelCount }} 频道</template>
+            </span>
+            <div class="flex gap-2">
+              <Button variant="outline" size="sm" :disabled="sourceStore.isLoading" @click="handleSelectAllMatched" title="选中运营商匹配的源，以及广播电台和国际电视分类">按推荐选择</Button>
+              <Button variant="outline" size="sm" :disabled="sourceStore.isLoading" @click="handleSelectAllCompatible" title="仅选中运营商匹配的源">仅运营商兼容</Button>
+              <Button variant="ghost" size="sm" @click="sourceStore.clearOnline" :disabled="selectedOnlineIds.length === 0">清空</Button>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -185,14 +195,16 @@
       </div>
     </div>
 
-    <Card>
-      <CardHeader>
-        <CardTitle class="flex items-center gap-2">
-          <Settings2 class="h-5 w-5 text-primary" />
-          检测参数
-        </CardTitle>
-      </CardHeader>
-      <CardContent class="space-y-5">
+    <details class="group rounded-xl border bg-card transition-colors open:bg-accent/5">
+      <summary class="flex items-center justify-between gap-3 px-5 py-4 cursor-pointer list-none select-none">
+        <div class="flex items-center gap-2 min-w-0">
+          <Settings2 class="h-5 w-5 text-muted-foreground shrink-0" />
+          <span class="font-semibold">检测参数</span>
+          <span class="hidden sm:inline text-xs text-muted-foreground truncate">连接 {{ config.timeout_connect }}s · 读取 {{ config.timeout_read }}s · 并发 {{ config.max_threads }} · 方案 {{ { quick: '快速', standard: '标准', deep: '深度' }[config.check_mode] || '标准' }}</span>
+        </div>
+        <ChevronDown class="h-4 w-4 text-muted-foreground transition-transform duration-200 group-open:rotate-180 shrink-0" />
+      </summary>
+      <div class="px-5 pb-5 space-y-5 border-t pt-4">
         <div class="grid gap-6 lg:grid-cols-3">
           <div class="space-y-2">
             <div class="flex items-center justify-between">
@@ -217,12 +229,18 @@
           </div>
         </div>
         <Separator />
-        <div class="flex items-center justify-between">
-          <div>
-            <div class="text-sm font-medium">测速</div>
-            <div class="text-xs text-muted-foreground">检测下载速度（较慢但更准确）</div>
+        <div>
+          <div class="text-sm font-medium mb-2">检测方案</div>
+          <Tabs class="w-full">
+            <TabButton class="flex-1" :active="config.check_mode === 'quick'" @click="config.check_mode = 'quick'">快速</TabButton>
+            <TabButton class="flex-1" :active="config.check_mode === 'standard'" @click="config.check_mode = 'standard'">标准</TabButton>
+            <TabButton class="flex-1" :active="config.check_mode === 'deep'" @click="config.check_mode = 'deep'">深度</TabButton>
+          </Tabs>
+          <div class="text-xs text-muted-foreground mt-1.5">
+            <template v-if="config.check_mode === 'quick'">仅测可达性（HTTP 200 + 延迟），速度最快</template>
+            <template v-else-if="config.check_mode === 'deep'">可达性 + 拉流验证 + 下载测速，最准但最慢</template>
+            <template v-else>可达性 + 拉流验证（推荐）</template>
           </div>
-          <Switch v-model="config.run_speed_test" />
         </div>
         <div class="flex items-center justify-between">
           <div>
@@ -248,8 +266,8 @@
             <span class="text-xs text-muted-foreground">%</span>
           </div>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </details>
 
     <div class="flex justify-end gap-3 flex-wrap">
       <Button
@@ -257,19 +275,11 @@
         :disabled="!canStart || fetching || starting"
         @click="doFetch"
         class="gap-2 px-6"
+        title="只下载并解析选中源的频道列表（不测速），供「一键检测」自动复用"
       >
         <CloudDownload v-if="!fetching" class="h-4 w-4" />
         <Loader2 v-else class="h-4 w-4 animate-spin" />
-        {{ fetching ? `拉取中 ${fetchProgress.done_sources}/${fetchProgress.total_sources}` : '拉取数据' }}
-      </Button>
-      <Button
-        variant="outline"
-        :disabled="!hasFetchedData || starting || fetching"
-        @click="doCheckFromFetched"
-        class="gap-2 px-6"
-      >
-        <Play class="h-4 w-4" />
-        使用已拉取数据检测
+        {{ fetching ? `拉取中 ${fetchProgress.done_sources}/${fetchProgress.total_sources}` : '仅拉取频道列表' }}
       </Button>
       <Button
         size="lg"
@@ -282,33 +292,37 @@
         {{ starting ? '启动中...' : '一键检测' }}
       </Button>
     </div>
+
+    <SourceDetailDialog v-model:open="showDetailDialog" :source="detailSource" />
+    <CategorySourcesDialog v-model:open="showCategoryDialog" :category="activeCategory" />
   </div>
 </template>
 
 <script setup>
 import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue'
 import {
-  Sparkles, Rocket, CloudDownload, FileUp, Settings2, Play,
+  Rocket, CloudDownload, FileUp, Settings2, Play,
   Upload, FileText, X, Loader2, Link, RefreshCw, Clock,
-  ChevronDown, ChevronRight, ChevronsUpDown,
+  ChevronDown, ChevronRight,
 } from 'lucide-vue-next'
 import { useRouter } from 'vue-router'
 import { useAppStore } from '../stores/app'
 import { useSourceStore } from '../stores/source'
 import { useCheckStore } from '../stores/check'
-import { startCheck, checkFromFetched, uploadFile, triggerSourceSync, getSourceSyncStatus, getSourceSyncProgress, startFetch, getFetchProgress, getFetchedChannels } from '../api'
+import { startCheck, uploadFile, triggerSourceSync, getSourceSyncStatus, getSourceSyncProgress, startFetch, getFetchProgress } from '../api'
 import { useToast } from '../composables/useToast'
 import { cn } from '../lib/utils'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../components/ui/card'
 import { Progress } from '../components/ui/progress'
 import { Button } from '../components/ui/button'
-import { Badge } from '../components/ui/badge'
 import { Slider } from '../components/ui/slider'
 import { Switch } from '../components/ui/switch'
 import { Separator } from '../components/ui/separator'
 import { Input } from '../components/ui/input'
 import { Checkbox } from '../components/ui/checkbox'
-import VirtualList from '../components/VirtualList.vue'
+import { Tabs, TabButton } from '../components/ui/tabs'
+import SourceDetailDialog from '../components/SourceDetailDialog.vue'
+import CategorySourcesDialog from '../components/CategorySourcesDialog.vue'
 
 const store = useAppStore()
 const sourceStore = useSourceStore()
@@ -316,13 +330,16 @@ const checkStore = useCheckStore()
 const router = useRouter()
 const { toast } = useToast()
 
-const selectedOnlineIds = ref([])
+const selectedOnlineIds = computed(() => sourceStore.selectedOnlineIds)
+const detailSource = ref(null)
+const showDetailDialog = ref(false)
+const activeCategory = ref('')
+const showCategoryDialog = ref(false)
 const uploadedFiles = ref([])
 const fileInput = ref(null)
 const starting = ref(false)
 const fetching = ref(false)
 const fetchProgress = ref({ is_fetching: false, total_sources: 0, done_sources: 0, fetched_channels: 0 })
-const hasFetchedData = ref(false)
 
 const syncing = ref(false)
 const syncStatus = ref(null)
@@ -352,7 +369,6 @@ const syncEtaText = computed(() => {
 onMounted(() => {
   sourceStore.fetchOnlineSources().catch(() => {})
   loadSyncStatus()
-  checkFetchedData()
   checkSyncInProgress()
   checkFetchInProgress()
 })
@@ -413,13 +429,6 @@ watch(() => store.syncProgress, (val) => {
     }
   }
 }, { deep: true })
-
-async function checkFetchedData() {
-  try {
-    const { data } = await getFetchedChannels()
-    hasFetchedData.value = data.count > 0
-  } catch {}
-}
 
 async function loadSyncStatus() {
   try {
@@ -487,46 +496,17 @@ const config = reactive({
   timeout_connect: 5,
   timeout_read: 15,
   max_threads: 80,
-  run_speed_test: false,
+  check_mode: 'standard',
   use_cache: true,
   enable_recheck: false,
   min_valid_rate: 0,
 })
 
-const categorizedSources = computed(() => sourceStore.categorizedSources)
 const totalSourceCount = computed(() => sourceStore.onlineSources.length || 0)
 const totalChannelCount = computed(() => sourceStore.onlineSources.reduce((sum, s) => sum + (s.channel_count || 0), 0) || 0)
 const pageLoading = computed(() => sourceStore.isLoading)
 const loadError = computed(() => sourceStore.error)
-
-const PROTOCOL_MAP = { hls: 'HLS', http: 'HTTP', rtmp: 'RTMP', rtsp: 'RTSP', ts: 'TS' }
-const QUALITY_MAP = { S: 'S级', A: 'A级', B: 'B级', C: 'C级' }
-
-const expandedSourceId = ref(null)
-function toggleExpand(id) {
-  expandedSourceId.value = expandedSourceId.value === id ? null : id
-}
-
-const collapsedCategories = ref(new Set())
-try {
-  const saved = localStorage.getItem('iptv_collapsed_categories')
-  if (saved) collapsedCategories.value = new Set(JSON.parse(saved))
-} catch {}
-
-function isCategoryCollapsed(category) {
-  return collapsedCategories.value.has(category)
-}
-
-function toggleCategory(category) {
-  if (collapsedCategories.value.has(category)) {
-    collapsedCategories.value.delete(category)
-  } else {
-    collapsedCategories.value.add(category)
-  }
-  try {
-    localStorage.setItem('iptv_collapsed_categories', JSON.stringify([...collapsedCategories.value]))
-  } catch {}
-}
+const categorizedSources = computed(() => sourceStore.categorizedSources)
 
 function getCategoryIcon(category) {
   if (/国际|海外/.test(category)) return '🌍'
@@ -534,46 +514,44 @@ function getCategoryIcon(category) {
   return '📺'
 }
 
-function getCategoryStyle(category) {
-  if (/国际|海外/.test(category)) return 'text-primary'
-  if (/广播|Radio/.test(category)) return 'text-primary'
-  return 'text-muted-foreground'
+function openCategory(category) {
+  activeCategory.value = category
+  showCategoryDialog.value = true
 }
 
-const allCollapsed = computed(() => {
-  return categorizedSources.value.length > 0 && categorizedSources.value.every(cat => isCategoryCollapsed(cat.category))
+// 预计算分类 -> 源 id 列表（缓存，避免每帧渲染时对 28980 个源反复 filter）
+const categoryIdsMap = computed(() => {
+  const map = {}
+  for (const s of sourceStore.onlineSources) {
+    if (s.disabled) continue
+    const cat = s.category || '未分类'
+    if (!map[cat]) map[cat] = []
+    map[cat].push(s.id)
+  }
+  return map
 })
 
-function toggleAllCategories() {
-  if (allCollapsed.value) {
-    collapsedCategories.value.clear()
-  } else {
-    categorizedSources.value.forEach(cat => collapsedCategories.value.add(cat.category))
+function isCategoryFullySelected(category) {
+  const ids = categoryIdsMap.value[category] || []
+  return ids.length > 0 && ids.every(id => sourceStore.selectedIdSet.has(id))
+}
+
+function isCategoryPartiallySelected(category) {
+  const ids = categoryIdsMap.value[category] || []
+  if (ids.length === 0) return false
+  let selected = 0
+  for (const id of ids) {
+    if (sourceStore.selectedIdSet.has(id)) selected++
   }
-  try {
-    localStorage.setItem('iptv_collapsed_categories', JSON.stringify([...collapsedCategories.value]))
-  } catch {}
+  return selected > 0 && selected < ids.length
 }
 
-function shouldShowProtocol(protocol) {
-  return protocol && protocol !== 'unknown'
-}
-
-function getProtocolLabel(protocol) {
-  return PROTOCOL_MAP[protocol] || protocol
-}
-
-function shouldShowQuality(rating) {
-  return rating && rating !== 'A' && rating !== 'C'
-}
-
-function getQualityLabel(rating) {
-  return QUALITY_MAP[rating] || rating
-}
-
-function shouldShowIsp(isp) {
-  if (!isp || !isp.length) return false
-  return !(isp.length === 1 && isp[0] === '其他')
+function toggleCategorySelect(category) {
+  if (isCategoryFullySelected(category)) {
+    sourceStore.clearCategory(category)
+  } else {
+    sourceStore.selectCategory(category)
+  }
 }
 
 const customSrcName = ref('')
@@ -586,6 +564,41 @@ try {
 } catch {}
 
 const canStart = computed(() => selectedOnlineIds.value.length > 0 || uploadedFiles.value.length > 0)
+
+const selectedChannelCount = computed(() => {
+  let total = 0
+  for (const s of sourceStore.onlineSources) {
+    if (sourceStore.selectedIdSet.has(s.id)) total += s.channel_count || 0
+  }
+  return total
+})
+
+function showDetail(id) {
+  detailSource.value = sourceStore.onlineSources.find(s => s.id === id) || null
+  if (detailSource.value) showDetailDialog.value = true
+}
+
+function handleSelectAllMatched() {
+  const before = sourceStore.selectedOnlineIds.length
+  sourceStore.selectAllMatched()
+  const total = sourceStore.selectedOnlineIds.length
+  const added = total - before
+  toast.success(
+    '按推荐选择完成',
+    added > 0 ? `本次新增 ${added} 个推荐源，当前已选 ${total} 个源` : '当前已选源均已推荐，无需新增'
+  )
+}
+
+function handleSelectAllCompatible() {
+  const before = sourceStore.selectedOnlineIds.length
+  sourceStore.selectAllCompatible()
+  const total = sourceStore.selectedOnlineIds.length
+  const added = total - before
+  toast.success(
+    '仅选运营商兼容完成',
+    added > 0 ? `本次新增 ${added} 个运营商兼容源（非检测有效，仅表示源适配你的运营商），当前已选 ${total} 个源` : '当前已选源已全部为运营商兼容'
+  )
+}
 
 const ispLabel = computed(() => {
   const isp = store.localIsp
@@ -602,27 +615,6 @@ const matchedChannelCount = computed(() => {
     .filter(s => s.isp_compatible)
     .reduce((sum, s) => sum + (s.channel_count || 0), 0) || 0
 })
-
-function isIspMatch(src) {
-  return src.isp_compatible
-}
-
-function toggleOnline(id) {
-  const idx = selectedOnlineIds.value.indexOf(id)
-  if (idx >= 0) selectedOnlineIds.value.splice(idx, 1)
-  else selectedOnlineIds.value.push(id)
-}
-
-function selectAllMatched() {
-  const matched = sourceStore.onlineSources
-    .filter(s => !s.disabled && (s.isp_compatible || s.category === '广播电台' || s.category === '国际电视'))
-    .map(s => s.id)
-  selectedOnlineIds.value = [...new Set([...selectedOnlineIds.value, ...matched])]
-}
-
-function clearOnline() {
-  selectedOnlineIds.value = []
-}
 
 function addCustomSource() {
   if (!customSrcUrl.value) return
@@ -655,17 +647,13 @@ function removeFile(idx) {
   uploadedFiles.value.splice(idx, 1)
 }
 
-function handleStartCheck() {
-  router.push('/checking')
-}
-
 async function doFetch() {
   fetching.value = true
   fetchProgress.value = { is_fetching: true, total_sources: 0, done_sources: 0, fetched_channels: 0 }
   try {
     const payload = {
       online_source_ids: selectedOnlineIds.value,
-      use_cache: true,
+      use_cache: config.use_cache,
       min_valid_rate: (config.min_valid_rate || 0) / 100,
     }
     const fetchPromise = startFetch(payload)
@@ -679,7 +667,6 @@ async function doFetch() {
     clearInterval(pollTimer)
     const { data: finalData } = await getFetchProgress()
     fetchProgress.value = finalData
-    hasFetchedData.value = true
     const channelCount = data.fetched_channels || finalData.fetched_channels || 0
     const rawChannels = data.raw_channels || finalData.raw_channels || 0
     const dedupChannels = data.dedup_channels || finalData.dedup_channels || 0
@@ -696,33 +683,6 @@ async function doFetch() {
     toast.error('拉取失败', msg)
   } finally {
     fetching.value = false
-  }
-}
-
-async function doCheckFromFetched() {
-  starting.value = true
-  try {
-    const payload = {
-      timeout_connect: config.timeout_connect,
-      timeout_read: config.timeout_read,
-      max_threads: config.max_threads,
-      run_speed_test: config.run_speed_test,
-      use_cache: config.use_cache,
-      enable_recheck: config.enable_recheck,
-    }
-    router.push('/checking')
-    checkStore.startCheckState(0)
-    await checkFromFetched(payload)
-  } catch (e) {
-    console.error('检测失败:', e)
-    checkStore.resetCheckState()
-    router.push('/source')
-    let msg = '启动检测失败'
-    if (e.response?.data?.detail) msg = e.response.data.detail
-    else if (e.message) msg = e.message
-    toast.error('启动失败', msg)
-  } finally {
-    starting.value = false
   }
 }
 
@@ -766,20 +726,4 @@ async function doStart() {
 }
 </script>
 
-<style scoped>
-.category-columns {
-  column-count: 2;
-  column-gap: 0.75rem;
-}
 
-.category-column-item {
-  break-inside: avoid;
-  margin-bottom: 0.5rem;
-}
-
-@media (max-width: 900px) {
-  .category-columns {
-    column-count: 1;
-  }
-}
-</style>

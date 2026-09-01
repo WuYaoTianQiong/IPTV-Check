@@ -9,7 +9,7 @@ import aiohttp
 
 from iptv_check.models.channel import Channel
 from iptv_check.models.check_result import CheckResult
-from iptv_check.models.settings import CheckConfig
+from iptv_check.models.settings import CheckConfig, CheckMode
 from iptv_check.domain.events import DomainEvents
 from iptv_check.infra.persistence.event_store import EventStore
 from iptv_check.infra.persistence.read_model import ReadModel
@@ -18,6 +18,13 @@ from iptv_check.infra.config.settings import settings
 from iptv_check.infra.batch_result_collector import BatchResultCollector
 
 logger = logging.getLogger(__name__)
+
+
+def _parse_check_mode(value) -> CheckMode:
+    try:
+        return CheckMode(value)
+    except (ValueError, TypeError):
+        return CheckMode.STANDARD
 
 
 class CheckService:
@@ -89,22 +96,6 @@ class CheckService:
         task.add_done_callback(self._on_check_task_done)
         logger.info("[CheckService] 已注册完成回调")
 
-    async def start_check_from_channels(self, channels: List[Channel], config: CheckConfig) -> None:
-        with self._lock:
-            if self._is_running:
-                raise RuntimeError("检测正在进行中")
-            self._is_running = True
-            self._check_total = 0
-            self._current_stage = ""
-            self._current_stage_message = ""
-
-        self._session_id = self._event_store.new_session()
-        await self._event_store.append(DomainEvents.CHECK_STARTED, {"session_id": self._session_id}, self._session_id)
-        await self._broadcast_fn("check_started", {"total": 0, "session_id": self._session_id})
-
-        task = asyncio.create_task(self._run_check_from_channels(channels, config))
-        task.add_done_callback(self._on_check_task_done)
-
     def _on_check_task_done(self, task):
         """后台检测任务完成回调，用于捕获和记录异常"""
         try:
@@ -145,61 +136,6 @@ class CheckService:
         await self._event_store.append(DomainEvents.CHECK_STOPPED, {}, self._session_id)
         await self._broadcast_fn("check_stopped", {})
 
-    async def _run_check_from_channels(self, channels: List[Channel], config: CheckConfig):
-        t0 = time.time()
-        logger.info("[检测] 从已拉取频道启动检测, session=%s, 频道数=%d", self._session_id, len(channels))
-
-        self._collector = BatchResultCollector(
-            event_store=self._event_store,
-            broadcast_fn=self._broadcast_fn,
-            batch_size=100,
-            flush_interval=3.0,
-            session_id=self._session_id,
-        )
-        await self._collector.start()
-
-        all_channels = channels
-        self._check_total = len(all_channels)
-        self._collector.set_total(self._check_total)
-
-        for ch in all_channels:
-            await self._event_store.append(
-                DomainEvents.CHANNEL_SUBMITTED,
-                {"url_key": ch.url_key, "name": ch.name, "url": ch.url, "group": ch.group, "is_radio": ch.is_radio},
-                self._session_id,
-            )
-
-        logger.info("[检测] 频道加载完毕, 总计=%d", self._check_total)
-
-        if not self._check_total:
-            await self._event_store.append(DomainEvents.CHECK_FAILED, {"reason": "没有可检测的频道"}, self._session_id)
-            with self._lock:
-                self._is_running = False
-            await self._collector.stop()
-            await self._broadcast_fn("check_completed", {
-                "total": 0, "checked": 0, "valid": 0, "likely_valid": 0, "invalid": 0, "is_running": False
-            })
-            return
-
-        await self._broadcast_fn("channels_loaded", {"total": self._check_total})
-        await self._broadcast_stage("checking", f"正在检测 {self._check_total} 个频道...")
-        logger.info("[检测] 启动检测引擎, 频道数=%d", self._check_total)
-
-        def on_result(result: CheckResult):
-            self._collector.submit_result_sync(result)
-
-        def on_cached_result(result: CheckResult):
-            self._collector.submit_cached_result_sync(result)
-
-        def on_complete():
-            logger.info("[CheckService] on_complete 回调被触发")
-            self._collector.submit_complete_sync()
-            logger.info("[CheckService] submit_complete_sync 已调用")
-
-        self._check_engine.start(all_channels, config, on_result=on_result, on_complete=on_complete, on_cached_result=on_cached_result)
-
-        await self._collector.wait_for_complete()
-
     async def _run_check(self, req):
         from iptv_check.core.parser import PlaylistParser
 
@@ -219,6 +155,7 @@ class CheckService:
             timeout_connect=req.timeout_connect,
             timeout_read=req.timeout_read,
             max_threads=req.max_threads,
+            check_mode=_parse_check_mode(getattr(req, 'check_mode', 'standard')),
             run_speed_test=req.run_speed_test,
             use_cache=req.use_cache,
             max_latency_ms=getattr(req, 'max_latency_ms', 10000),
@@ -243,7 +180,8 @@ class CheckService:
             for ch in channels:
                 await self._event_store.append(
                     DomainEvents.CHANNEL_SUBMITTED,
-                    {"url_key": ch.url_key, "name": ch.name, "url": ch.url, "group": ch.group, "is_radio": ch.is_radio},
+                    {"url_key": ch.url_key, "name": ch.name, "url": ch.url, "group": ch.group,
+                     "sources": ch.sources, "is_radio": ch.is_radio},
                     self._session_id,
                 )
 
@@ -498,7 +436,8 @@ class CheckService:
             results.append(direct_channels)
             await self._event_store.append_batch(
                 [(DomainEvents.CHANNEL_SUBMITTED,
-                  {"url_key": ch.url_key, "name": ch.name, "url": ch.url, "group": ch.group, "is_radio": ch.is_radio})
+                  {"url_key": ch.url_key, "name": ch.name, "url": ch.url, "group": ch.group,
+                   "sources": ch.sources, "is_radio": ch.is_radio})
                  for ch in direct_channels],
                 self._session_id,
             )

@@ -13,7 +13,7 @@ import aiohttp
 
 from iptv_check.models.channel import Channel
 from iptv_check.models.check_result import CheckResult
-from iptv_check.models.settings import CheckConfig
+from iptv_check.models.settings import CheckConfig, CheckMode
 from iptv_check.infra.check_engine.base import CheckEngineProtocol
 from iptv_check.infra.check_engine.adaptive_controller import AdaptiveConcurrencyController
 from iptv_check.core.m3u8_validator import M3U8Validator
@@ -252,6 +252,7 @@ class AsyncCheckEngine:
 
         likely_m3u8 = channel.url.lower().endswith(".m3u8")
         fetch_url = self._maybe_proxy_url(channel.url) if likely_m3u8 else channel.url
+        mode = self._config.effective_mode
 
         async with self._http.get(
             fetch_url,
@@ -266,7 +267,13 @@ class AsyncCheckEngine:
             content_type = resp.headers.get("Content-Type", "").lower()
             is_m3u8 = "mpegurl" in content_type or likely_m3u8
 
-            if self._config.run_speed_test:
+            if mode == CheckMode.QUICK:
+                # 方案1（快速）：只确认 HTTP 可达且响应体非空，不做任何拉流验证
+                chunk = await resp.content.read(1024)
+                if not chunk:
+                    raise ValueError("无响应数据")
+            elif mode == CheckMode.DEEP:
+                # 方案1+2+测速（深度）：可达性 + 拉流验证 + 真实下载测速
                 if is_m3u8:
                     playlist_content = await resp.text()
                     if not self._is_valid_m3u8_content(playlist_content):
@@ -280,6 +287,7 @@ class AsyncCheckEngine:
                 else:
                     speed = await self._test_speed_async(resp.content.iter_any(), self._config.timeout_read)
             else:
+                # 方案1+2（标准·推荐）：可达性 + 首包流验证，读到有效流头即通过
                 if is_m3u8:
                     playlist_content = await resp.text()
                     if not self._is_valid_m3u8_content(playlist_content):
@@ -300,7 +308,7 @@ class AsyncCheckEngine:
             result.latency = latency
             result.speed = speed
 
-            if self._config.run_speed_test and speed in ("-", "N/A"):
+            if mode == CheckMode.DEEP and speed in ("-", "N/A"):
                 result.is_valid = True
                 result.quality_tier = "likely_valid"
                 result.details = "速度测试超时" if not is_m3u8 else "分片速度测试超时"
@@ -317,7 +325,7 @@ class AsyncCheckEngine:
                 result.quality_tier = "valid"
                 result.details = f"OK ({resp.status})"
 
-            if is_m3u8 and result.is_valid:
+            if is_m3u8 and result.is_valid and mode != CheckMode.QUICK:
                 try:
                     segments = self._m3u8.find_all_segment_urls(playlist_content, channel.url, limit=4)
                     if len(segments) >= 2:
@@ -348,18 +356,6 @@ class AsyncCheckEngine:
                             result.is_valid = False
                             result.quality_tier = "invalid"
                             result.details = f"分段不可达 ({ok_count}/{tested})"
-                except Exception:
-                    pass
-
-            if not is_m3u8 and result.is_valid:
-                try:
-                    sustained_ok = await self._sustained_stream_check(
-                        channel.url, duration_secs=2,
-                    )
-                    if not sustained_ok:
-                        result.is_valid = False
-                        result.quality_tier = "invalid"
-                        result.details = "流中断"
                 except Exception:
                     pass
 
@@ -422,31 +418,6 @@ class AsyncCheckEngine:
             return ""
         except Exception:
             return "N/A"
-
-    async def _sustained_stream_check(self, url: str, duration_secs: int = 5) -> bool:
-        """Verify a non-M3U8 stream continues to deliver data over time."""
-        timeout = aiohttp.ClientTimeout(
-            total=self._config.timeout_connect + duration_secs + 2,
-            connect=self._config.timeout_connect,
-            sock_read=duration_secs + 2,
-        )
-        try:
-            fetch_url = self._maybe_proxy_url(url)
-            async with self._http.get(
-                fetch_url, headers=self._headers,
-                timeout=timeout, allow_redirects=True, ssl=False,
-            ) as resp:
-                resp.raise_for_status()
-                chunk_count = 0
-                deadline = time.time() + duration_secs
-                async for chunk in resp.content.iter_any():
-                    if chunk:
-                        chunk_count += 1
-                    if chunk_count >= 2 or time.time() >= deadline:
-                        break
-                return chunk_count >= 2
-        except Exception:
-            return False
 
     def add_channels(self, channels: List[Channel], config: CheckConfig,
                      on_result: Optional[Callable[[CheckResult], None]] = None) -> None:
