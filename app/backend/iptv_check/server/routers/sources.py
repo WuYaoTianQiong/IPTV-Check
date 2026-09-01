@@ -1,6 +1,8 @@
 import logging
+import time
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api", tags=["sources"])
@@ -9,6 +11,74 @@ router = APIRouter(prefix="/api", tags=["sources"])
 def _get_state():
     from iptv_check.server.app import app_state
     return app_state
+
+
+class SubscriptionRequest(BaseModel):
+    name: str = ""
+    url: str = ""
+
+
+def _get_subscriptions(state) -> list:
+    subs = state.settings.get("subscriptions", [])
+    return subs if isinstance(subs, list) else []
+
+
+@router.get("/subscriptions")
+async def get_subscriptions():
+    state = _get_state()
+    return {"subscriptions": _get_subscriptions(state)}
+
+
+@router.post("/subscriptions")
+async def add_subscription(req: SubscriptionRequest):
+    state = _get_state()
+    if not req.url or not req.url.strip():
+        raise HTTPException(400, "订阅 URL 不能为空")
+    subs = _get_subscriptions(state)
+    sub_id = f"sub_{int(time.time() * 1000)}"
+    subs.append({"id": sub_id, "name": req.name.strip() or req.url.strip(), "url": req.url.strip()})
+    state.settings.set("subscriptions", subs)
+    return {"subscriptions": subs}
+
+
+@router.delete("/subscriptions/{sub_id}")
+async def delete_subscription(sub_id: str):
+    state = _get_state()
+    subs = _get_subscriptions(state)
+    subs = [s for s in subs if s.get("id") != sub_id]
+    state.settings.set("subscriptions", subs)
+    return {"subscriptions": subs}
+
+
+@router.post("/subscriptions/sync")
+async def sync_subscriptions():
+    """拉取所有订阅 URL 的 M3U 内容并解析，返回各订阅的频道统计与样本（仅预览，不写入检测库）"""
+    state = _get_state()
+    subs = _get_subscriptions(state)
+    if not subs:
+        raise HTTPException(400, "暂无订阅，请先添加")
+    import asyncio
+    import aiohttp
+    from iptv_check.core.parser import PlaylistParser
+
+    async def fetch_one(sub):
+        try:
+            timeout = aiohttp.ClientTimeout(total=30, connect=10, sock_read=20)
+            async with state._async_session.get(sub["url"], timeout=timeout, ssl=False) as resp:
+                if resp.status != 200:
+                    return {"name": sub["name"], "ok": False, "channels": 0, "error": f"HTTP {resp.status}"}
+                text = await resp.text()
+            channels = await asyncio.to_thread(PlaylistParser.parse_m3u_content, text, sub["name"], "")
+            return {
+                "name": sub["name"], "ok": True, "channels": len(channels),
+                "sample": [c.name for c in channels[:20]],
+            }
+        except Exception as e:
+            return {"name": sub["name"], "ok": False, "channels": 0, "error": str(e)[:100]}
+
+    results = await asyncio.gather(*[fetch_one(s) for s in subs])
+    total = sum(r["channels"] for r in results if r["ok"])
+    return {"results": results, "total_channels": total}
 
 
 def _compute_quality_score(source, local_isp: str) -> str:
@@ -48,6 +118,8 @@ async def get_online_sources():
             "channel_count": s.channel_count,
             "isp_compatible": s.is_isp_compatible(state.local_isp),
             "has_epg": s.has_epg, "has_logo_support": s.has_logo_support,
+            "mirror_url": s.mirror_url,
+            "last_updated": s.last_updated,
         }
 
     sources_with_score = []
@@ -70,8 +142,7 @@ async def get_online_sources():
 @router.get("/isp")
 async def get_isp():
     state = _get_state()
-    if state.local_isp == "未知":
-        await state.detect_isp()
+    state.ensure_isp_detection_started()
     return {"local_isp": state.local_isp}
 
 
@@ -86,9 +157,8 @@ async def refresh_isp():
 async def get_info():
     from iptv_check.infra.config.settings import APP_VERSION, APP_TITLE
     state = _get_state()
-    # 如果 ISP 检测未完成，触发检测并等待完成
-    if state.local_isp == "未知":
-        await state.detect_isp()
+    # ISP 检测在后台运行，不阻塞请求；完成后通过 SSE 推送 isp_updated
+    state.ensure_isp_detection_started()
     return {
         "version": APP_VERSION,
         "title": APP_TITLE,
