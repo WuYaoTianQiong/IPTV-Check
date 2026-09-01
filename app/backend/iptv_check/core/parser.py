@@ -2,6 +2,7 @@ import re
 import os
 import hashlib
 import logging
+from functools import lru_cache
 from typing import List, Optional
 
 from iptv_check.models.channel import Channel
@@ -792,6 +793,7 @@ _PINYIN_WORD_BOUNDARY = re.compile(
 )
 
 
+@lru_cache(maxsize=100000)
 def _translate_channel_name(name: str, tvg_name: str = "") -> str:
     if _has_chinese(name):
         return ""

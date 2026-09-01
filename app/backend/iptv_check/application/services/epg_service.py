@@ -103,6 +103,17 @@ class EpgService:
     def loaded_sources(self) -> List[str]:
         return list(self._epg_data.keys())
 
+    def get_merged_epg(self) -> Dict[str, EpgChannel]:
+        """合并所有已加载源的节目单，返回扁平的 channel_id -> EpgChannel。
+
+        供导出（瘦身节目单）复用网页已加载的 EPG 源：若用户已在网页配置了自定义/区域 EPG 源，
+        导出就基于它而不是默认的全量源，保持与网页内 EPG 匹配一致。未加载任何源时返回空字典。
+        """
+        merged: Dict[str, EpgChannel] = {}
+        for epg in self._epg_data.values():
+            merged.update(epg)
+        return merged
+
     def get_stats(self) -> dict:
         total_channels = sum(len(epg) for epg in self._epg_data.values())
         total_programs = sum(

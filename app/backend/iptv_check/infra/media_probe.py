@@ -83,10 +83,8 @@ class MediaProbe:
                 lambda: ffmpeg.probe(
                     url,
                     v="error",
-                    show_format=True,
-                    show_streams=True,
                     timeout=self._timeout,
-                    analyze_duration="5000000",
+                    analyzeduration="5000000",
                 ),
             )
         except ffmpeg.Error as e:

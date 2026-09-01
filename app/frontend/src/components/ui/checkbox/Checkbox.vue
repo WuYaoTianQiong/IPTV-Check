@@ -2,13 +2,13 @@
   <button
     type="button"
     role="checkbox"
-    :aria-checked="modelValue"
+    :aria-checked="indeterminate ? 'mixed' : modelValue"
     :class="cn(
       'peer h-4 w-4 shrink-0 rounded-sm border-2 border-primary ring-offset-background',
       'bg-background shadow-sm',
       'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
       'disabled:cursor-not-allowed disabled:opacity-50',
-      modelValue && 'bg-primary text-primary-foreground border-primary',
+      (modelValue || indeterminate) && 'bg-primary text-primary-foreground border-primary',
     )"
     @click="$emit('update:modelValue', !modelValue)"
   >
@@ -20,6 +20,9 @@
       <svg v-if="modelValue" class="h-3 w-3 mx-auto" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M2 6l3 3 5-5" />
       </svg>
+      <svg v-else-if="indeterminate" class="h-3 w-3 mx-auto" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M2 6h8" />
+      </svg>
     </Transition>
   </button>
 </template>
@@ -29,6 +32,7 @@ import { cn } from '../../../lib/utils'
 
 defineProps({
   modelValue: { type: Boolean, default: false },
+  indeterminate: { type: Boolean, default: false },
 })
 defineEmits(['update:modelValue'])
 </script>

@@ -1,7 +1,7 @@
 <template>
   <div class="flex h-screen flex-col bg-background">
     <AppHeader />
-    <div v-if="!sseConnected" class="flex items-center justify-center gap-2 px-4 py-1.5 text-xs font-medium bg-warning/10 text-warning border-b border-warning/20">
+    <div v-if="sseReconnecting" class="flex items-center justify-center gap-2 px-4 py-1.5 text-xs font-medium bg-warning/10 text-warning border-b border-warning/20">
       <Loader2 class="h-3 w-3 animate-spin" />
       <span>连接断开，正在尝试重连...</span>
     </div>
@@ -19,12 +19,12 @@ import AppHeader from './AppHeader.vue'
 import ToastContainer from '../ToastContainer.vue'
 import { sseStatus } from '../../api'
 
-const sseConnected = ref(true)
+const sseReconnecting = ref(false)
 let pollTimer = null
 
 onMounted(() => {
   pollTimer = setInterval(() => {
-    sseConnected.value = sseStatus.connected
+    sseReconnecting.value = sseStatus.reconnecting
   }, 1000)
 })
 onUnmounted(() => clearInterval(pollTimer))

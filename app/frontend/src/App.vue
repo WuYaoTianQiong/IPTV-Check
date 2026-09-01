@@ -37,10 +37,12 @@ async function handleSSEReconnect() {
   } catch {}
 }
 
-onMounted(async () => {
-  await store.fetchInfo()
+onMounted(() => {
+  // 先建立 SSE 再拉基础信息：避免 /api/info 慢时整页横幅"连接断开"刷屏，
+  // 且 local_isp 可通过 SSE 的 isp_updated 事件及时更新
   sse = createSSEConnection((msg) => store.handleSSEMessage(msg), handleSSEReconnect)
   store.startReconciliation()
+  store.fetchInfo().catch(() => {})
 
   if (store.localIsp === '检测中...' || store.localIsp === '未知') {
     setTimeout(() => {

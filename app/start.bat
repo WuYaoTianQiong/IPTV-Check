@@ -8,6 +8,10 @@ echo.
 
 cd /d "%~dp0"
 
+rem Prefer project virtualenv if available, otherwise fall back to global python
+set "PYTHON=python"
+if exist "%CD%\.venv\Scripts\python.exe" set "PYTHON=%CD%\.venv\Scripts\python.exe"
+
 set "MODE=%~1"
 if /i "%MODE%"=="" set "MODE=prod"
 if /i "%MODE%"=="dev" goto :dev
@@ -62,7 +66,7 @@ echo [%TIME%] Frontend build OK
 
 echo [%TIME%] Starting server: http://127.0.0.1:%PORT%
 cd backend
-start "IPTV-Check" cmd /k "python -m iptv_check --port %PORT% --no-browser && echo [%TIME%] Server started successfully. Press Ctrl+C to stop. || (echo [%TIME%] ERROR: Server failed to start! Press any key to exit... && pause)"
+start "IPTV-Check" cmd /k ""%PYTHON%" -m iptv_check --port %PORT% --no-browser && echo [%TIME%] Server started successfully. Press Ctrl+C to stop. || (echo [%TIME%] ERROR: Server failed to start! Press any key to exit... && pause)"
 cd ..
 
 echo [%TIME%] Waiting for server to be ready...
@@ -135,7 +139,7 @@ cd ..
 
 echo [%TIME%] Starting backend dev server (Uvicorn --reload)...
 cd backend
-start "IPTV-Check Backend" cmd /c "python -m uvicorn iptv_check.server.app:create_app --factory --host 127.0.0.1 --port %PORT% --reload"
+start "IPTV-Check Backend" cmd /c ""%PYTHON%" -m uvicorn iptv_check.server.app:create_app --factory --host 127.0.0.1 --port %PORT% --reload"
 cd ..
 
 timeout /t 4 /nobreak >nul

@@ -16,6 +16,7 @@ import aiohttp
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from starlette.middleware.gzip import GZipMiddleware
 from fastapi.responses import HTMLResponse, FileResponse, StreamingResponse, Response
 from pydantic import BaseModel
 
@@ -132,6 +133,7 @@ class AppState:
 
         self.online_sources: List[OnlineSource] = []
         self.local_isp: str = "未知"
+        self._isp_detect_task: Optional[asyncio.Task] = None
 
         self._task_scheduler = TaskScheduler()
         self._scheduled_check_config: Optional[dict] = None
@@ -205,7 +207,7 @@ class AppState:
         # 因为 blinker 不支持 async 处理器
         event_bus.connect(Events.ISP_DETECTED, lambda sender, **kwargs: asyncio.create_task(self._on_isp_detected(sender, **kwargs)))
         
-        asyncio.create_task(self.detect_isp())
+        self.ensure_isp_detection_started()
         await self.stream_proxy.initialize()
 
         connector = aiohttp.TCPConnector(
@@ -306,8 +308,32 @@ class AppState:
         self._wal_checkpoint()
         logger.info("服务已关闭")
 
+    def ensure_isp_detection_started(self) -> bool:
+        """确保 ISP 检测在后台运行（不等待结果，避免阻塞请求）。
+        已有检测任务在跑或已有有效结果时返回 False。"""
+        if self._isp_detect_task is not None and not self._isp_detect_task.done():
+            return False
+        if self.local_isp not in ("未知", "检测中..."):
+            return False
+        self._isp_detect_task = asyncio.create_task(self._run_isp_detection())
+        return True
+
+    async def _run_isp_detection(self):
+        try:
+            detected = await self.isp_detector.detect_local_isp_async()
+            if detected:
+                self.local_isp = detected
+                logger.info("ISP 检测完成：%s", self.local_isp)
+        except Exception as e:
+            logger.warning("ISP 检测失败: %s", e)
+
     async def detect_isp(self):
-        self.local_isp = await self.isp_detector.detect_local_isp_async()
+        """显式同步等待检测（用于用户主动刷新的场景，需立即返回结果）"""
+        if self._isp_detect_task is not None and not self._isp_detect_task.done():
+            await self._isp_detect_task
+            return self.local_isp
+        self._isp_detect_task = asyncio.create_task(self._run_isp_detection())
+        await self._isp_detect_task
         return self.local_isp
 
     async def _on_isp_detected(self, sender, **kwargs):
@@ -386,6 +412,10 @@ def create_app() -> FastAPI:
     # Register middleware (correlation ID, request logging)
     register_middleware(app)
 
+    # GZip 压缩大响应（如 /api/online-sources 12.9MB JSON）。
+    # Starlette 默认排除 text/event-stream，不会破坏 SSE；大块压缩走线程池不阻塞事件循环。
+    app.add_middleware(GZipMiddleware, minimum_size=1024)
+
     # Register CORS middleware
     app.add_middleware(
         CORSMiddleware,
@@ -438,7 +468,8 @@ def create_app() -> FastAPI:
     async def index():
         index_file = static_dir / "index.html"
         if index_file.is_file():
-            return FileResponse(str(index_file))
+            # no-cache 保证每次访问都拿到最新构建产物（assets 带 hash 仍可长缓存）
+            return FileResponse(str(index_file), headers={"Cache-Control": "no-cache"})
         return HTMLResponse("<h1>IPTV-Check API Server</h1><p>前端未构建，请访问 <a href='/docs'>/docs</a> 查看 API</p>")
 
     @app.get("/healthz")
@@ -618,7 +649,7 @@ def create_app() -> FastAPI:
         """SPA fallback - serve index.html for all non-API frontend routes (MUST be last)"""
         index_file = static_dir / "index.html"
         if index_file.is_file():
-            return FileResponse(str(index_file))
+            return FileResponse(str(index_file), headers={"Cache-Control": "no-cache"})
         raise HTTPException(404, "Frontend not built")
 
     return app
