@@ -59,11 +59,13 @@ describe('useCheckStore', () => {
   it('completeCheckState 应标记完成', () => {
     const store = useCheckStore()
     store.startCheckState(10)
-    store.completeCheckState(10, 8, 2)
+    // 签名: (total, valid, likelyValid, invalid) — 与 app.js SSE 调用一致
+    store.completeCheckState(10, 8, 0, 2)
 
     expect(store.isChecking).toBe(false)
     expect(store.checkedCount).toBe(10)
     expect(store.validCount).toBe(8)
+    expect(store.likelyValidCount).toBe(0)
     expect(store.invalidCount).toBe(2)
     expect(store.phase).toBe('completed')
   })
@@ -100,6 +102,8 @@ describe('useCheckStore', () => {
     store.invalidCount = 20
     store.likelyValidCount = 5
     store.stage = 'rechecking'
+    // stageMessage 优先于 stage 分支，清空后 stage 文案才生效
+    store.stageMessage = ''
 
     expect(store.currentStatus).toBe('正在复检无效频道... (25 个待复检)')
   })
@@ -110,6 +114,7 @@ describe('useCheckStore', () => {
     store.checkedCount = 100
     store.checkTotal = 100
     store.stage = 'finalizing'
+    store.stageMessage = ''
 
     expect(store.currentStatus).toBe('正在生成报告...')
   })

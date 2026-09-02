@@ -209,7 +209,7 @@
           <div v-if="cacheStats.logos" class="flex justify-between"><span class="text-muted-foreground">台标缓存</span><span>{{ cacheStats.logos.count ?? '-' }} 条</span></div>
           <div v-if="!cacheStats.detection && !cacheStats.epg && !cacheStats.logos" class="text-muted-foreground">暂无缓存数据</div>
         </div>
-        <Button variant="destructive" class="w-full gap-2" :disabled="clearingCache" @click="clearAllCache">
+        <Button variant="destructive" class="w-full gap-2" :disabled="clearingCache" @click="showCacheConfirm = true">
           <Loader2 v-if="clearingCache" class="h-4 w-4 animate-spin" />
           <Trash2 v-else class="h-4 w-4" />
           一键清理全部缓存
@@ -217,28 +217,17 @@
       </div>
     </Dialog>
 
-    <!-- 源健康报告 -->
-    <Dialog v-model:open="showHealth" class="max-w-3xl">
-      <DialogHeader><DialogTitle>源健康报告</DialogTitle></DialogHeader>
-      <div class="p-6 pt-0 space-y-3">
-        <div class="text-xs text-muted-foreground">基于最近一次检测结果，按有效率从低到高排列</div>
-        <div v-if="healthLoading" class="text-xs text-muted-foreground py-4 text-center">加载中...</div>
-        <div v-else-if="healthSources.length === 0" class="text-xs text-muted-foreground py-4 text-center">暂无健康数据，请先执行一次检测</div>
-        <div v-else class="space-y-2 max-h-80 overflow-y-auto">
-          <div
-            v-for="h in healthSources" :key="h.source_name"
-            class="flex items-center gap-3 rounded-lg border px-3 py-2 text-sm"
-            :class="h.is_healthy ? 'border-border' : 'border-destructive/40 bg-destructive/5'"
-          >
-            <span class="font-medium truncate flex-1 min-w-0">{{ h.source_name }}</span>
-            <span class="text-xs text-muted-foreground shrink-0">{{ h.valid }}/{{ h.total }} 有效</span>
-            <span class="text-xs shrink-0 w-14 text-right" :class="h.valid_rate < 60 ? 'text-destructive' : 'text-success'">{{ h.valid_rate }}%</span>
-            <span v-if="h.avg_latency > 0" class="text-xs text-muted-foreground shrink-0">{{ h.avg_latency }}ms</span>
-            <Badge v-if="!h.is_healthy" variant="destructive" class="text-[10px] shrink-0">异常</Badge>
-          </div>
-        </div>
-      </div>
-    </Dialog>
+    <!-- 缓存清理二次确认 -->
+    <AlertDialog v-model:open="showCacheConfirm">
+      <AlertDialogHeader>确认清理全部缓存？</AlertDialogHeader>
+      <AlertDialogDescription>
+        将清空检测缓存、EPG 缓存与台标缓存，清理后首次检测会明显变慢。此操作不可撤销。
+      </AlertDialogDescription>
+      <AlertDialogFooter>
+        <Button variant="outline" @click="showCacheConfirm = false">取消</Button>
+        <Button variant="destructive" @click="showCacheConfirm = false; clearAllCache()">确认清理</Button>
+      </AlertDialogFooter>
+    </AlertDialog>
   </div>
 </template>
 
@@ -253,7 +242,7 @@ import {
   convertText, getSubscriptions, addSubscription as addSubApi, deleteSubscription as deleteSubApi,
   syncSubscriptions, startScheduler, stopScheduler, getSchedulerState,
   startM3uServer, stopM3uServer, getM3uState,
-  getCacheStats, clearCache, getSourceHealth, getRecommendM3u,
+  getCacheStats, clearCache, getRecommendM3u,
 } from '../api'
 import { useToast } from '../composables/useToast'
 import { cn } from '../lib/utils'
@@ -262,6 +251,7 @@ import { Badge } from '../components/ui/badge'
 import { Input } from '../components/ui/input'
 import { Select } from '../components/ui/select'
 import { Dialog, DialogHeader, DialogTitle } from '../components/ui/dialog'
+import { AlertDialog, AlertDialogHeader, AlertDialogDescription, AlertDialogFooter } from '../components/ui/alert-dialog'
 
 const { toast } = useToast()
 
@@ -270,7 +260,7 @@ const showSubscription = ref(false)
 const showScheduler = ref(false)
 const showM3u = ref(false)
 const showCache = ref(false)
-const showHealth = ref(false)
+const showCacheConfirm = ref(false)
 const convertInput = ref(null)
 const convertFile = ref(null)
 const convertOutputFormat = ref('m3u')
@@ -290,8 +280,6 @@ const m3uState = ref({ running: false, url: '', file_exists: false, valid_channe
 const loadingM3u = ref(false)
 const cacheStats = ref({})
 const clearingCache = ref(false)
-const healthSources = ref([])
-const healthLoading = ref(false)
 
 const beginnerTools = [
   {
@@ -349,13 +337,6 @@ const advancedTools = [
     icon: Trash2,
     actionLabel: '一键释放空间',
     action: () => { showCache.value = true; loadCacheStats() },
-  },
-  {
-    title: '源健康报告',
-    desc: '查看各源在最近一次检测中的有效率、平均延迟与异常告警，及时发现需要替换的劣质源。',
-    icon: HelpCircle,
-    actionLabel: '查看健康报告',
-    action: () => { showHealth.value = true; loadHealth() },
   },
 ]
 
@@ -568,20 +549,6 @@ async function clearAllCache() {
     toast.error('清理失败', e.response?.data?.detail || e.message)
   } finally {
     clearingCache.value = false
-  }
-}
-
-// ---------- 源健康报告 ----------
-async function loadHealth() {
-  healthLoading.value = true
-  try {
-    const { data } = await getSourceHealth()
-    const sources = data.sources || {}
-    healthSources.value = Object.values(sources).sort((a, b) => a.valid_rate - b.valid_rate)
-  } catch (e) {
-    toast.error('加载健康报告失败', e.response?.data?.detail || e.message)
-  } finally {
-    healthLoading.value = false
   }
 }
 </script>

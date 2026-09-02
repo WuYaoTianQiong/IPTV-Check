@@ -6,6 +6,9 @@ export const useResultStore = defineStore('result', () => {
   const checkResults = ref([])
   const resultsPage = ref(1)
   const resultsTotal = ref(0)
+  // 当前会话+当前筛选条件下各 tab 的计数（由后端 /api/results 返回），
+  // 用于 tab 栏/标题行的口径统一，避免与 checkStore（最新检测会话）混淆。
+  const tabCounts = ref(null)
   const resultsPerPage = ref(50)
   try {
     const saved = localStorage.getItem('iptv_result_per_page')
@@ -52,9 +55,22 @@ export const useResultStore = defineStore('result', () => {
     try { localStorage.setItem('iptv_result_session_id', val) } catch {}
   })
 
-  async function fetchResults(params = {}) {
-    isLoading.value = true
-    error.value = null
+  // 请求序号：静默刷新与手动刷新并发时，丢弃过期响应防止旧数据覆盖新数据
+  let _fetchSeq = 0
+
+  /**
+   * 拉取结果列表。
+   * @param {object} params 筛选/分页参数
+   * @param {{silent?: boolean}} opts silent=true 时不置 isLoading（不闪骨架屏），
+   *        用于检测中/复检中的后台静默刷新，避免整表被骨架屏打断无法查看。
+   */
+  async function fetchResults(params = {}, opts = {}) {
+    const silent = !!(opts && opts.silent)
+    const seq = ++_fetchSeq
+    if (!silent) {
+      isLoading.value = true
+      error.value = null
+    }
     try {
       const baseParams = {
         tab: currentTab.value,
@@ -64,18 +80,23 @@ export const useResultStore = defineStore('result', () => {
         sort: sortOrder.value,
         ...params,
       }
-      if (selectedSessionId.value) {
+      // 显式传入 session_id 时优先（实时跟随当前检测会话），否则用历史选中会话
+      const hasExplicitSession = Object.prototype.hasOwnProperty.call(params, 'session_id')
+      if (!hasExplicitSession && selectedSessionId.value) {
         baseParams.session_id = selectedSessionId.value
       }
       const { data } = await getResults(baseParams)
+      if (seq !== _fetchSeq) return null // 已有更新的请求，丢弃本次过期响应
       checkResults.value = data.items || []
       resultsTotal.value = data.total || 0
+      tabCounts.value = data.tab_counts || null
       return data
     } catch (e) {
+      if (seq !== _fetchSeq) throw e
       error.value = e.message || '获取结果失败'
       throw e
     } finally {
-      isLoading.value = false
+      if (seq === _fetchSeq && !silent) isLoading.value = false
     }
   }
 
@@ -123,6 +144,7 @@ export const useResultStore = defineStore('result', () => {
     checkResults.value = []
     resultsPage.value = 1
     resultsTotal.value = 0
+    tabCounts.value = null
     currentTab.value = 'all'
     searchQuery.value = ''
     isLoading.value = false
@@ -136,6 +158,7 @@ export const useResultStore = defineStore('result', () => {
     checkResults,
     resultsPage,
     resultsTotal,
+    tabCounts,
     resultsPerPage,
     currentTab,
     searchQuery,

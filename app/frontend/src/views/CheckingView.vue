@@ -17,17 +17,14 @@
         <span class="text-3xl font-extrabold">{{ smoothPercent }}%</span>
       </div>
       <p class="font-semibold text-sm">{{ statusText }}</p>
+      <p class="text-xs text-muted-foreground">环形进度 = 整体检测完成度（源加载 → 频道检测 → 报告生成）</p>
       <p v-if="checkStore.eta" class="text-xs text-muted-foreground">预计剩余: {{ checkStore.eta }}</p>
     </div>
 
-    <div class="grid grid-cols-4 gap-6 max-w-lg mx-auto">
+    <div class="grid grid-cols-3 gap-6 max-w-lg mx-auto">
       <div class="text-center">
         <div class="text-3xl font-bold text-success">{{ checkStore.validCount }}</div>
         <div class="text-sm text-muted-foreground mt-1">有效</div>
-      </div>
-      <div class="text-center">
-        <div class="text-3xl font-bold text-warning">{{ checkStore.likelyValidCount }}</div>
-        <div class="text-sm text-muted-foreground mt-1">疑似有效</div>
       </div>
       <div class="text-center">
         <div class="text-3xl font-bold text-destructive">{{ checkStore.invalidCount }}</div>
@@ -44,6 +41,25 @@
       <div class="flex justify-between mt-2 text-xs text-muted-foreground">
         <span>已检测 {{ checkStore.checkedCount }} / {{ checkStore.checkTotal }}</span>
         <span>有效率 {{ checkStore.validRate }}%</span>
+      </div>
+    </div>
+
+    <!-- 复检/延迟刷新进度（与结果页复检任务联动） -->
+    <div v-if="refreshVisible" class="max-w-lg mx-auto w-full">
+      <div class="rounded-lg border p-4 space-y-3">
+        <div class="flex items-center justify-between">
+          <span class="text-sm font-semibold flex items-center gap-2">
+            <RefreshCw class="w-3.5 h-3.5" :class="{ 'animate-spin': appStore.isRefreshLatencyRunning }" />
+            {{ refreshTitle }}
+          </span>
+          <span class="text-xs text-muted-foreground">{{ refreshPercent }}%</span>
+        </div>
+        <Progress :model-value="refreshPercent" class="transition-all duration-300" />
+        <div class="flex justify-between text-xs text-muted-foreground">
+          <span>已检测 {{ appStore.refreshLatencyProgress.checked }} / {{ appStore.refreshLatencyProgress.total }} 源地址</span>
+          <span v-if="appStore.refreshLatencyProgress.channel_count">共 {{ appStore.refreshLatencyProgress.channel_count }} 频道</span>
+          <span>可达 {{ appStore.refreshLatencyProgress.updated }}</span>
+        </div>
       </div>
     </div>
 
@@ -93,21 +109,36 @@
 <script setup>
 import { ref, watch, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { Minimize2, Square, AlertTriangle, BarChart3, ExternalLink } from 'lucide-vue-next'
+import { Minimize2, Square, AlertTriangle, BarChart3, ExternalLink, RefreshCw } from 'lucide-vue-next'
 import { useCheckStore } from '../stores/check'
+import { useAppStore } from '../stores/app'
 import { useToast } from '../composables/useToast'
 import { stopCheck, getCheckState } from '../api'
-import { cn } from '../lib/utils'
-import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card'
 import { Button } from '../components/ui/button'
 import { Progress } from '../components/ui/progress'
 import { AlertDialog, AlertDialogHeader, AlertDialogDescription, AlertDialogFooter } from '../components/ui/alert-dialog'
 
 const checkStore = useCheckStore()
+const appStore = useAppStore()
 const router = useRouter()
 const { toast } = useToast()
 const showStopDialog = ref(false)
 const hasShownCompletionToast = ref(false)
+
+// 复检/延迟刷新进度：进行中或刚完成（进度保留）时展示
+const refreshVisible = computed(() =>
+  appStore.isRefreshLatencyRunning ||
+  (appStore.refreshLatencyProgress.total > 0 &&
+    appStore.refreshLatencyProgress.checked >= appStore.refreshLatencyProgress.total)
+)
+const refreshPercent = computed(() => {
+  const p = appStore.refreshLatencyProgress
+  if (!p.total) return 0
+  return Math.floor((p.checked / p.total) * 100)
+})
+const refreshTitle = computed(() =>
+  appStore.isRefreshLatencyRunning ? '复检 / 延迟刷新进行中' : '复检 / 延迟刷新已完成'
+)
 
 const smoothPercent = ref(0)
 let animationFrame = null
@@ -152,7 +183,6 @@ onMounted(async () => {
         if (data.total) checkStore.checkTotal = data.total
         if (data.checked) checkStore.checkedCount = data.checked
         if (data.valid) checkStore.validCount = data.valid
-        if (data.likely_valid) checkStore.likelyValidCount = data.likely_valid
         if (data.invalid) checkStore.invalidCount = data.invalid
         if (data.stage) checkStore.stage = data.stage
         if (data.stage_message) checkStore.stageMessage = data.stage_message
@@ -172,12 +202,11 @@ watch(() => checkStore.phase, (newPhase) => {
     hasShownCompletionToast.value = true
     const total = checkStore.checkTotal
     const valid = checkStore.validCount
-    const likelyValid = checkStore.likelyValidCount
     const rate = total ? Math.round((valid / total) * 100) : 0
     
     toast.success(
       '检测完成',
-      `共 ${total} 个频道，有效 ${valid}，疑似有效 ${likelyValid}，有效率 ${rate}%`,
+      `共 ${total} 个频道，有效 ${valid}，有效率 ${rate}%`,
       {
         label: '查看检测结果',
         handler: () => router.push('/result')

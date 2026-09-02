@@ -8,11 +8,14 @@ const RECONCILIATION_INTERVAL = 2000
 
 export const useCheckStore = defineStore('check', () => {
   const isChecking = ref(false)
+  const sessionId = ref('')
   const checkTotal = ref(0)
   const checkedCount = ref(0)
   const validCount = ref(0)
   const likelyValidCount = ref(0)
   const invalidCount = ref(0)
+  const downloadDone = ref(0)
+  const downloadTotal = ref(0)
   const phase = ref('idle')
   const stage = ref('') // parsing | downloading | checking | finalizing
   const stageMessage = ref('')
@@ -41,7 +44,14 @@ export const useCheckStore = defineStore('check', () => {
     if (phase.value === 'completed') return 100
     if (checkTotal.value === 0) {
       if (stage.value === 'parsing') return 5
-      if (stage.value === 'downloading') return 15
+      if (stage.value === 'downloading') {
+        // 下载阶段权重 15%：按真实下载完成度映射（解析后 10% 起跳 → 检测前 25%），
+        // 替代固定 15%，避免"下载 0/28428 却显示 15%"的误导
+        if (downloadTotal.value > 0) {
+          return Math.min(10 + Math.round((downloadDone.value / downloadTotal.value) * 15), 25)
+        }
+        return 5
+      }
       return 0
     }
     let baseProgress = 0
@@ -102,6 +112,7 @@ export const useCheckStore = defineStore('check', () => {
 
   function resetCheckState() {
     isChecking.value = false
+    sessionId.value = ''
     checkTotal.value = 0
     checkedCount.value = 0
     validCount.value = 0
@@ -176,11 +187,23 @@ export const useCheckStore = defineStore('check', () => {
         const { data } = await getCheckState()
         const sseOk = sseStatus.connected
 
+        if (data.download_total != null) downloadTotal.value = data.download_total
+        if (data.download_done != null) downloadDone.value = data.download_done
+
+        if (data.session_id) sessionId.value = data.session_id
+
         if (data.is_running && !isChecking.value) {
           isChecking.value = true
           phase.value = data.phase || 'checking'
-          if (data.stage && stage.value === '') stage.value = data.stage
-          if (data.stage_message) stageMessage.value = data.stage_message
+        }
+
+        // 阶段文案/进度以 API 为权威同步：SSE 可能错过事件、重连或消息丢失，
+        // 轮询兜底必须覆盖，否则页面会停留在旧阶段（如一直显示"正在解析本地文件..."）
+        if (data.stage && data.stage !== stage.value) {
+          stage.value = data.stage
+        }
+        if (data.stage_message && data.stage_message !== stageMessage.value) {
+          stageMessage.value = data.stage_message
         }
 
         if (!sseOk) {
@@ -190,9 +213,6 @@ export const useCheckStore = defineStore('check', () => {
             validCount.value = data.valid
             likelyValidCount.value = data.likely_valid || 0
             invalidCount.value = data.invalid
-          }
-          if (data.stage && data.stage !== stage.value) {
-            stage.value = data.stage
           }
           isChecking.value = data.is_running
         }
@@ -254,11 +274,14 @@ export const useCheckStore = defineStore('check', () => {
 
   return {
     isChecking,
+    sessionId,
     checkTotal,
     checkedCount,
     validCount,
     likelyValidCount,
     invalidCount,
+    downloadDone,
+    downloadTotal,
     phase,
     stage,
     stageMessage,

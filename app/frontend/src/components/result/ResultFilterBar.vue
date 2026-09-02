@@ -96,13 +96,41 @@
     <div v-if="showAdvanced" class="bg-muted/20 rounded-lg border p-4 space-y-3">
       <!-- 国家/地区 -->
       <div class="space-y-2">
-        <label class="text-xs font-medium text-muted-foreground">国家/地区</label>
+        <div class="flex items-center justify-between">
+          <label class="text-xs font-medium text-muted-foreground">
+            国家/地区
+            <span v-if="countryMode === 'exclude'" class="ml-1 text-destructive">（排除模式）</span>
+          </label>
+          <!-- 反向筛选开关：包含 / 排除所选国家 -->
+          <div class="flex items-center border rounded-md p-0.5 bg-muted/30">
+            <Button
+              variant="ghost"
+              size="sm"
+              class="h-6 px-2 text-xs"
+              :class="countryMode === 'include' ? 'bg-background shadow-sm' : 'hover:bg-transparent'"
+              title="只显示所选国家的频道（可多选）"
+              @click="$emit('update:countryMode', 'include')"
+            >包含</Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              class="h-6 px-2 text-xs"
+              :class="countryMode === 'exclude' ? 'bg-background shadow-sm text-destructive' : 'hover:bg-transparent'"
+              title="排除所选国家，其余全部显示。例如选「中国」即可只看非中国频道"
+              @click="$emit('update:countryMode', 'exclude')"
+            >排除</Button>
+          </div>
+        </div>
+        <p v-if="countryMode === 'exclude'" class="text-xs text-muted-foreground">
+          反向筛选：选中的国家<b class="text-destructive">不会</b>出现在结果中。想看非中国的电视/电台 → 点选「中国」即可。
+        </p>
         <div class="flex flex-wrap gap-1.5">
           <Badge
             v-for="country in availableCountries"
             :key="country.code"
-            :variant="selectedCountries.includes(country.code) ? 'default' : 'outline'"
+            :variant="selectedCountries.includes(country.code) ? (countryMode === 'exclude' ? 'destructive' : 'default') : 'outline'"
             class="cursor-pointer text-xs"
+            :title="countryMode === 'exclude' ? `排除 ${country.name}` : `只看 ${country.name}`"
             @click="$emit('toggle-country', country.code)"
           >
             {{ country.name }}
@@ -114,8 +142,8 @@
             @update:model-value="$emit('update:countrySearch', $event)"
           />
         </div>
-        <!-- 中国二级区域 -->
-        <div v-if="showRegionPanel && dynamicRegions.length > 0" class="ml-2 space-y-1">
+        <!-- 中国二级区域（仅「包含」模式且勾选中国时展开） -->
+        <div v-if="countryMode === 'include' && showRegionPanel && dynamicRegions.length > 0" class="ml-2 space-y-1">
           <label class="text-xs font-medium text-muted-foreground">省级行政单位 / 直辖市</label>
           <div class="flex flex-wrap gap-1.5">
             <Badge
@@ -226,14 +254,22 @@
         </div>
       </div>
 
-      <div class="flex justify-between items-center pt-1 border-t">
-        <span class="text-xs text-muted-foreground" v-if="activeFilterCount > 0">
-          已激活 {{ activeFilterCount }} 个筛选条件
-        </span>
-        <span v-else class="text-xs text-muted-foreground">无激活的筛选条件</span>
-        <div class="flex gap-2">
-          <Button variant="outline" size="sm" @click="$emit('clear-all-filters')">清除所有筛选</Button>
-          <Button variant="default" size="sm" @click="$emit('apply-filters')">应用筛选</Button>
+      <div class="pt-1 border-t space-y-2">
+        <!-- 内容质量：隐藏点播/轮播类假台 -->
+        <label class="flex items-center gap-2 cursor-pointer select-none">
+          <input type="checkbox" :checked="hideVod" @change="$emit('update:hideVod', $event.target.checked)" class="h-4 w-4 accent-primary shrink-0" />
+          <span class="text-sm font-medium">隐藏轮播/点播内容</span>
+          <span class="text-xs text-muted-foreground">mp4 单文件循环、XX 第N集/合集等"假台"（想看剧自己搜即可）</span>
+        </label>
+        <div class="flex justify-between items-center">
+          <span class="text-xs text-muted-foreground" v-if="activeFilterCount > 0">
+            已激活 {{ activeFilterCount }} 个筛选条件
+          </span>
+          <span v-else class="text-xs text-muted-foreground">无激活的筛选条件</span>
+          <div class="flex gap-2">
+            <Button variant="outline" size="sm" @click="$emit('clear-all-filters')">清除所有筛选</Button>
+            <Button variant="default" size="sm" title="应用后自动收起筛选面板" @click="$emit('apply-filters'); $emit('close-filter-panel')">应用筛选</Button>
+          </div>
         </div>
       </div>
     </div>
@@ -264,6 +300,8 @@ defineProps({
 
   // 高级筛选字段
   selectedCountries: { type: Array, default: () => [] },
+  countryMode: { type: String, default: 'include' }, // include=包含所选 | exclude=排除所选（反向筛选）
+  hideVod: { type: Boolean, default: true }, // 隐藏点播/轮播类假台
   selectedCategory: { type: String, default: '' },
   selectedQuality: { type: String, default: '' },
   selectedProtocol: { type: String, default: '' },
@@ -293,6 +331,8 @@ defineEmits([
   'update:selectedSessionId',
   'toggle-advanced',
   'toggle-batch-select',
+  'update:countryMode',
+  'update:hideVod',
   'toggle-country',
   'toggle-region',
   'toggle-source',
@@ -305,12 +345,14 @@ defineEmits([
   'update:speedMin', 'update:speedMax',
   'clear-all-filters',
   'apply-filters',
+  'close-filter-panel',
 ])
 
 function formatHistoryLabel(h) {
   if (!h) return ''
   const date = h.created_at ? new Date(h.created_at).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '未知时间'
   const validRate = h.total > 0 ? Math.round((h.valid / h.total) * 100) : 0
-  return `${date} | ${h.total}频道 | 有效${validRate}%`
+  const tag = h.parent_session_id ? '细筛' : (h.check_mode ? { quick: '快速', standard: '标准', deep: '深度' }[h.check_mode] : '')
+  return `${tag ? `[${tag}] ` : ''}${date} | ${h.total}频道 | 有效${validRate}%`
 }
 </script>

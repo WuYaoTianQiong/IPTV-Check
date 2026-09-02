@@ -38,6 +38,8 @@ export const useFavoriteStore = defineStore('favorite', () => {
       favorites.value = data.favorites || []
       favoritesTotal.value = data.total || 0
       favoritesPage.value = data.page || 1
+      // 同步刷新文件夹计数，避免增删/移动后侧栏计数失真
+      fetchFolders()
     } catch (e) {
       favorites.value = []
       throw e

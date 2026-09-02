@@ -23,7 +23,7 @@
           ref="dialogRef"
           role="dialog"
           aria-modal="true"
-          class="pointer-events-auto relative w-full max-w-lg rounded-xl border bg-card text-card-foreground shadow-lg"
+          class="pointer-events-auto relative w-full max-w-lg max-h-[85vh] overflow-y-auto overscroll-contain rounded-xl border bg-card text-card-foreground shadow-lg"
           :class="$attrs.class ?? ''"
           v-bind="$attrs"
           @keydown="onKeydown"

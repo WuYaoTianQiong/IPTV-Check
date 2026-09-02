@@ -1,5 +1,5 @@
 <template>
-  <Dialog :open="open" @update:open="$emit('update:open', $event)">
+  <Dialog :open="open" class="max-w-2xl!" @update:open="$emit('update:open', $event)">
     <DialogHeader>
       <DialogTitle class="flex items-center gap-2">
         <Download class="h-5 w-5" />
@@ -7,7 +7,7 @@
       </DialogTitle>
     </DialogHeader>
 
-    <div class="space-y-4 p-6 pt-0">
+    <div class="max-h-[60vh] space-y-4 overflow-y-auto overscroll-contain p-6 pt-0">
       <div class="space-y-2">
         <label class="text-sm font-medium">导出格式</label>
         <div class="grid grid-cols-2 gap-2">
@@ -105,6 +105,32 @@
           <option value="by_source">按源导出</option>
         </Select>
       </div>
+
+      <div class="space-y-2">
+        <label class="text-sm font-medium">播放器内频道分组</label>
+        <Select v-model="groupMode">
+          <option value="original">保持原分组</option>
+          <option value="media">只按 电视 / 广播</option>
+          <option value="media_country">电视/广播 × 国家地区（推荐）</option>
+        </Select>
+        <div class="text-xs text-muted-foreground">
+          选「电视/广播 × 国家地区」时：外语台自动标注国家（如 电视·日本），港澳台归 香港/澳门/台湾，
+          国内细分为 央视/卫视/省份，实在判不出的进「未识别」——一眼就能看出某台属于哪里。
+        </div>
+      </div>
+
+      <div
+        class="flex items-center gap-2 rounded-lg border p-3 cursor-pointer transition-colors hover:bg-accent"
+        :class="annotateCountryName ? 'border-primary bg-primary/5' : 'border-border'"
+      >
+        <input id="annotateName" type="checkbox" v-model="annotateCountryName" class="rounded border-muted-foreground" />
+        <div>
+          <label for="annotateName" class="text-sm cursor-pointer">外语频道名加国家前缀</label>
+          <div class="text-xs text-muted-foreground">
+            播放器显示名加「国旗+归属」，如 🇯🇵 日本 NHK World；不改频道原名，不影响 EPG 节目单匹配
+          </div>
+        </div>
+      </div>
     </div>
 
     <DialogFooter class="flex-wrap gap-2">
@@ -153,6 +179,8 @@ const mediaType = ref('all')
 const countryScope = ref('all')
 const selectedCountries = ref([])
 const availableCountries = ref([])
+const groupMode = ref('original')
+const annotateCountryName = ref(false)
 const { toast } = useToast()
 
 const mediaTypes = [
@@ -213,6 +241,8 @@ async function doExport() {
       country_scope: countryScope.value,
       countries: selectedCountries.value,
       with_logo: withLogo.value,
+      group_mode: groupMode.value,
+      annotate_country_name: annotateCountryName.value,
     }
     if (exportScope.value === 'selected' && props.selectedUrls.length > 0) {
       payload.channel_urls = props.selectedUrls
@@ -255,6 +285,8 @@ async function exportPlaylistEpgZip() {
       countries: selectedCountries.value,
       local_isp: '',
       with_logo: withLogo.value,
+      group_mode: groupMode.value,
+      annotate_country_name: annotateCountryName.value,
     }
     const { data } = await exportPlaylistEpg(payload)
     const url = window.URL.createObjectURL(data)

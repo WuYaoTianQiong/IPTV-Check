@@ -77,6 +77,7 @@
               placeholder="输入频道名称搜索..."
               class="w-full rounded border bg-card px-3 py-2 text-sm"
               @input="onChannelSearch"
+              @focus="onSearchFocus"
             />
             <div
               v-if="searchSuggestions.length > 0 && showSuggestions"
@@ -217,6 +218,10 @@ async function loadData() {
   }
 }
 
+function onSearchFocus() {
+  if (channelSearch.value) showSuggestions.value = true
+}
+
 function onChannelSearch() {
   const q = channelSearch.value.toLowerCase().trim()
   if (!q) {
@@ -255,7 +260,6 @@ async function loadChannelTrend() {
 
 function stabilityColor(rate) {
   if (rate >= 90) return 'text-success'
-  if (rate >= 70) return 'text-warning'
   if (rate >= 50) return 'text-warning'
   return 'text-destructive'
 }

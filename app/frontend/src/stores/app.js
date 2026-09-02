@@ -23,7 +23,7 @@ export const useAppStore = defineStore('app', () => {
   const m3uState = ref({ running: false, url: '', file_exists: false, valid_channels: 0 })
   const mediaProbeStatus = ref({ enabled: false, ffmpeg_available: false, usable: false })
   const syncProgress = ref({ is_syncing: false, stage: '', current_url_index: 0, total_urls: 0, current_url_label: '', fetched_channel_count: 0, added: 0, updated: 0, elapsed_seconds: 0, eta_seconds: null })
-  const refreshLatencyProgress = ref({ checked: 0, total: 0, updated: 0 })
+  const refreshLatencyProgress = ref({ checked: 0, total: 0, updated: 0, channel_count: 0 })
   const isRefreshLatencyRunning = ref(false)
 
   let ispCheckTimeout = null
@@ -186,6 +186,7 @@ export const useAppStore = defineStore('app', () => {
       autoSaveResults().catch(() => {})
     } else if (event === 'check_started') {
       console.log('[SSE] check_started 事件详情:', msg)
+      checkStore.sessionId.value = msg.session_id || ''
       if (!checkStore.isChecking) {
         checkStore.startCheckState(msg.total || 0)
       }
@@ -230,6 +231,7 @@ export const useAppStore = defineStore('app', () => {
           checked: msg.checked || 0,
           total: msg.total || 0,
           updated: msg.updated || 0,
+          channel_count: msg.channel_count || 0,
         }
       }
     } else if (event === 'refresh_latency_completed') {
@@ -237,6 +239,7 @@ export const useAppStore = defineStore('app', () => {
         checked: msg.checked || 0,
         total: msg.total || 0,
         updated: msg.updated || 0,
+        channel_count: msg.channel_count || 0,
       }
       isRefreshLatencyRunning.value = false
     } else if (event === 'refresh_latency_failed') {

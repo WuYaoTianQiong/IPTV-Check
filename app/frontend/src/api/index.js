@@ -17,7 +17,12 @@ api.interceptors.response.use(
   (err) => {
     const status = err.response?.status
     const msg = err.response?.data?.error?.message || err.response?.data?.message || err.response?.data?.detail || err.message
-    if (status === 400) {
+    // 客户端超时没有 response，不能误报成"服务未启动"（后端任务可能仍在正常运行）
+    const isTimeout = err.code === 'ECONNABORTED' || err.code === 'ETIMEDOUT'
+      || (!err.response && /timeout of \d+ms exceeded/i.test(err.message || ''))
+    if (isTimeout) {
+      showToast('请求超时，请重试', 'warning')
+    } else if (status === 400) {
       showToast(msg || '请求参数错误', 'warning')
     } else if (status === 401) {
       showToast('未授权访问，请刷新页面或重新登录', 'error')
@@ -51,24 +56,29 @@ export const addSubscription = (data) => api.post('/subscriptions', data)
 export const deleteSubscription = (id) => api.delete(`/subscriptions/${id}`)
 export const syncSubscriptions = () => api.post('/subscriptions/sync', {}, { timeout: 60000 })
 export const startCheck = (data) => api.post('/check/start', data)
+export const startDetailCheck = (data) => api.post('/check/detail', data)
 export const stopCheck = () => api.post('/check/stop')
 export const getCheckState = () => api.get('/check/state')
 export const getResults = (params) => api.get('/results', { params })
 export const getCategoryTree = (params = {}) => api.get('/results/category-tree', { params })
-export const getAvailableLanguages = () => api.get('/results/languages')
+export const getAvailableLanguages = (params = {}) => api.get('/results/languages', { params })
 export const getAvailableCountries = () => api.get('/results/countries')
 export const getAvailableRegions = () => api.get('/results/regions')
-export const getAvailableSources = () => api.get('/results/sources')
+export const getAvailableSources = (params = {}) => api.get('/results/sources', { params })
 export const getSourceHealth = () => api.get('/results/source-health')
 export const getResultsStats = () => api.get('/results/stats')
 export const getCheckHistory = (limit = 20) => api.get('/results/history', { params: { limit } })
 export const quickCheckResults = (items) => api.post('/results/quick-check', items)
+// 触发类端点：后端返回 202 前需同步完成筛选取数与延迟重置，数据量大时可达数秒~数十秒，
+// 超时过短会让前端误判为失败（实际任务已在后台正常运行），故单独放宽。
+const TRIGGER_TIMEOUT = 60000
+
 export const refreshResultsLatency = (sessionId, filters = {}) => {
   const params = [`session_id=${encodeURIComponent(sessionId || '')}`]
   for (const [k, v] of Object.entries(filters || {})) {
     if (v !== '' && v !== undefined && v !== null) params.push(`${k}=${encodeURIComponent(v)}`)
   }
-  return api.post(`/results/refresh-latency?${params.join('&')}`, {}, { timeout: 10000 })
+  return api.post(`/results/refresh-latency?${params.join('&')}`, {}, { timeout: TRIGGER_TIMEOUT })
 }
 export const thoroughCheck = (sessionId, urls = [], filters = {}) => {
   const params = [`session_id=${encodeURIComponent(sessionId || '')}`]
@@ -76,10 +86,11 @@ export const thoroughCheck = (sessionId, urls = [], filters = {}) => {
   for (const [k, v] of Object.entries(filters || {})) {
     if (v !== '' && v !== undefined && v !== null) params.push(`${k}=${encodeURIComponent(v)}`)
   }
-  return api.post(`/results/thorough-check?${params.join('&')}`, {}, { timeout: 10000 })
+  return api.post(`/results/thorough-check?${params.join('&')}`, {}, { timeout: TRIGGER_TIMEOUT })
 }
 export const getFilteredUrls = (params = {}) => api.get('/results/filtered-urls', { params })
-export const getRefreshLatencyStatus = () => api.get('/results/refresh-latency/status')
+export const getRefreshLatencyStatus = (config = {}) => api.get('/results/refresh-latency/status', config)
+export const getLatencySummary = (sessionId = '') => api.get('/results/latency-summary', { params: { session_id: sessionId } })
 export const stopRefreshLatency = () => api.post('/results/refresh-latency/stop')
 export const saveResults = () => api.post('/results/save')
 export const exportResults = (data) => api.post('/export', data)
@@ -211,6 +222,18 @@ export function createSSEConnection(onMessage, onReconnect) {
     es.addEventListener('refresh_latency_failed', (e) => {
       try { onMessage({ event: 'refresh_latency_failed', ...JSON.parse(e.data) }) } catch {}
     })
+
+    // SSE 命名事件（event: xxx）不会触发 onmessage，必须显式注册 listener，
+    // 否则检测进度/阶段/完成等事件在浏览器端全部丢失，表现为 /checking 页面
+    // 后端进度在涨、前端数字全是 0（轮询只在 SSE 断开或检测完成时才兜底同步）。
+    for (const ev of ['progress_update', 'stage_changed', 'check_started', 'channels_loaded',
+                      'check_completed', 'check_stopped', 'channel_checked', 'source_downloaded',
+                      'isp_updated', 'health_alert', 'sync_progress', 'fetch_started',
+                      'fetch_completed', 'fetch_progress']) {
+      es.addEventListener(ev, (e) => {
+        try { onMessage(JSON.parse(e.data)) } catch {}
+      })
+    }
 
     es.onmessage = (e) => {
       try {

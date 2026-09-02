@@ -25,3 +25,48 @@ export function countryCodeToName(code) {
   if (!code) return ''
   return COUNTRY_ZH[code.toUpperCase()] || code
 }
+
+// 中国省级行政区 / 直辖市 / 自治区 / 特别行政区名（与后端 _CN_REGION_KEYWORDS 的 region 粒度一致）
+const CN_REGION_NAMES = new Set([
+  '北京', '上海', '天津', '重庆',
+  '河北', '山西', '辽宁', '吉林', '黑龙江', '江苏', '浙江', '安徽', '福建', '江西', '山东',
+  '河南', '湖北', '湖南', '广东', '广西', '海南', '四川', '贵州', '云南', '西藏', '陕西', '甘肃',
+  '青海', '宁夏', '新疆', '内蒙古', '香港', '澳门', '台湾',
+])
+
+function geoCountry(item) {
+  return ((item && item.country) || '').toUpperCase()
+}
+
+function isCnCode(code) {
+  return ['CN', 'CHN', 'HK', 'MO', 'TW'].includes(code)
+}
+
+/**
+ * 频道归属地文本（展示用）：
+ * - 国内频道 → "中国"+省份/港澳台（如 中国浙江 / 中国香港）；无法细分省时退化为 "中国"
+ * - 国外频道 → 国家中文名（如 美国 / 日本）
+ * - 无法识别 → ''
+ */
+export function geoLabel(item) {
+  if (!item) return ''
+  const country = geoCountry(item)
+  const region = (item.region || '').trim()
+  if (region === '香港' || region === '澳门' || region === '台湾') return '中国' + region
+  if (region === '中国' || region.startsWith('中国')) return region
+  if (region && CN_REGION_NAMES.has(region)) return '中国' + region
+  if (isCnCode(country)) return region || '中国'
+  if (country) return countryCodeToName(country)
+  return region || ''
+}
+
+/** 是否为国外频道（决定归属地徽章底色；国内绿 / 国外靛蓝） */
+export function geoIsForeign(item) {
+  if (!item) return false
+  const country = geoCountry(item)
+  const region = (item.region || '').trim()
+  if (isCnCode(country)) return false
+  if (region && (region.startsWith('中国') || CN_REGION_NAMES.has(region))) return false
+  if (country) return true
+  return !!region
+}

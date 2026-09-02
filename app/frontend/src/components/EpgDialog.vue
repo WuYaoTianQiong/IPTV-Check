@@ -8,8 +8,9 @@
       </DialogTitle>
     </DialogHeader>
     <div class="p-6 pt-0 space-y-3">
-      <div v-if="loading" class="text-sm text-muted-foreground py-8 text-center">加载节目单中...</div>
+      <div v-if="loading" class="text-sm text-muted-foreground py-8 text-center">节目单加载中（首次约需几秒）...</div>
       <div v-else-if="error" class="text-sm text-destructive py-8 text-center">{{ error }}</div>
+      <div v-else-if="!epg && isRadio" class="text-sm text-muted-foreground py-8 text-center">电台暂无节目单数据</div>
       <div v-else-if="!epg" class="text-sm text-muted-foreground py-8 text-center">未匹配到该频道的节目单数据</div>
       <template v-else>
         <div v-if="epg.current" class="rounded-lg border border-primary/30 bg-primary/5 p-3">
@@ -42,7 +43,7 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, onUnmounted } from 'vue'
 import { Tv } from 'lucide-vue-next'
 import { getChannelEpg } from '../api'
 import { Dialog, DialogHeader, DialogTitle, DialogFooter } from './ui/dialog'
@@ -52,6 +53,7 @@ import { Badge } from './ui/badge'
 const props = defineProps({
   open: { type: Boolean, default: false },
   channelName: { type: String, default: '' },
+  isRadio: { type: Boolean, default: false },
 })
 
 defineEmits(['update:open'])
@@ -60,20 +62,45 @@ const epg = ref(null)
 const loading = ref(false)
 const error = ref('')
 
-watch(() => [props.open, props.channelName], async ([open, name]) => {
+let retryTimer = null
+
+watch(() => [props.open, props.channelName, props.isRadio], ([open, name, radio]) => {
+  if (retryTimer) {
+    clearTimeout(retryTimer)
+    retryTimer = null
+  }
   if (!open || !name) return
   epg.value = null
   error.value = ''
+  // 电台暂无节目单数据源，直接降级展示
+  if (radio) {
+    loading.value = false
+    return
+  }
+  fetchChannelEpg(name)
+})
+
+async function fetchChannelEpg(name) {
   loading.value = true
   try {
     const { data } = await getChannelEpg(name)
+    if (data && data.loading) {
+      // 后端按需拉取全量 EPG 中，稍后自动重查
+      retryTimer = setTimeout(() => {
+        if (props.open) fetchChannelEpg(name)
+      }, 3000)
+      return
+    }
     epg.value = data.epg || null
-    if (!data.epg) error.value = ''
+    loading.value = false
   } catch (e) {
     error.value = e.response?.data?.detail || e.message || '加载失败'
-  } finally {
     loading.value = false
   }
+}
+
+onUnmounted(() => {
+  if (retryTimer) clearTimeout(retryTimer)
 })
 
 function formatTime(xmltvTime) {

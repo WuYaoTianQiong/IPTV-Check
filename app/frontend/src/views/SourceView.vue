@@ -17,7 +17,7 @@
         >
           <Loader2 v-if="starting" class="h-5 w-5 animate-spin" />
           <Rocket v-else class="h-5 w-5" />
-          {{ starting ? '启动中...' : '一键开始检测' }}
+          {{ starting ? '启动中...' : '一键检测' }}
         </Button>
       </div>
     </div>
@@ -293,7 +293,6 @@
       </Button>
     </div>
 
-    <SourceDetailDialog v-model:open="showDetailDialog" :source="detailSource" />
     <CategorySourcesDialog v-model:open="showCategoryDialog" :category="activeCategory" />
   </div>
 </template>
@@ -321,7 +320,6 @@ import { Separator } from '../components/ui/separator'
 import { Input } from '../components/ui/input'
 import { Checkbox } from '../components/ui/checkbox'
 import { Tabs, TabButton } from '../components/ui/tabs'
-import SourceDetailDialog from '../components/SourceDetailDialog.vue'
 import CategorySourcesDialog from '../components/CategorySourcesDialog.vue'
 
 const store = useAppStore()
@@ -331,8 +329,6 @@ const router = useRouter()
 const { toast } = useToast()
 
 const selectedOnlineIds = computed(() => sourceStore.selectedOnlineIds)
-const detailSource = ref(null)
-const showDetailDialog = ref(false)
 const activeCategory = ref('')
 const showCategoryDialog = ref(false)
 const uploadedFiles = ref([])
@@ -447,17 +443,6 @@ function formatSyncTime(isoStr) {
   }
 }
 
-function formatDuration(seconds) {
-  if (!seconds || seconds < 0) return '0秒'
-  if (seconds < 60) return `${Math.round(seconds)}秒`
-  const m = Math.floor(seconds / 60)
-  const s = Math.round(seconds % 60)
-  if (m < 60) return `${m}分${s}秒`
-  const h = Math.floor(m / 60)
-  const rm = m % 60
-  return `${h}时${rm}分`
-}
-
 async function handleSync() {
   if (syncing.value) return
   syncing.value = true
@@ -563,7 +548,7 @@ try {
   if (saved) customSources.value = JSON.parse(saved)
 } catch {}
 
-const canStart = computed(() => selectedOnlineIds.value.length > 0 || uploadedFiles.value.length > 0)
+const canStart = computed(() => selectedOnlineIds.value.length > 0 || uploadedFiles.value.length > 0 || customSources.value.length > 0)
 
 const selectedChannelCount = computed(() => {
   let total = 0
@@ -572,11 +557,6 @@ const selectedChannelCount = computed(() => {
   }
   return total
 })
-
-function showDetail(id) {
-  detailSource.value = sourceStore.onlineSources.find(s => s.id === id) || null
-  if (detailSource.value) showDetailDialog.value = true
-}
 
 function handleSelectAllMatched() {
   const before = sourceStore.selectedOnlineIds.length
@@ -705,6 +685,7 @@ async function doStart() {
     const payload = {
       online_source_ids: selectedOnlineIds.value,
       file_paths: filePaths,
+      custom_source_urls: customSources.value.map(s => s.url),
       ...config,
     }
 

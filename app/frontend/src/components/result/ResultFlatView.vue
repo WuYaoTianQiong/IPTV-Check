@@ -45,7 +45,9 @@
           v-for="item in items"
           :key="item.index"
           class="border-b transition-colors hover:bg-accent/50"
-          :class="item.is_valid ? 'border-l-4 border-l-success' : 'border-l-4 border-l-destructive'"
+          :class="item.is_radio
+            ? 'border-l-4 border-l-amber-400 dark:border-l-amber-500/80'
+            : (item.is_valid ? 'border-l-4 border-l-success' : 'border-l-4 border-l-destructive')"
         >
           <td class="px-3 py-2.5 text-muted-foreground">{{ item.index }}</td>
           <td class="px-3 py-2.5 max-w-48">
@@ -64,9 +66,7 @@
             <span v-else class="text-xs text-muted-foreground">-</span>
           </td>
           <td class="px-3 py-2.5">
-            <Badge :variant="item.is_radio ? 'secondary' : 'default'" class="text-xs">
-              {{ item.is_radio ? '电台' : '电视' }}
-            </Badge>
+            <MediaTypeBadge :is-radio="item.is_radio" />
             <Badge
               v-if="item.region"
               variant="default"
@@ -111,6 +111,7 @@
 import { SearchX, Star, Loader2, Calendar, PlayCircle } from 'lucide-vue-next'
 import { Button } from '../ui/button'
 import { Badge } from '../ui/badge'
+import MediaTypeBadge from './MediaTypeBadge.vue'
 import { useFavoriteStore } from '../../stores/favorite'
 
 const favoriteStore = useFavoriteStore()

@@ -4,20 +4,21 @@
       v-for="item in items"
       :key="item.index"
       class="rounded-lg border p-4 transition-all hover:border-primary/40 hover:shadow-sm"
-      :class="item.has_valid ? 'border-l-4 border-l-success' : 'border-l-4 border-l-destructive'"
+      :class="item.is_radio
+        ? 'border-l-4 border-l-amber-400 dark:border-l-amber-500/80'
+        : (item.has_valid ? 'border-l-4 border-l-success' : 'border-l-4 border-l-destructive')"
     >
       <div class="flex items-center gap-3">
         <div class="flex-1 min-w-0">
           <div class="flex items-center gap-2 flex-wrap">
-            <span class="font-medium text-base">{{ item.name }}</span>
             <Badge
-              v-if="item.region"
-              variant="default"
-              class="text-[10px] shrink-0 bg-emerald-600 text-white dark:bg-emerald-500"
-            >{{ item.region }}</Badge>
-            <Badge :variant="item.is_radio ? 'secondary' : 'default'" class="text-[10px] shrink-0">
-              {{ item.is_radio ? '电台' : '电视' }}
-            </Badge>
+              v-if="geoLabel(item)"
+              variant="secondary"
+              class="text-[10px] shrink-0 px-1.5 py-0 h-4"
+              :class="geoIsForeign(item) ? 'bg-indigo-50 text-indigo-600 border-indigo-200 dark:bg-indigo-950/30 dark:text-indigo-400 dark:border-indigo-800' : 'bg-emerald-600 text-white border-emerald-600 dark:bg-emerald-500 dark:border-emerald-500'"
+            >{{ geoLabel(item) }}</Badge>
+            <span class="font-medium text-base">{{ item.name }}</span>
+            <MediaTypeBadge :is-radio="item.is_radio" />
             <Badge
               v-if="item.is_radio && item.frequency"
               variant="default"
@@ -73,7 +74,7 @@
           <span class="truncate text-muted-foreground flex-1" :title="src.url">{{ src.url }}</span>
           <Badge v-if="si === item.recommended_source_idx" variant="success" class="text-[10px] shrink-0">推荐</Badge>
           <span class="text-muted-foreground w-20 shrink-0 truncate">{{ src.source_name }}</span>
-          <Button v-if="src.is_valid" variant="ghost" size="icon" class="h-6 w-6 shrink-0" @click="$emit('open-player', item.name, src.url)">
+          <Button v-if="src.is_valid" variant="ghost" size="icon" class="h-6 w-6 shrink-0" @click="$emit('open-player', item, src.url)">
             <PlayCircle class="h-3 w-3" />
           </Button>
         </div>
@@ -90,7 +91,9 @@
 import { Calendar, PlayCircle, ChevronDown, ChevronRight, SearchX, Star, Loader2 } from 'lucide-vue-next'
 import { Button } from '../ui/button'
 import { Badge } from '../ui/badge'
+import MediaTypeBadge from './MediaTypeBadge.vue'
 import { useFavoriteStore } from '../../stores/favorite'
+import { geoLabel, geoIsForeign } from '../../lib/utils'
 
 const favoriteStore = useFavoriteStore()
 

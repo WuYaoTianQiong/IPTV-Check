@@ -1,7 +1,7 @@
 <template>
   <header class="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
     <div class="flex h-14 items-center px-4 gap-4">
-      <RouterLink to="/favorites" class="flex items-center gap-2 shrink-0 hover:opacity-80 transition-opacity">
+      <RouterLink to="/source" class="flex items-center gap-2 shrink-0 hover:opacity-80 transition-opacity">
         <Tv class="h-6 w-6 text-primary" />
         <span class="font-semibold text-lg hidden sm:inline">电视直播源检测工具</span>
         <span class="font-semibold text-lg sm:hidden">IPTV检测</span>
@@ -92,7 +92,7 @@
         <button
           @click="navigate"
           :class="cn(
-            'flex flex-col items-center gap-0.5 px-3 py-1 text-xs transition-colors',
+            'flex flex-1 flex-col items-center gap-0.5 px-1 py-1 text-xs transition-colors',
             isActive
               ? 'text-primary'
               : 'text-muted-foreground'
@@ -140,11 +140,13 @@ const navItems = computed(() => [
   { id: 'favorites', to: '/favorites', label: '收藏夹', icon: Star },
 ])
 
-// 移动端底部导航保持精简（5 项），报告/趋势可从桌面顶栏或结果页进入
+// 移动端底部导航与桌面顶栏保持一致（7 项），避免报告/趋势在移动端无入口
 const mobileNavItems = computed(() => [
   { id: 'source', to: '/source', label: '源', icon: Radio },
   { id: 'checking', to: '/checking', label: store.isChecking ? '检测中' : '检测', icon: PlayCircle },
   { id: 'result', to: '/result', label: '结果', icon: BarChart3 },
+  { id: 'report', to: '/report', label: '报告', icon: FileBarChart2 },
+  { id: 'trend', to: '/trend', label: '趋势', icon: TrendingUp },
   { id: 'favorites', to: '/favorites', label: '收藏', icon: Star },
   { id: 'toolbox', to: '/toolbox', label: '工具', icon: Wrench },
 ])

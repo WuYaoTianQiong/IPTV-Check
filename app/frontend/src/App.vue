@@ -10,6 +10,7 @@ import { useAppStore } from './stores/app'
 import { useCheckStore } from './stores/check'
 import { createSSEConnection, setToastHandler, getCheckState } from './api'
 import AppLayout from './components/layout/AppLayout.vue'
+import { prefetchAllRoutes } from './router'
 
 const store = useAppStore()
 const checkStore = useCheckStore()
@@ -43,6 +44,9 @@ onMounted(() => {
   sse = createSSEConnection((msg) => store.handleSSEMessage(msg), handleSSEReconnect)
   store.startReconciliation()
   store.fetchInfo().catch(() => {})
+
+  // 后台预热懒加载页签 chunk（不阻塞首屏），消除检测初期切页签的下载卡顿
+  prefetchAllRoutes()
 
   if (store.localIsp === '检测中...' || store.localIsp === '未知') {
     setTimeout(() => {

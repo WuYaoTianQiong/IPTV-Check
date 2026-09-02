@@ -401,10 +401,11 @@
       <div class="flex items-center gap-2">
         <Input v-model="exportChannelSearch" placeholder="搜索频道..." class="flex-1 text-xs" />
         <Button variant="outline" size="sm" @click="toggleSelectAllExport" class="text-xs shrink-0">
-          {{ exportSelectedChannels.size === flatAllChannels.length ? '取消全选' : '全选' }}
+          {{ exportSelectedChannels.size === filteredExportChannels.length && filteredExportChannels.length > 0 ? '取消全选' : '全选' }}
         </Button>
       </div>
       <div class="max-h-72 overflow-y-auto space-y-1 border rounded-lg p-2">
+        <div v-if="exportAllLoading" class="text-center py-6 text-muted-foreground text-xs">加载全部收藏中...</div>
         <div
           v-for="fav in filteredExportChannels" :key="fav.id"
           class="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-accent cursor-pointer text-sm"
@@ -420,7 +421,7 @@
           </div>
           <Badge v-if="fav.region" variant="secondary" class="text-[10px] shrink-0">{{ fav.region }}</Badge>
         </div>
-        <div v-if="filteredExportChannels.length === 0" class="text-center py-6 text-muted-foreground text-xs">
+        <div v-if="!exportAllLoading && filteredExportChannels.length === 0" class="text-center py-6 text-muted-foreground text-xs">
           没有匹配的频道
         </div>
       </div>
@@ -455,7 +456,7 @@ import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { Star, Download, Plus, Trash2, X, ExternalLink, Tv, Folder as FolderIcon, Inbox, FolderInput, ChevronLeft, ChevronRight, Check, Pencil, Move, RefreshCw } from 'lucide-vue-next'
 import { useFavoriteStore } from '../stores/favorite'
-import { removeFavorite as removeFavoriteApi, updateFavorite, refreshFavoritesLatency } from '../api'
+import { getFavorites, removeFavorite as removeFavoriteApi, updateFavorite, refreshFavoritesLatency } from '../api'
 import { useToast } from '../composables/useToast'
 import LatencyBadge from '../components/LatencyBadge.vue'
 import ResultPagination from '../components/result/ResultPagination.vue'
@@ -565,16 +566,6 @@ watch(showDeleteConfirm, (val) => {
   }
 })
 
-watch(showExportDialog, (val) => {
-  if (!val) {
-    exportMode.value = 'folder'
-    exportFolderId.value = 'all'
-    exportChannelSearch.value = ''
-    exportSelectedChannels.value = new Set()
-    exportFormat.value = 'm3u'
-  }
-})
-
 const allFolders = computed(() => {
   const folders = favoriteStore.folders || []
   const unfiled = folders.find(f => f.id === null) || { id: null, name: '未分类', count: 0 }
@@ -587,9 +578,10 @@ const groupedFavorites = computed(() => {
   return allFolders.value
     .map(folder => ({
       folder,
-      count: folder.id === null
+      // 优先用后端返回的全量计数（不受侧栏分页影响），无计数时回退为当前页统计
+      count: folder.count ?? (folder.id === null
         ? favs.filter(f => f.folder_id === null || f.folder_id === undefined).length
-        : favs.filter(f => f.folder_id === folder.id).length,
+        : favs.filter(f => f.folder_id === folder.id).length),
       channels: folder.id === null
         ? favs.filter(f => f.folder_id === null || f.folder_id === undefined)
         : favs.filter(f => f.folder_id === folder.id),
@@ -600,10 +592,38 @@ const groupedFavorites = computed(() => {
 
 const flatAllChannels = computed(() => favoriteStore.favorites || [])
 
+// 导出/计数等需要全量数据的场景：不受侧栏分页限制，单独拉全量收藏
+async function fetchAllFavorites() {
+  const { data } = await getFavorites({ page: 1, per_page: 100000 })
+  return data.favorites || []
+}
+
+const exportAllChannels = ref([])
+const exportAllLoading = ref(false)
+
+watch(showExportDialog, async (val) => {
+  if (val) {
+    exportAllLoading.value = true
+    try {
+      exportAllChannels.value = await fetchAllFavorites()
+    } catch {
+      exportAllChannels.value = []
+    } finally {
+      exportAllLoading.value = false
+    }
+    return
+  }
+  exportMode.value = 'folder'
+  exportFolderId.value = 'all'
+  exportChannelSearch.value = ''
+  exportSelectedChannels.value = new Set()
+  exportFormat.value = 'm3u'
+})
+
 const filteredExportChannels = computed(() => {
   const q = exportChannelSearch.value.toLowerCase().trim()
-  if (!q) return flatAllChannels.value
-  return flatAllChannels.value.filter(f =>
+  if (!q) return exportAllChannels.value
+  return exportAllChannels.value.filter(f =>
     f.name.toLowerCase().includes(q) ||
     (f.channel_group && f.channel_group.toLowerCase().includes(q))
   )
@@ -715,16 +735,17 @@ async function handleRemoveFavorite(fav) {
 }
 
 async function handleBatchRemove() {
-  try {
-    for (const id of selectedIds.value) {
-      await removeFavoriteApi(id)
-    }
-    selectedIds.value = new Set()
-    batchRemoveMode.value = false
-    await favoriteStore.fetchFavorites()
-    toast.success('批量删除完成')
-  } catch (e) {
-    toast.error('批量删除失败', e.response?.data?.detail || e.message)
+  const results = await Promise.allSettled(
+    [...selectedIds.value].map(id => removeFavoriteApi(id))
+  )
+  const failed = results.filter(r => r.status === 'rejected').length
+  selectedIds.value = new Set()
+  batchRemoveMode.value = false
+  await favoriteStore.fetchFavorites()
+  if (failed > 0) {
+    toast.error('批量删除失败', `${results.length - failed} 个成功，${failed} 个失败`)
+  } else {
+    toast.success('批量删除完成', `共删除 ${results.length} 项`)
   }
 }
 
@@ -764,13 +785,18 @@ function onFavSortChange(sort) {
 }
 
 // ---------- 批量移动 ----------
-function handleBatchMoveSelected() {
+async function handleBatchMoveSelected() {
   if (selectedIds.value.size === 0) return
   // 复用移动弹窗：取第一个选中项作为触发源
   const firstId = [...selectedIds.value][0]
-  const fav = flatAllChannels.value.find(f => f.id === firstId)
+  let fav = flatAllChannels.value.find(f => f.id === firstId)
+  if (!fav) {
+    // 跨页选中时当前页找不到，拉全量兜底
+    const all = await fetchAllFavorites().catch(() => [])
+    fav = all.find(f => f.id === firstId)
+  }
   if (fav) {
-    // 临时修改 doMoveToFolder：批量移动所有选中项
+    // 批量移动所有选中项
     movingFav.value = fav
     showMoveDialog.value = true
   }
@@ -779,19 +805,19 @@ function handleBatchMoveSelected() {
 async function doMoveToFolder(folderId) {
   if (batchRemoveMode && selectedIds.value.size > 1) {
     // 批量移动所有选中项
-    const count = selectedIds.value.size
-    try {
-      for (const id of selectedIds.value) {
-        await updateFavorite(id, { folder_id: folderId })
-      }
-      selectedIds.value = new Set()
-      batchRemoveMode.value = false
-      await favoriteStore.fetchFavorites()
-      toast.success(`已移动 ${count} 项`)
-    } catch {
-      toast.error('批量移动失败')
-    }
+    const results = await Promise.allSettled(
+      [...selectedIds.value].map(id => updateFavorite(id, { folder_id: folderId }))
+    )
+    const failed = results.filter(r => r.status === 'rejected').length
+    selectedIds.value = new Set()
+    batchRemoveMode.value = false
+    await favoriteStore.fetchFavorites()
     showMoveDialog.value = false
+    if (failed > 0) {
+      toast.error('批量移动失败', `${results.length - failed} 个成功，${failed} 个失败`)
+    } else {
+      toast.success('批量移动完成', `已移动 ${results.length} 项`)
+    }
     return
   }
   // 单频道移动（原有逻辑）
@@ -805,10 +831,11 @@ async function doMoveToFolder(folderId) {
 }
 
 // ---------- 批量导出 ----------
-function handleBatchExportSelected() {
+async function handleBatchExportSelected() {
   if (selectedIds.value.size === 0) return
   const ids = [...selectedIds.value]
-  const selected = flatAllChannels.value.filter(f => ids.includes(f.id))
+  const all = await fetchAllFavorites().catch(() => flatAllChannels.value)
+  const selected = all.filter(f => ids.includes(f.id))
   if (!selected.length) return
   const content = generateExportContent(selected)
   downloadExport(content, exportFormat.value || 'm3u', 'selected')
@@ -852,7 +879,7 @@ async function handleCreateFolderInMove() {
 
 async function handleExportFolder() {
   try {
-    const favs = favoriteStore.favorites || []
+    const favs = await fetchAllFavorites()
     let channels
     if (exportFolderId.value === 'all') {
       channels = favs
@@ -878,7 +905,7 @@ async function handleExportFolder() {
 async function handleExportSelected() {
   try {
     const ids = [...exportSelectedChannels.value]
-    const selected = flatAllChannels.value.filter(f => ids.includes(f.id))
+    const selected = exportAllChannels.value.filter(f => ids.includes(f.id))
     if (!selected.length) return
     const content = generateExportContent(selected)
     downloadExport(content, exportFormat.value, 'selected')
@@ -894,7 +921,7 @@ function generateExportContent(channels) {
   switch (fmt) {
     case 'm3u':
     case 'm3u8': {
-      const lines = [fmt === 'm3u8' ? '' : '#EXTM3U']
+      const lines = ['#EXTM3U']
       for (const ch of channels) {
         lines.push(`#EXTINF:-1 group-title="${ch.channel_group || '未分类'}",${ch.name}`)
         lines.push(ch.url)
