@@ -1,0 +1,372 @@
+#EXTM3U x-tvg-url="检测结果_节目单.epg.xml"
+#EXTINF:-1 tvg-name="🇦🇲 亚美尼亚 HJFI Caracol Radio Armenia 1150" group-title="亚美尼亚",🇦🇲 亚美尼亚 HJFI Caracol Radio Armenia 1150
+https://playerservices.streamtheworld.com/api/livestream-redirect/CR_AM_ARMENIAAAC
+#EXTINF:-1 tvg-name="🇦🇲 亚美尼亚 AYP FM" group-title="亚美尼亚",🇦🇲 亚美尼亚 AYP FM
+http://stric6.streamakaci.com/radioayp.mp3
+#EXTINF:-1 tvg-name="🇦🇲 亚美尼亚 La Carinosa - Armenia 1400" group-title="亚美尼亚",🇦🇲 亚美尼亚 La Carinosa - Armenia 1400
+https://mdstrm.com/audio/632cb885194ef808b9f594ad/icecast.audio
+#EXTINF:-1 tvg-name="🇦🇲 亚美尼亚 Tropicana - Armenia 104.7" group-title="亚美尼亚",🇦🇲 亚美尼亚 Tropicana - Armenia 104.7
+https://27323.live.streamtheworld.com/TR_ARMENIAAAC_SC
+#EXTINF:-1 tvg-name="🇮🇱 以色列 Big FM bigBalkan" group-title="以色列",🇮🇱 以色列 Big FM bigBalkan
+http://streams.bigfm.de/bigfm-balkan-128-aac
+#EXTINF:-1 tvg-name="🇮🇱 以色列 RFI Mandenkan" group-title="以色列",🇮🇱 以色列 RFI Mandenkan
+https://rfimandingue64k.ice.infomaniak.ch/rfimandingue-64k.mp3
+#EXTINF:-1 tvg-name="🇮🇱 以色列 Radio Nueva Jerusalem" group-title="以色列",🇮🇱 以色列 Radio Nueva Jerusalem
+https://as100.globalhost1.com/8132/stream
+#EXTINF:-1 tvg-name="🇮🇳 印度 1.FM Bombay Beats India Radio" group-title="印度",🇮🇳 印度 1.FM Bombay Beats India Radio
+http://strm112.1.fm/bombaybeats_mobile_mp3
+#EXTINF:-1 tvg-name="🇮🇳 印度 HJNW Caracol Radio Cartagena de Indias 1070" group-title="印度",🇮🇳 印度 HJNW Caracol Radio Cartagena de Indias 1070
+https://playerservices.streamtheworld.com/api/livestream-redirect/CR_AM_CARTAGENAAAC
+#EXTINF:-1 tvg-name="🇮🇳 印度 KRPI 1550 Sher-E-Punjab Radio" group-title="印度",🇮🇳 印度 KRPI 1550 Sher-E-Punjab Radio
+https://playerservices.streamtheworld.com/api/livestream-redirect/KRPIAMAAC_SC
+#EXTINF:-1 tvg-name="🇮🇳 印度 HJA25 Radio Caracoal - Cartagena de Indias 107.5" group-title="印度",🇮🇳 印度 HJA25 Radio Caracoal - Cartagena de Indias 107.5
+https://27403.live.streamtheworld.com/CR_AM_CARTAGENAAAC.aac
+#EXTINF:-1 tvg-name="🇮🇳 印度尼西亚 Radio Balises" group-title="印度尼西亚",🇮🇳 印度尼西亚 Radio Balises
+http://radios.infini.fr:8000/radiobalises
+#EXTINF:-1 tvg-name="🇮🇳 印度尼西亚 Radio Dangdut Indonesia 97.1" group-title="印度尼西亚",🇮🇳 印度尼西亚 Radio Dangdut Indonesia 97.1
+http://202.147.199.99:8000/;stream/1
+#EXTINF:-1 tvg-name="🇮🇳 印度尼西亚 Radio Sonora Bandung 93.3" group-title="印度尼西亚",🇮🇳 印度尼西亚 Radio Sonora Bandung 93.3
+https://streamingv2.shoutcast.com/sonora-bandung
+#EXTINF:-1 tvg-name="🇮🇳 印度尼西亚 Wijaya 103.5 FM Surabaya" group-title="印度尼西亚",🇮🇳 印度尼西亚 Wijaya 103.5 FM Surabaya
+http://wijayafm.onlivestreaming.net:9880/stream?
+#EXTINF:-1 tvg-name="🇰🇿 哈萨克斯坦 Qazaq Radiosy 101.0" group-title="哈萨克斯坦",🇰🇿 哈萨克斯坦 Qazaq Radiosy 101.0
+https://radio-streams.kaztrk.kz/qazradio/qazradio/icecast.audio
+#EXTINF:-1 tvg-name="🇹🇷 土耳其 TRT Memleketim FM" group-title="土耳其",🇹🇷 土耳其 TRT Memleketim FM
+https://radio-trtmemleketimfm.medya.trt.com.tr/master_128.m3u8
+#EXTINF:-1 tvg-name="🇳🇵 尼泊尔 Radio Kantipur FM" group-title="尼泊尔",🇳🇵 尼泊尔 Radio Kantipur FM
+https://radio-broadcast.ekantipur.com/stream
+#EXTINF:-1 tvg-name="🇵🇰 巴基斯坦 CBR 102.1 Calgary" group-title="巴基斯坦",🇵🇰 巴基斯坦 CBR 102.1 Calgary
+https://27033.live.streamtheworld.com/CBXFM_CBC.mp3
+#EXTINF:-1 tvg-name="🇵🇰 巴基斯坦 Jazz Radio Contemporary Jazz" group-title="巴基斯坦",🇵🇰 巴基斯坦 Jazz Radio Contemporary Jazz
+http://jazz-wr05.ice.infomaniak.ch/jazz-wr05-128.mp3
+#EXTINF:-1 tvg-name="🇵🇰 巴基斯坦 FM 100 Pakistan" group-title="巴基斯坦",🇵🇰 巴基斯坦 FM 100 Pakistan
+http://162.244.80.118:4900/;stream.mp3
+#EXTINF:-1 tvg-name="🇵🇰 巴基斯坦 Radio Pakistan World Service" group-title="巴基斯坦",🇵🇰 巴基斯坦 Radio Pakistan World Service
+https://whmsonic.radio.gov.pk:7005/stream?type=http&nocache=12
+#EXTINF:-1 tvg-name="🇵🇰 巴基斯坦 Radio Caprice Contemporary Jazz" group-title="巴基斯坦",🇵🇰 巴基斯坦 Radio Caprice Contemporary Jazz
+http://79.111.119.111:8002/contemporaryjazz
+#EXTINF:-1 tvg-name="🇵🇰 巴基斯坦 Radio Caprice Contemporary Classical" group-title="巴基斯坦",🇵🇰 巴基斯坦 Radio Caprice Contemporary Classical
+http://79.111.119.111:8002/contclass
+#EXTINF:-1 tvg-name="🇵🇰 巴基斯坦 KWIT HD3" group-title="巴基斯坦",🇵🇰 巴基斯坦 KWIT HD3
+https://playerservices.streamtheworld.com/api/livestream-redirect/KWITHD3AAC.aac
+#EXTINF:-1 tvg-name="🇵🇰 巴基斯坦 KEXU-LP 96.1 Poor Peoples Revolutionary Radio" group-title="巴基斯坦",🇵🇰 巴基斯坦 KEXU-LP 96.1 Poor Peoples Revolutionary Radio
+https://pnnkexu.out.airtime.pro/pnnkexu_b
+#EXTINF:-1 tvg-name="🇸🇬 新加坡 Radio Disney 100.1 XHCNA" group-title="新加坡",🇸🇬 新加坡 Radio Disney 100.1 XHCNA
+https://playerservices.streamtheworld.com/api/livestream-redirect/XHCNAFMAAC_SC
+#EXTINF:-1 tvg-name="🇸🇬 新加坡 Mediacorp 987 98.7" group-title="新加坡",🇸🇬 新加坡 Mediacorp 987 98.7
+https://playerservices.streamtheworld.com/api/livestream-redirect/987FMAAC.aac
+#EXTINF:-1 tvg-name="🇯🇵 日本 Radio Mast Japanese" group-title="日本",🇯🇵 日本 Radio Mast Japanese
+https://audio-edge-kef8b.ams.s.radiomast.io/a622d414-52a6-4426-b3b8-ed2a4dbb704b
+#EXTINF:-1 tvg-name="🇬🇪 格鲁吉亚 Georgia Radio Music" group-title="格鲁吉亚",🇬🇪 格鲁吉亚 Georgia Radio Music
+https://tv.cdn.xsg.ge/gpb-radio2/tracks-a1/mono.m3u8
+#EXTINF:-1 tvg-name="🇯🇴 约旦 Royal Radio 96.8" group-title="约旦",🇯🇴 约旦 Royal Radio 96.8
+https://c22.radioboss.fm/stream/186
+#EXTINF:-1 tvg-name="🇵🇭 菲律宾 Radio Mont-Blanc" group-title="菲律宾",🇵🇭 菲律宾 Radio Mont-Blanc
+http://radiomontblanc1.ice.infomaniak.ch/radiomontblanc1-64.aac
+#EXTINF:-1 tvg-name="🇵🇭 菲律宾 Radio Mont-Blanc" group-title="菲律宾",🇵🇭 菲律宾 Radio Mont-Blanc
+http://radiomontblanc1.ice.infomaniak.ch/radiomontblanc1-128.mp3
+#EXTINF:-1 tvg-name="🇵🇭 菲律宾 Radio Manila 95.0" group-title="菲律宾",🇵🇭 菲律宾 Radio Manila 95.0
+http://stream15.top-ix.org:8000/radiomanila
+#EXTINF:-1 tvg-name="🇵🇭 菲律宾 Enigma Stereo" group-title="菲律宾",🇵🇭 菲律宾 Enigma Stereo
+https://portal.enigmasecurity.cl/radio/8000/radio.mp3
+#EXTINF:-1 tvg-name="🇵🇭 菲律宾 Enigma DJ Radio" group-title="菲律宾",🇵🇭 菲律宾 Enigma DJ Radio
+https://srv6.sonicpanel.cl/8024/stream
+#EXTINF:-1 tvg-name="🇵🇭 菲律宾 Radio Enigma" group-title="菲律宾",🇵🇭 菲律宾 Radio Enigma
+https://radio19.servidorderadio.net/8118/stream
+#EXTINF:-1 tvg-name="🇲🇳 蒙古 Xinjiang Mongolian Radio" group-title="蒙古",🇲🇳 蒙古 Xinjiang Mongolian Radio
+http://satellitepull.cnr.cn/live/wxxjmygb/playlist.m3u8
+#EXTINF:-1 tvg-name="🇲🇳 蒙古 Xilingol Mongolian Radio" group-title="蒙古",🇲🇳 蒙古 Xilingol Mongolian Radio
+http://satellitepull.cnr.cn/live/wx32nmgxlglmygb/playlist.m3u8
+#EXTINF:-1 tvg-name="🇴🇲 阿曼 1.FM Love Classics Radio" group-title="阿曼",🇴🇲 阿曼 1.FM Love Classics Radio
+http://strm112.1.fm/loveclassics_mobile_mp3
+#EXTINF:-1 tvg-name="🇴🇲 阿曼 my105 Love" group-title="阿曼",🇴🇲 阿曼 my105 Love
+http://stream01.my105.ch/my105love.mp3
+#EXTINF:-1 tvg-name="🇴🇲 阿曼 FM Dos 98.5" group-title="阿曼",🇴🇲 阿曼 FM Dos 98.5
+https://playerservices.streamtheworld.com/api/livestream-redirect/FMDOSAAC_SC
+#EXTINF:-1 tvg-name="🇴🇲 阿曼 HJQ46 Bésame Cali 106.5" group-title="阿曼",🇴🇲 阿曼 HJQ46 Bésame Cali 106.5
+https://playerservices.streamtheworld.com/api/livestream-redirect/BESAME_CALIAAC_SC
+#EXTINF:-1 tvg-name="🇴🇲 阿曼 Radio Bit Italia" group-title="阿曼",🇴🇲 阿曼 Radio Bit Italia
+http://radiobititalia.stream.laut.fm/radiobititalia?t302=2021-12-21_01-49-24&uuid=68efea5b-63b4-433c-916e-c64dad75a1b8
+#EXTINF:-1 tvg-name="🇴🇲 阿曼 Comando 88 FM" group-title="阿曼",🇴🇲 阿曼 Comando 88 FM
+http://rgradio.net:8044/comando88
+#EXTINF:-1 tvg-name="🇴🇲 阿曼 Radio Onda Positiva 94.1" group-title="阿曼",🇴🇲 阿曼 Radio Onda Positiva 94.1
+https://streamingecuador.net:8011/radioondapositiva
+#EXTINF:-1 tvg-name="🇴🇲 阿曼 Radio Romance 90.1" group-title="阿曼",🇴🇲 阿曼 Radio Romance 90.1
+https://streamingecuador.net:9090/stream
+#EXTINF:-1 tvg-name="🇴🇲 阿曼 Champagne FM Love" group-title="阿曼",🇴🇲 阿曼 Champagne FM Love
+https://stream.rcs.revma.com/gxsrs20at18uv
+#EXTINF:-1 tvg-name="🇴🇲 阿曼 Radio Moderna" group-title="阿曼",🇴🇲 阿曼 Radio Moderna
+https://playerservices.streamtheworld.com/api/livestream-redirect/MODERNAAAC_SC
+#EXTINF:-1 tvg-name="🇴🇲 阿曼 Radio Romantica" group-title="阿曼",🇴🇲 阿曼 Radio Romantica
+http://5.196.75.187:8004/stream
+#EXTINF:-1 tvg-name="🇴🇲 阿曼 Radio Centro y El Fonografo 690 XEJP" group-title="阿曼",🇴🇲 阿曼 Radio Centro y El Fonografo 690 XEJP
+https://playerservices.streamtheworld.com/api/livestream-redirect/XEJP_AMAAC.aac
+#EXTINF:-1 tvg-name="🇴🇲 阿曼 Radio Latidos 94.7" group-title="阿曼",🇴🇲 阿曼 Radio Latidos 94.7
+http://ip.peruhits.com:9944/;stream.mp3
+#EXTINF:-1 tvg-name="🇴🇲 阿曼 Radio Cafe Romania" group-title="阿曼",🇴🇲 阿曼 Radio Cafe Romania
+http://live.radiocafe.ro:8048/live.aac
+#EXTINF:-1 tvg-name="🇴🇲 阿曼 RFI Romania" group-title="阿曼",🇴🇲 阿曼 RFI Romania
+http://asculta.rfi.ro:9128/live.aac
+#EXTINF:-1 tvg-name="🇴🇲 阿曼 Romanticheskiy Shanson" group-title="阿曼",🇴🇲 阿曼 Romanticheskiy Shanson
+http://chanson.hostingradio.ru:8041/chanson-romantic256.mp3
+#EXTINF:-1 tvg-name="🇴🇲 阿曼 Radio Bern1 Love&Relax" group-title="阿曼",🇴🇲 阿曼 Radio Bern1 Love&Relax
+https://chmedia.streamabc.net/79-loverelax-mp3-192-4714203
+#EXTINF:-1 tvg-name="🇴🇲 阿曼 GVFM Romandie" group-title="阿曼",🇴🇲 阿曼 GVFM Romandie
+https://gvfm.ice.infomaniak.ch/romandie.aac
+#EXTINF:-1 tvg-name="🇴🇲 阿曼 RTR" group-title="阿曼",🇴🇲 阿曼 RTR
+https://stxt-audiostreaming.akamaized.net/hls/live/2117380/rr/master.m3u8
+#EXTINF:-1 tvg-name="🇴🇲 阿曼 Radio Actual 102.9" group-title="阿曼",🇴🇲 阿曼 Radio Actual 102.9
+http://192.198.83.230:8776/;
+#EXTINF:-1 tvg-name="🇴🇲 阿曼 Planet Radio - Romantica" group-title="阿曼",🇴🇲 阿曼 Planet Radio - Romantica
+https://stream-286.surfernetwork.com/h3zw68nx34zuv
+#EXTINF:-1 tvg-name="🇴🇲 阿曼 Radio Comunidad" group-title="阿曼",🇴🇲 阿曼 Radio Comunidad
+https://us9.maindigitalstream.com/ssl/7160
+#EXTINF:-1 tvg-name="🇴🇲 阿曼 Radio Odisea 104.3" group-title="阿曼",🇴🇲 阿曼 Radio Odisea 104.3
+https://streaming.comunicacioneschile.net/8024/stream
+#EXTINF:-1 tvg-name="🇴🇲 阿曼 Radio Por Amor a Chile" group-title="阿曼",🇴🇲 阿曼 Radio Por Amor a Chile
+https://sonic-us.arkeo.cl:7052/stream
+#EXTINF:-1 tvg-name="🇴🇲 阿曼 Radio Sol Latina" group-title="阿曼",🇴🇲 阿曼 Radio Sol Latina
+https://us9.maindigitalstream.com/ssl/7435
+#EXTINF:-1 tvg-name="🇴🇲 阿曼 Radio Sur 92.1" group-title="阿曼",🇴🇲 阿曼 Radio Sur 92.1
+https://estacion.kombi.cl:8030/stream
+#EXTINF:-1 tvg-name="🇴🇲 阿曼 Radio Tu y Yo 88.1" group-title="阿曼",🇴🇲 阿曼 Radio Tu y Yo 88.1
+http://audio5.tustreaming.cl:7490/Tuyyo
+#EXTINF:-1 tvg-name="🇴🇲 阿曼 Raudal FM 97.1" group-title="阿曼",🇴🇲 阿曼 Raudal FM 97.1
+https://audio.streaminghd.cl:9164/;
+#EXTINF:-1 tvg-name="🇴🇲 阿曼 Vinotinto Radio" group-title="阿曼",🇴🇲 阿曼 Vinotinto Radio
+https://stream.vinotintoradio.com:10691/;
+#EXTINF:-1 tvg-name="🇴🇲 阿曼 Amor Stereo" group-title="阿曼",🇴🇲 阿曼 Amor Stereo
+https://stream-282.surfernetwork.com/aycnet07h0hvv
+#EXTINF:-1 tvg-name="🇴🇲 阿曼 Besame FM - Manizales 91.7" group-title="阿曼",🇴🇲 阿曼 Besame FM - Manizales 91.7
+https://24423.live.streamtheworld.com/BESAME_MANIZALESAAC_SC
+#EXTINF:-1 tvg-name="🇴🇲 阿曼 Acuario Estereo 1010" group-title="阿曼",🇴🇲 阿曼 Acuario Estereo 1010
+https://24273.live.streamtheworld.com/ACUARIO_SC
+#EXTINF:-1 tvg-name="🇴🇲 阿曼 Besame FM - Bucaramanga 104.7" group-title="阿曼",🇴🇲 阿曼 Besame FM - Bucaramanga 104.7
+https://27373.live.streamtheworld.com/BESAME_BUCARAMANGAAAC_SC?csegid=2000
+#EXTINF:-1 tvg-name="🇴🇲 阿曼 Besame FM - Armenia 90.7" group-title="阿曼",🇴🇲 阿曼 Besame FM - Armenia 90.7
+https://27373.live.streamtheworld.com/BESAME_ARMENIAAAC_SC
+#EXTINF:-1 tvg-name="🇴🇲 阿曼 Crossover Radio Pereira" group-title="阿曼",🇴🇲 阿曼 Crossover Radio Pereira
+https://stream-284.surfernetwork.com/2e7wr8sp168uv
+#EXTINF:-1 tvg-name="🇴🇲 阿曼 Besame FM - Bogota 97.4" group-title="阿曼",🇴🇲 阿曼 Besame FM - Bogota 97.4
+https://26503.live.streamtheworld.com/BESAME_BOGOTAAAC_SC
+#EXTINF:-1 tvg-name="🇴🇲 阿曼 Besame FM - Medellin 94.9" group-title="阿曼",🇴🇲 阿曼 Besame FM - Medellin 94.9
+https://27593.live.streamtheworld.com/BESAME_MEDELLINAAC_SC
+#EXTINF:-1 tvg-name="🇴🇲 阿曼 Besame FM - Barranquilla 88.6" group-title="阿曼",🇴🇲 阿曼 Besame FM - Barranquilla 88.6
+https://26563.live.streamtheworld.com/BESAME_BARRANQUILLAAAC_SC
+#EXTINF:-1 tvg-name="🇴🇲 阿曼 Besame FM - Pereira 93.7" group-title="阿曼",🇴🇲 阿曼 Besame FM - Pereira 93.7
+https://27593.live.streamtheworld.com/BESAME_PEREIRA_FMAAC_SC
+#EXTINF:-1 tvg-name="🇴🇲 阿曼 La Romantica Bogota" group-title="阿曼",🇴🇲 阿曼 La Romantica Bogota
+https://streaming.maximaestereobogota.com/listen/la_rom%C3%A1ntica_bogot%C3%A1/laromantica
+#EXTINF:-1 tvg-name="🇴🇲 阿曼 Radio Romanticas" group-title="阿曼",🇴🇲 阿曼 Radio Romanticas
+https://stream-289.surfernetwork.com/cnp4ym52seruv
+#EXTINF:-1 tvg-name="🇦🇪 阿联酋 Sharjah Radio 94.4" group-title="阿联酋",🇦🇪 阿联酋 Sharjah Radio 94.4
+http://svs.itworkscdn.net/smcradiolive/smcradiolive/chunks.m3u8
+#EXTINF:-1 tvg-name="🇰🇷 韩国 Amur River Korean Radio" group-title="韩国",🇰🇷 韩国 Amur River Korean Radio
+http://satellitepull.cnr.cn/live/wx32hljcygb/playlist.m3u8
+#EXTINF:-1 tvg-name="🇰🇷 韩国 Radio Caprice K-Pop" group-title="韩国",🇰🇷 韩国 Radio Caprice K-Pop
+http://79.111.119.111:8002/kpop
+#EXTINF:-1 tvg-name="🇰🇷 韩国 Love" group-title="韩国",🇰🇷 韩国 Love
+https://live.insidefm.cl/listen/klove/stream
+#EXTINF:-1 tvg-name="🇲🇾 马来西亚 Radio Nord Castrovillari" group-title="马来西亚",🇲🇾 马来西亚 Radio Nord Castrovillari
+http://178.32.138.88:8063/stream
+#EXTINF:-1 tvg-name="🇲🇾 马来西亚 RTM Ai 89.3" group-title="马来西亚",🇲🇾 马来西亚 RTM Ai 89.3
+https://22243.live.streamtheworld.com/AI_FMAAC.aac
+#EXTINF:-1 tvg-name="🇲🇾 马来西亚 RTM Johor FM" group-title="马来西亚",🇲🇾 马来西亚 RTM Johor FM
+https://22243.live.streamtheworld.com/JOHOR_FMAAC.aac
+#EXTINF:-1 tvg-name="🇲🇾 马来西亚 RTM Red FM" group-title="马来西亚",🇲🇾 马来西亚 RTM Red FM
+https://28103.live.streamtheworld.com/RED_FMAAC.aac
+#EXTINF:-1 tvg-name="🇲🇾 马来西亚 RTM TraXX FM" group-title="马来西亚",🇲🇾 马来西亚 RTM TraXX FM
+https://28103.live.streamtheworld.com/TRAXX_FMAAC.aac
+#EXTINF:-1 tvg-name="🇲🇾 马来西亚 RTM Wai FM" group-title="马来西亚",🇲🇾 马来西亚 RTM Wai FM
+https://28093.live.streamtheworld.com/WAI_FM_IBANAAC.aac
+#EXTINF:-1 tvg-name="🇲🇾 马来西亚 Radio Astro Urbano 90.7" group-title="马来西亚",🇲🇾 马来西亚 Radio Astro Urbano 90.7
+https://sonic.comunikados.stream/8344/stream
+#EXTINF:-1 tvg-name="🇲🇾 马来西亚 Tropical Stereo Castro" group-title="马来西亚",🇲🇾 马来西亚 Tropical Stereo Castro
+https://sonic-us.fhost.cl/8178/stream
+#EXTINF:-1 tvg-name="🇱🇧 黎巴嫩 Voice of Lebanon Radio" group-title="黎巴嫩",🇱🇧 黎巴嫩 Voice of Lebanon Radio
+https://l3.itworkscdn.net/itwaudio/9054/stream
+#EXTINF:-1 tvg-name="🇦🇲 亚美尼亚 Yerevan 102.0" group-title="亚美尼亚",🇦🇲 亚美尼亚 Yerevan 102.0
+https://eu1.stream4cast.com/proxy/arradioi/stream?1734693740453
+#EXTINF:-1 tvg-name="🇶🇦 卡塔尔 Al Jazeera" group-title="卡塔尔",🇶🇦 卡塔尔 Al Jazeera
+https://live-hls-audio-web-aja.getaj.net/VOICE-AJA/01.m3u8
+#EXTINF:-1 tvg-name="🇮🇳 印度 Taj 92.3" group-title="印度",🇮🇳 印度 Taj 92.3
+http://ice66.securenetsystems.net/TAJ
+#EXTINF:-1 tvg-name="🇮🇳 印度 KSJO Bolly 92.3" group-title="印度",🇮🇳 印度 KSJO Bolly 92.3
+http://www.streamcontrol.net:12010/stream
+#EXTINF:-1 tvg-name="🇮🇳 印度尼西亚 Arctic Monkeys" group-title="印度尼西亚",🇮🇳 印度尼西亚 Arctic Monkeys
+https://streaming.exclusive.radio/er/arcticmonkeys/icecast.audio
+#EXTINF:-1 tvg-name="🇮🇳 印度尼西亚 Arctic Monkeys - Hits" group-title="印度尼西亚",🇮🇳 印度尼西亚 Arctic Monkeys - Hits
+https://streaming.exclusive.radio/er/arcticmonkeyshits/icecast.audio
+#EXTINF:-1 tvg-name="🇹🇷 土耳其 Big FM bigSES" group-title="土耳其",🇹🇷 土耳其 Big FM bigSES
+http://streams.bigfm.de/bigfm-turkey-128-aac
+#EXTINF:-1 tvg-name="🇹🇷 土耳其 Radyo Ankara Havalari" group-title="土耳其",🇹🇷 土耳其 Radyo Ankara Havalari
+http://37.247.98.8/stream/30/listen.pls
+#EXTINF:-1 tvg-name="🇹🇷 土耳其 NTV Radyo" group-title="土耳其",🇹🇷 土耳其 NTV Radyo
+http://46.20.3.207/
+#EXTINF:-1 tvg-name="🇹🇷 土耳其 TRT Erzurum" group-title="土耳其",🇹🇷 土耳其 TRT Erzurum
+https://radio-trterzurum.medya.trt.com.tr/master_128.m3u8
+#EXTINF:-1 tvg-name="🇹🇷 土耳其 TRT Cukurova 105.1" group-title="土耳其",🇹🇷 土耳其 TRT Cukurova 105.1
+https://radio-trtcukurova.medya.trt.com.tr/master_128.m3u8
+#EXTINF:-1 tvg-name="🇹🇷 土耳其 TRT Antalya" group-title="土耳其",🇹🇷 土耳其 TRT Antalya
+https://radio-trtantalya.medya.trt.com.tr/master_128.m3u8
+#EXTINF:-1 tvg-name="🇹🇷 土耳其 TRT GAP Diyarbakir" group-title="土耳其",🇹🇷 土耳其 TRT GAP Diyarbakir
+https://radio-trtgap.medya.trt.com.tr/master_128.m3u8
+#EXTINF:-1 tvg-name="🇹🇷 土耳其 TRT Radyo Kurdi" group-title="土耳其",🇹🇷 土耳其 TRT Radyo Kurdi
+https://radio-trtradyo6.medya.trt.com.tr/master_128.m3u8
+#EXTINF:-1 tvg-name="🇹🇷 土耳其 TRT Trabzon 97.0" group-title="土耳其",🇹🇷 土耳其 TRT Trabzon 97.0
+https://radio-trttrabzon.medya.trt.com.tr/master_128.m3u8
+#EXTINF:-1 tvg-name="🇹🇷 土耳其 TRT VOT West" group-title="土耳其",🇹🇷 土耳其 TRT VOT West
+https://radio-trtvotwest.medya.trt.com.tr/master_128.m3u8
+#EXTINF:-1 tvg-name="🇧🇩 孟加拉国 Bangladesh Betar Traffic Broadcasting 88.8" group-title="孟加拉国",🇧🇩 孟加拉国 Bangladesh Betar Traffic Broadcasting 88.8
+https://as1.digitalsynapsebd.com/proxy/bbdktraf/stream
+#EXTINF:-1 tvg-name="🇵🇰 巴基斯坦 Gary Moore" group-title="巴基斯坦",🇵🇰 巴基斯坦 Gary Moore
+https://streaming.exclusive.radio/er/garymoore/icecast.audio
+#EXTINF:-1 tvg-name="🇵🇰 巴基斯坦 Mary J Blige" group-title="巴基斯坦",🇵🇰 巴基斯坦 Mary J Blige
+https://streaming.exclusive.radio/er/maryjblige/icecast.audio
+#EXTINF:-1 tvg-name="🇵🇰 巴基斯坦 CJSW 90.9 University of Calgary" group-title="巴基斯坦",🇵🇰 巴基斯坦 CJSW 90.9 University of Calgary
+https://cjsw.leanstream.co/CJSWFM
+#EXTINF:-1 tvg-name="🇵🇰 巴基斯坦 KCVR Super Estrella 98.9" group-title="巴基斯坦",🇵🇰 巴基斯坦 KCVR Super Estrella 98.9
+https://playerservices.streamtheworld.com/api/livestream-redirect/KCVRFMAAC_SC
+#EXTINF:-1 tvg-name="🇵🇰 巴基斯坦 KEZE Hot 96.9" group-title="巴基斯坦",🇵🇰 巴基斯坦 KEZE Hot 96.9
+https://playerservices.streamtheworld.com/api/livestream-redirect/KEZEFMAAC_SC
+#EXTINF:-1 tvg-name="🇵🇰 巴基斯坦 KHHM Hot 103.5" group-title="巴基斯坦",🇵🇰 巴基斯坦 KHHM Hot 103.5
+https://playerservices.streamtheworld.com/api/livestream-redirect/KHHMFMAAC_SC
+#EXTINF:-1 tvg-name="🇯🇵 日本 Nihon no Oto" group-title="日本",🇯🇵 日本 Nihon no Oto
+http://stream1.nihon-no-oto.com/nihonogg
+#EXTINF:-1 tvg-name="🇬🇪 格鲁吉亚 Florida Georgia Line" group-title="格鲁吉亚",🇬🇪 格鲁吉亚 Florida Georgia Line
+https://streaming.exclusive.radio/er/floridageorgialine/icecast.audio
+#EXTINF:-1 tvg-name="🇸🇦 沙特阿拉伯 Saudi Quran 100.0" group-title="沙特阿拉伯",🇸🇦 沙特阿拉伯 Saudi Quran 100.0
+http://m.live.net.sa:1935/live/quransa/playlist.m3u8
+#EXTINF:-1 tvg-name="🇯🇴 约旦 Royal Club" group-title="约旦",🇯🇴 约旦 Royal Club
+http://193.33.170.218:8000/RoyalClub
+#EXTINF:-1 tvg-name="🇯🇴 约旦 Royal Lounge" group-title="约旦",🇯🇴 约旦 Royal Lounge
+http://193.33.170.218:8000/RoyalLounge
+#EXTINF:-1 tvg-name="🇯🇴 约旦 Royal Drum" group-title="约旦",🇯🇴 约旦 Royal Drum
+http://193.33.170.218:8000/RoyalDrum
+#EXTINF:-1 tvg-name="🇯🇴 约旦 Royal 98.6" group-title="约旦",🇯🇴 约旦 Royal 98.6
+http://185.39.195.90:8000/royal_live
+#EXTINF:-1 tvg-name="🇯🇴 约旦 Royal Rock" group-title="约旦",🇯🇴 约旦 Royal Rock
+http://193.33.170.218:8000/RoyalRock
+#EXTINF:-1 tvg-name="🇯🇴 约旦 Royal Trance" group-title="约旦",🇯🇴 约旦 Royal Trance
+http://193.33.170.218:8000/RoyalTrance
+#EXTINF:-1 tvg-name="🇯🇴 约旦 Royal Trap" group-title="约旦",🇯🇴 约旦 Royal Trap
+http://193.33.170.218:8000/RoyalTrap
+#EXTINF:-1 tvg-name="🇲🇳 蒙古 Inner Mongolia Traffic Voice 105.6" group-title="蒙古",🇲🇳 蒙古 Inner Mongolia Traffic Voice 105.6
+http://satellitepull.cnr.cn/live/wx32nmgjtgb/playlist.m3u8
+#EXTINF:-1 tvg-name="🇲🇳 蒙古 Inner Mongolia Rural and Pastoral Area Broadcasting" group-title="蒙古",🇲🇳 蒙古 Inner Mongolia Rural and Pastoral Area Broadcasting
+http://satellitepull.cnr.cn/live/wx32nmglyzs/playlist.m3u8
+#EXTINF:-1 tvg-name="🇲🇳 蒙古 Inner Mongolia Green Field Sound" group-title="蒙古",🇲🇳 蒙古 Inner Mongolia Green Field Sound
+http://ls.qingting.fm/live/1888.m3u8
+#EXTINF:-1 tvg-name="🇲🇳 蒙古 Inner Mongolia Mongolian External Broadcasting 105.0" group-title="蒙古",🇲🇳 蒙古 Inner Mongolia Mongolian External Broadcasting 105.0
+http://satellitepull.cnr.cn/live/wx32nmgdwgb/playlist.m3u8
+#EXTINF:-1 tvg-name="🇲🇳 蒙古 Inner Mongolia Sound of Music 93.6" group-title="蒙古",🇲🇳 蒙古 Inner Mongolia Sound of Music 93.6
+http://satellitepull.cnr.cn/live/wx32nmgyygb/playlist.m3u8
+#EXTINF:-1 tvg-name="🇲🇳 蒙古 Alxa Mongolian Comprehensive Broadcasting" group-title="蒙古",🇲🇳 蒙古 Alxa Mongolian Comprehensive Broadcasting
+http://satellitepull.cnr.cn/live/wx32nmgalsmygb/playlist.m3u8
+#EXTINF:-1 tvg-name="🇦🇿 阿塞拜疆 Europa Plus Baku 107.7" group-title="阿塞拜疆",🇦🇿 阿塞拜疆 Europa Plus Baku 107.7
+https://hls-02-europaplus.emgsound.ru/11/128/playlist.m3u8
+#EXTINF:-1 tvg-name="🇴🇲 阿曼 Voz de la Capilla" group-title="阿曼",🇴🇲 阿曼 Voz de la Capilla
+https://sonic.paulatina.co/7446/stream
+#EXTINF:-1 tvg-name="🇴🇲 阿曼 Feeling Love" group-title="阿曼",🇴🇲 阿曼 Feeling Love
+https://streamingv2.shoutcast.com/Feeling-LOVE
+#EXTINF:-1 tvg-name="🇴🇲 阿曼 RIRE ET CHANSONS ONE WOMAN SHOW" group-title="阿曼",🇴🇲 阿曼 RIRE ET CHANSONS ONE WOMAN SHOW
+https://streaming.nrjaudio.fm/ouwgyvsk6j4d
+#EXTINF:-1 tvg-name="🇴🇲 阿曼 Oxygen Love Songs" group-title="阿曼",🇴🇲 阿曼 Oxygen Love Songs
+https://oxygenmusic.hu:8443/oxygenlovesongs
+#EXTINF:-1 tvg-name="🇴🇲 阿曼 RMC Romantic Rock" group-title="阿曼",🇴🇲 阿曼 RMC Romantic Rock
+http://edge.radiomontecarlo.net/rmcweb015
+#EXTINF:-1 tvg-name="🇴🇲 阿曼 Fórmula Melódica 97.9 XETIA" group-title="阿曼",🇴🇲 阿曼 Fórmula Melódica 97.9 XETIA
+https://s2.yesstreaming.net:9085/stream
+#EXTINF:-1 tvg-name="🇴🇲 阿曼 VOX 96.9 XHOD" group-title="阿曼",🇴🇲 阿曼 VOX 96.9 XHOD
+https://playradio.mx/proxy/vox?mp=/stream
+#EXTINF:-1 tvg-name="🇴🇲 阿曼 Uzhhorod" group-title="阿曼",🇴🇲 阿曼 Uzhhorod
+http://radio.ukr.radio:8000/ur1-uz-mp3-m
+#EXTINF:-1 tvg-name="🇴🇲 阿曼 Uzhhorod" group-title="阿曼",🇴🇲 阿曼 Uzhhorod
+http://radio.ukr.radio:8000/ur1-uz-mp3
+#EXTINF:-1 tvg-name="🇴🇲 阿曼 Uzhhorod" group-title="阿曼",🇴🇲 阿曼 Uzhhorod
+http://radio.ukr.radio:8000/ur1-uz-aacplus
+#EXTINF:-1 tvg-name="🇴🇲 阿曼 Colombia Romantica" group-title="阿曼",🇴🇲 阿曼 Colombia Romantica
+https://play10.tikast.com/proxy/colromantica?mp=/stream
+#EXTINF:-1 tvg-name="🇴🇲 阿曼 Romantica Baladas del Amor" group-title="阿曼",🇴🇲 阿曼 Romantica Baladas del Amor
+https://das-edge09-live365-dal03.cdnstream.com/a98246
+#EXTINF:-1 tvg-name="🇦🇪 阿联酋 Al Arabiya 99.0" group-title="阿联酋",🇦🇪 阿联酋 Al Arabiya 99.0
+https://fm.alarabiya.net/fm/myStream/playlist.m3u8
+#EXTINF:-1 tvg-name="🇰🇷 韩国 MBC AM" group-title="韩国",🇰🇷 韩国 MBC AM
+http://andong.webcasting.co.kr:1935/live/amlive/playlist.m3u8
+
+
+#EXTINF:-1 tvg-name="🇹🇷 土耳其 TRT Nagme 102.8" group-title="土耳其",🇹🇷 土耳其 TRT Nagme 102.8
+https://radio-trtnagme.live.trt.com.tr/master.m3u8
+
+#EXTINF:-1 tvg-name="🇹🇷 土耳其 TRT Radyo 3" group-title="土耳其",🇹🇷 土耳其 TRT Radyo 3
+https://radio-trtradyo3.live.trt.com.tr/master.m3u8
+
+#EXTINF:-1 tvg-name="🇹🇷 土耳其 TRT TSR" group-title="土耳其",🇹🇷 土耳其 TRT TSR
+https://radio-trttsr.live.trt.com.tr/master.m3u8
+
+#EXTINF:-1 tvg-name="🇹🇷 土耳其 TRT Turku 98.6" group-title="土耳其",🇹🇷 土耳其 TRT Turku 98.6
+https://radio-trtturku.live.trt.com.tr/master.m3u8
+
+
+#EXTINF:-1 tvg-name="🇬🇪 格鲁吉亚 Fortuna 106.9" group-title="格鲁吉亚",🇬🇪 格鲁吉亚 Fortuna 106.9
+http://tv.cdn.xsg.ge/cld9-0386/fortuna/tracks-a1/mono.m3u8
+#EXTINF:-1 tvg-name="🇬🇪 格鲁吉亚 Fortuna Plus 103.5" group-title="格鲁吉亚",🇬🇪 格鲁吉亚 Fortuna Plus 103.5
+https://tv.cdn.xsg.ge/cld9-0386/fortuna/tracks-a1/mono.m3u8
+#EXTINF:-1 tvg-name="🇮🇱 以色列 The Edge Hakatze" group-title="以色列",🇮🇱 以色列 The Edge Hakatze
+http://kzradio.mediacast.co.il/kzradio_live/kzradio/icecast.audio
+#EXTINF:-1 tvg-name="🇰🇷 韩国 Gugak 99.1" group-title="韩国",🇰🇷 韩国 Gugak 99.1
+https://mgugaklive.nowcdn.co.kr/gugakradio/gugakradio.stream/chunklist_w253831608.m3u8
+#EXTINF:-1 tvg-name="🇹🇭 泰国 Looktung Network 98.5" group-title="泰国",🇹🇭 泰国 Looktung Network 98.5
+https://cdn-th2.livestreaming.in.th/shoutcast/8200
+#EXTINF:-1 tvg-name="🇹🇷 土耳其 Power Earth" group-title="土耳其",🇹🇷 土耳其 Power Earth
+http://listen.powerapp.com.tr/powerearth/abr/playlist.m3u8
+#EXTINF:-1 tvg-name="🇹🇷 土耳其 Power Turk" group-title="土耳其",🇹🇷 土耳其 Power Turk
+http://listen.powerapp.com.tr/powerturk/mpeg/icecast.audio?/listen.pls
+#EXTINF:-1 tvg-name="🇹🇷 土耳其 Radyo ODTU Rock" group-title="土耳其",🇹🇷 土耳其 Radyo ODTU Rock
+http://stream.radyoodtu.com.tr/rock
+#EXTINF:-1 tvg-name="🇹🇷 土耳其 Radyo ODTU Hit" group-title="土耳其",🇹🇷 土耳其 Radyo ODTU Hit
+http://stream.radyoodtu.com.tr/hit
+#EXTINF:-1 tvg-name="🇹🇷 土耳其 Radyo ODTU Easy" group-title="土耳其",🇹🇷 土耳其 Radyo ODTU Easy
+http://stream.radyoodtu.com.tr/easy
+#EXTINF:-1 tvg-name="🇹🇷 土耳其 Radyo ODTU MixTape" group-title="土耳其",🇹🇷 土耳其 Radyo ODTU MixTape
+http://stream.radyoodtu.com.tr/karisikkaset
+#EXTINF:-1 tvg-name="🇮🇳 印度 Radyo Taksi" group-title="印度",🇮🇳 印度 Radyo Taksi
+https://live.radyo.in/8006/stream
+#EXTINF:-1 tvg-name="🇹🇷 土耳其 Radyo Seymen 107.0" group-title="土耳其",🇹🇷 土耳其 Radyo Seymen 107.0
+https://yayin.radyoseymen.com.tr:1070/stream
+#EXTINF:-1 tvg-name="🇹🇷 土耳其 Power POP" group-title="土耳其",🇹🇷 土耳其 Power POP
+https://listen.powerapp.com.tr/powerpop/128/chunks.m3u8
+#EXTINF:-1 tvg-name="🇦🇿 阿塞拜疆 90 FM" group-title="阿塞拜疆",🇦🇿 阿塞拜疆 90 FM
+https://stream.itv.az/rtmp:/radio/chunks.m3u8
+#EXTINF:-1 tvg-name="🇮🇳 印度 Diversia Radio Activa" group-title="印度",🇮🇳 印度 Diversia Radio Activa
+https://vivo.miradio.in/8120/stream
+#EXTINF:-1 tvg-name="🇮🇱 以色列 Radio Kol Chai 93.0" group-title="以色列",🇮🇱 以色列 Radio Kol Chai 93.0
+https://media2.93fm.co.il/live-new
+#EXTINF:-1 tvg-name="🇮🇱 以色列 Radio Kol Chai 93.0" group-title="以色列",🇮🇱 以色列 Radio Kol Chai 93.0
+https://media2.93fm.co.il/livemusic
+#EXTINF:-1 tvg-name="🇮🇳 印度 Radio Bolly FM" group-title="印度",🇮🇳 印度 Radio Bolly FM
+http://stream.radiobollyfm.in:8201/hd?t=1526570335
+#EXTINF:-1 tvg-name="🇮🇱 以色列 Eco 99fm" group-title="以色列",🇮🇱 以色列 Eco 99fm
+http://eco-live.mediacast.co.il/99fm_aac?hash=1559501510715.m4a
+#EXTINF:-1 tvg-name="🇰🇿 哈萨克斯坦 Shalqar FM 100.4" group-title="哈萨克斯坦",🇰🇿 哈萨克斯坦 Shalqar FM 100.4
+https://radio-streams.kaztrk.kz/shalqar/shalqar/icecast.audio
+#EXTINF:-1 tvg-name="🇹🇭 泰国 Radio Report 1" group-title="泰国",🇹🇭 泰国 Radio Report 1
+http://media.login.in.th:8135/;stream
+#EXTINF:-1 tvg-name="🇹🇷 土耳其 Power 100 FM" group-title="土耳其",🇹🇷 土耳其 Power 100 FM
+https://listen.powerapp.com.tr/powerfm/abr/playlist.m3u8
+
+#EXTINF:-1 tvg-name="🇧🇩 孟加拉国 🇧🇩 孟加拉 Radio Sarabela 98.8" group-title="孟加拉国",🇧🇩 孟加拉国 🇧🇩 孟加拉 Radio Sarabela 98.8
+https://broadcast.energytech.com.bd/stream/1/
+#EXTINF:-1 tvg-name="🇮🇩 印度尼西亚 🇮🇩 印尼 UTY FM Medari 90.7" group-title="印度尼西亚",🇮🇩 印度尼西亚 🇮🇩 印尼 UTY FM Medari 90.7
+http://utyfmedari.us.myradio.web.id:8000/utyfmedari
+#EXTINF:-1 tvg-name="🇲🇳 蒙古 🇲🇳 MN MNB P3 FM 100.9" group-title="蒙古",🇲🇳 蒙古 🇲🇳 MN MNB P3 FM 100.9
+https://live.mnb.mn/hls/radio2.stream.m3u8
+#EXTINF:-1 tvg-name="🇲🇳 蒙古 🇲🇳 MN MNB Mongolyn Radio" group-title="蒙古",🇲🇳 蒙古 🇲🇳 MN MNB Mongolyn Radio
+https://live.mnb.mn/hls/radio1.stream.m3u8
+
+#EXTINF:-1 tvg-name="🇰🇷 韩国 TBN" group-title="韩国",🇰🇷 韩国 TBN
+http://radio2.tbn.or.kr:1935/gyeongin/myStream/playlist.m3u8
+#EXTINF:-1 tvg-name="🇹🇷 土耳其 TRT-Haber Radyo" group-title="土耳其",🇹🇷 土耳其 TRT-Haber Radyo
+https://radio-trtradyohaber.live.trt.com.tr/master.m3u8
+#EXTINF:-1 tvg-name="🇮🇳 印度 Powerplay Discotheque" group-title="印度",🇮🇳 印度 Powerplay Discotheque
+https://cast.miradio.in/proxy/powerplay/stream

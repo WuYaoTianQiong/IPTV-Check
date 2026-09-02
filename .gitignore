@@ -68,11 +68,17 @@ Thumbs.db
 .arts/
 .codeartsdoer/
 
-# Temporary scripts
+# Temporary scripts（下划线前缀 = 本地调试残留，一律不提交）
+_*.py
+_*.txt
+_*.ps1
 _checkpath.py
 _clean_vite.py
 _clean_vite2.py
 _cp.py
+
+# Unified runtime logs（统一日志目录，若服务端启用请将输出重定向到此）
+logs/
 
 # Test output files
 批量检测_*.txt

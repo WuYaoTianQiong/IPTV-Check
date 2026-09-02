@@ -83,7 +83,12 @@ if ($Mode -eq "prod") {
     $pythonCmd = Join-Path $projectRoot ".venv\Scripts\python.exe"
     if (-not (Test-Path $pythonCmd)) { $pythonCmd = "python" }
     $env:PYTHONPATH = $backendDir
-    Start-Process -FilePath $pythonCmd -ArgumentList "-m", "iptv_check", "--port", $Port -WorkingDirectory $backendDir -WindowStyle Normal
+    # 服务日志统一写入 logs\（已在 .gitignore 忽略），避免散落源码目录
+    $logDir = Join-Path $projectRoot "logs"
+    New-Item -ItemType Directory -Force -Path $logDir | Out-Null
+    $stamp = Get-Date -Format "yyyyMMdd_HHmmss"
+    $proc = Start-Process -FilePath $pythonCmd -ArgumentList "-m", "iptv_check", "--port", $Port -WorkingDirectory $backendDir -WindowStyle Hidden -RedirectStandardOutput (Join-Path $logDir "server_$stamp.out.log") -RedirectStandardError (Join-Path $logDir "server_$stamp.err.log") -PassThru
+    Write-Host "[$(Get-Date -Format 'HH:mm:ss')] Server logs: $logDir (PID $($proc.Id))" -ForegroundColor DarkGray
 
     Start-Sleep -Seconds 3
     if (-not $NoBrowser) { Start-Process "http://127.0.0.1:$Port" }
