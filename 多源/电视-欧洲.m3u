@@ -43,8 +43,6 @@ http://vcdn1.produck.company:1935/out/dtv/playlist.m3u8
 https://ngtrk.dc.beltelecom.by/ngtrk/smil:belarus24.smil/playlist.m3u8
 #EXTINF:-1 tvg-name="🇧🇾 白俄罗斯 CTV 电视台" group-title="白俄罗斯",🇧🇾 白俄罗斯 CTV 电视台
 https://ctv.dc.beltelecom.by/ctv/ctv.stream/playlist.m3u8
-#EXTINF:-1 tvg-name="🇭🇺 匈牙利 MTV Sub" group-title="匈牙利",🇭🇺 匈牙利 MTV Sub
-https://live-fi.tvkaista.net/sub/live.m3u8?src=freetv
 #EXTINF:-1 tvg-name="🇭🇺 匈牙利 Budapest Európa TV" group-title="匈牙利",🇭🇺 匈牙利 Budapest Európa TV
 https://cloudfront44.lexanetwork.com:1344/freerelay/bpetv.sdp/playlist.m3u8
 #EXTINF:-1 tvg-name="🇷🇸 塞尔维亚 RTV HB Ⓢ" group-title="塞尔维亚",🇷🇸 塞尔维亚 RTV HB Ⓢ
@@ -101,10 +99,6 @@ https://lifetv.bitflip.ee/live/stream2.m3u8
 https://rrr.sz.xlcdn.com/?account=cn_kanal10media&file=live_transcoded&type=live&service=wowza&protocol=https&output=playlist.m3u8
 #EXTINF:-1 tvg-name="🇨🇭 瑞士 Trace Sports" group-title="瑞士",🇨🇭 瑞士 Trace Sports
 https://lightning-tracesport-samsungau.amagi.tv/playlist1080p.m3u8
-#EXTINF:-1 tvg-name="🇫🇮 芬兰 TV5 Finland" group-title="芬兰",🇫🇮 芬兰 TV5 Finland
-https://live-fi.tvkaista.net/tv5/live.m3u8?src=freetv
-#EXTINF:-1 tvg-name="🇫🇮 芬兰 Star Channel Finland" group-title="芬兰",🇫🇮 芬兰 Star Channel Finland
-https://live-fi.tvkaista.net/star-channel/live.m3u8?src=freetv
 #EXTINF:-1 tvg-name="🇫🇮 芬兰 QVC Style Ⓢ" group-title="芬兰",🇫🇮 芬兰 QVC Style Ⓢ
 https://qvcuk-live.akamaized.net/hls/live/2097112/qst/3/3.m3u8
 #EXTINF:-1 tvg-name="🇬🇧 英国 ITV" group-title="英国",🇬🇧 英国 ITV
@@ -238,8 +232,6 @@ http://sb.err.ee/live/etv.m3u8
 https://daserste-live.ard-mcdn.de/daserste/live/hls/de/master.m3u8
 #EXTINF:-1 tvg-name="🇩🇪 德国 BR Nord Ⓖ" group-title="德国",🇩🇪 德国 BR Nord Ⓖ
 https://mcdn.br.de/br/fs/bfs_nord/hls/de/master.m3u8
-#EXTINF:-1 tvg-name="🇬🇷 希腊 91NRG" group-title="希腊",🇬🇷 希腊 91NRG
-http://tv.nrg91.gr:1935/onweb/live/master.m3u8
 #EXTINF:-1 tvg-name="🇬🇷 希腊 Center TV" group-title="希腊",🇬🇷 希腊 Center TV
 https://eu1.streams.gr:8081/centertv/index.m3u8
 #EXTINF:-1 tvg-name="🇭🇺 匈牙利 Apostol TV" group-title="匈牙利",🇭🇺 匈牙利 Apostol TV

@@ -5425,8 +5425,6 @@ http://radio.nrcu.gov.ua:8000/ur2-mp3
 http://radio.nrcu.gov.ua:8000/ur2-aacp-ulow
 #EXTINF:-1 tvg-name="🇺🇦 乌克兰 UA Radio Kultura UR-3" group-title="乌克兰",🇺🇦 乌克兰 UA Radio Kultura UR-3
 http://radio.nrcu.gov.ua:8000/ur3-mp3
-#EXTINF:-1 tvg-name="🇨🇭 瑞士 West Africa Democracy Radio" group-title="瑞士",🇨🇭 瑞士 West Africa Democracy Radio
-https://westafricademocracyradio.ice.infomaniak.ch/westafricademocracyradio.mp3?westafricaradio
 #EXTINF:-1 tvg-name="🇨🇭 瑞士 Kwezi 106.9" group-title="瑞士",🇨🇭 瑞士 Kwezi 106.9
 http://kwezifm.ice.infomaniak.ch/kwezifm-128.mp3
 #EXTINF:-1 tvg-name="🇨🇭 瑞士 Mayotte La 1ère" group-title="瑞士",🇨🇭 瑞士 Mayotte La 1ère

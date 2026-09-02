@@ -451,14 +451,8 @@ http://live.wjyanghu.com/live/CH2.m3u8
 http://ali-vl.cztv.com/channels/lantian/channel009/360p.m3u8
 #EXTINF:-1 tvg-name="🇨🇳 中国 浙江经济" group-title="地方/专业频道",🇨🇳 中国 浙江经济
 https://ali-m-l.cztv.com/channels/lantian/channel003/1080p.m3u8?
-#EXTINF:-1 tvg-name="🇨🇳 中国 烟台公共" group-title="地方/专业频道",🇨🇳 中国 烟台公共
-http://live.yantaitv.cn/live/e50f104a4ffe4a41b2217cbda534146f/d86092e69df94668b33390278b061700-1.m3u8
-#EXTINF:-1 tvg-name="🇨🇳 中国 烟台经济科技" group-title="地方/专业频道",🇨🇳 中国 烟台经济科技
-http://live.yantaitv.cn/live/27f84144e95a4652ae9e5c211b2a6b55/405f3e33ba384aa0a16014d0becd1261-1.m3u8
 #EXTINF:-1 tvg-name="🇨🇳 中国 长白山电视台" group-title="地方/专业频道",🇨🇳 中国 长白山电视台
 http://stream8.jlntv.cn/cbstv/sd/live.m3u8?zjild
-#EXTINF:-1 tvg-name="🇨🇳 中国 中国村庄" group-title="地方/专业频道",🇨🇳 中国 中国村庄
-http://newcntv.qcloudcdn.com/asp/hls/4000/0303000a/3/default/93fc12dbf14241c18c23da104fbade23/4000.m3u8
 #EXTINF:-1 tvg-name="🇨🇳 中国 白山公共" group-title="地方/专业频道",🇨🇳 中国 白山公共
 http://stream8.jlntv.cn/baishan2/playlist.m3u8?zjild
 #EXTINF:-1 tvg-name="🇨🇳 中国 通化县" group-title="地方/专业频道",🇨🇳 中国 通化县
@@ -697,8 +691,6 @@ https://iptv.catvod.com/live.php?id=CCTV14&line=4
 https://iptv.catvod.com/live.php?id=CCTV16
 #EXTINF:-1 tvg-name="🇨🇳 中国 CCTV-9 纪录" group-title="央视频道",🇨🇳 中国 CCTV-9 纪录
 http://74.91.26.218:82/live/cctv9hd.m3u8
-#EXTINF:-1 tvg-name="🇨🇳 中国 CCTV-5+ 体育赛事" group-title="央视频道",🇨🇳 中国 CCTV-5+ 体育赛事
-http://107.150.60.122/live/cctv5p.m3u8
 #EXTINF:-1 tvg-name="🇨🇳 中国 CCTV-15 音乐" group-title="央视频道",🇨🇳 中国 CCTV-15 音乐
 https://iptv.catvod.com/live.php?id=CCTV15&line=3
 #EXTINF:-1 tvg-name="🇨🇳 中国 CCTV-12 社会与法" group-title="央视频道",🇨🇳 中国 CCTV-12 社会与法
@@ -839,8 +831,6 @@ https://m3u8.channel.dzsm.com/nmip-media/channellive/channel104601/playlist.m3u8
 http://tencentplay.gztv.com/live/zonghes.m3u8?txSecret=c8dbe86d6f86eb1a21999ab479fd5667&txTime=18d3c4690e8
 #EXTINF:-1 tvg-name="🇨🇳 中国 广州新闻" group-title="新闻综合/教育纪录",🇨🇳 中国 广州新闻
 http://tencentplay.gztv.com/live/xinwen.m3u8?txSecret=d2c2db0b598c02ec1b5623728434d367&txTime=18d57929bd3
-#EXTINF:-1 tvg-name="🇨🇳 中国 番禺综合" group-title="新闻综合/教育纪录",🇨🇳 中国 番禺综合
-http://video.epaper.pybtv.cn:8080/live/rtmp_live_demo.flv
 #EXTINF:-1 tvg-name="🇨🇳 中国 东莞新闻综合" group-title="新闻综合/教育纪录",🇨🇳 中国 东莞新闻综合
 https://stream.sun0769.com/dgrtv1/mp4tv1_800/index.m3u8
 #EXTINF:-1 tvg-name="🇨🇳 中国 东莞生活资讯" group-title="新闻综合/教育纪录",🇨🇳 中国 东莞生活资讯

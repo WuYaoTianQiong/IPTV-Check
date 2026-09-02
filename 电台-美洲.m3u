@@ -1635,8 +1635,6 @@ https://cast.radioservicios.cl/listen/gentesonline/web
 http://audio.streaminghd.cl:9058/;
 #EXTINF:-1 tvg-name="🇨🇱 智利 Positiva Cabildo" group-title="智利",🇨🇱 智利 Positiva Cabildo
 https://sonic.portalfoxmix.cl:7128/;
-#EXTINF:-1 tvg-name="🇨🇱 智利 SuperStereo Network" group-title="智利",🇨🇱 智利 SuperStereo Network
-http://icecast.centaury.cl:7610/SSDEMO
 #EXTINF:-1 tvg-name="🇨🇱 智利 Retro Tops" group-title="智利",🇨🇱 智利 Retro Tops
 https://sonic.portalfoxmix.cl/9942/stream
 #EXTINF:-1 tvg-name="🇧🇷 巴西 Jovem Pan 103.3 Patos de Minas" group-title="巴西",🇧🇷 巴西 Jovem Pan 103.3 Patos de Minas

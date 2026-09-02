@@ -1,8 +1,6 @@
 #EXTM3U x-tvg-url="检测结果_节目单.epg.xml"
 #EXTINF:-1 tvg-name="🇮🇳 印度 NDTV India" group-title="印度",🇮🇳 印度 NDTV India
 https://ndtvindiaelemarchana.akamaized.net/hls/live/2003679/ndtvindia/master.m3u8
-#EXTINF:-1 tvg-name="🇹🇷 土耳其 TapahtumaTV Eveo" group-title="土耳其",🇹🇷 土耳其 TapahtumaTV Eveo
-https://live-fi.tvkaista.net/tapahtumatv-eveo/live.m3u8?src=freetv
 #EXTINF:-1 tvg-name="🇹🇷 土耳其 INTV" group-title="土耳其",🇹🇷 土耳其 INTV
 http://tv1.intv.mk:1935/live/intv/index.m3u8
 #EXTINF:-1 tvg-name="🇹🇷 土耳其 TRT World" group-title="土耳其",🇹🇷 土耳其 TRT World
