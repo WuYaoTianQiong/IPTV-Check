@@ -427,6 +427,8 @@ http://jamesfm.ice.infomaniak.ch/jamesfm.mp3
 http://213.141.131.10:8002/americana
 #EXTINF:-1 tvg-name="🇺🇸 美国 Radio Caprice Chicago Blues" group-title="美国",🇺🇸 美国 Radio Caprice Chicago Blues
 http://79.111.14.76:8000/chicagoblues
+#EXTINF:-1 tvg-name="🇺🇸 美国 Radio Caprice Chicago Blues" group-title="美国",🇺🇸 美国 Radio Caprice Chicago Blues
+http://79.111.14.76:8002/chicagoblues
 #EXTINF:-1 tvg-name="🇺🇸 美国 KXJZ Capital Public Radio News" group-title="美国",🇺🇸 美国 KXJZ Capital Public Radio News
 https://playerservices.streamtheworld.com/api/livestream-redirect/KXJZ_SC
 #EXTINF:-1 tvg-name="🇺🇸 美国 ElectricFM America's Reals Dance!" group-title="美国",🇺🇸 美国 ElectricFM America's Reals Dance!
@@ -444,6 +446,8 @@ https://playerservices.streamtheworld.com/api/livestream-redirect/KAWCFM_SC
 #EXTINF:-1 tvg-name="🇺🇸 美国 KBUT 90.3" group-title="美国",🇺🇸 美国 KBUT 90.3
 https://playerservices.streamtheworld.com/api/livestream-redirect/KBUTFM_SC
 #EXTINF:-1 tvg-name="🇺🇸 美国 KCFR 90.1 Colorado Public Radio News" group-title="美国",🇺🇸 美国 KCFR 90.1 Colorado Public Radio News
+http://stream1.cprnetwork.org/cpr1_aac
+#EXTINF:-1 tvg-name="🇺🇸 美国 KCFR 90.1 Colorado Public Radio News" group-title="美国",🇺🇸 美国 KCFR 90.1 Colorado Public Radio News
 http://stream2.cprnetwork.org:8000/cpr1_lo
 #EXTINF:-1 tvg-name="🇺🇸 美国 KCHO 91.7 North State Public Radio" group-title="美国",🇺🇸 美国 KCHO 91.7 North State Public Radio
 https://playerservices.streamtheworld.com/api/livestream-redirect/KCHOFM_64_SC
@@ -453,6 +457,8 @@ http://localcurrent.stream.publicradio.org/localcurrent.mp3
 http://ice10.securenetsystems.net/SUNRADIO
 #EXTINF:-1 tvg-name="🇺🇸 美国 KERA 90.1" group-title="美国",🇺🇸 美国 KERA 90.1
 http://kera-ice.streamguys.us/keralive
+#EXTINF:-1 tvg-name="🇺🇸 美国 KERA 90.1" group-title="美国",🇺🇸 美国 KERA 90.1
+http://kera-ice.streamguys.us/keraliveaacplus
 #EXTINF:-1 tvg-name="🇺🇸 美国 KFSK 100.9" group-title="美国",🇺🇸 美国 KFSK 100.9
 http://amber.streamguys.com:4620/kfsk
 #EXTINF:-1 tvg-name="🇺🇸 美国 KJZZ 91.5" group-title="美国",🇺🇸 美国 KJZZ 91.5
@@ -493,6 +499,8 @@ http://peridot.streamguys.com:7140/live
 http://stream2.cprnetwork.org:8000/cpr3_aac
 #EXTINF:-1 tvg-name="🇺🇸 美国 KVPR 89.3 Valley Public Radio" group-title="美国",🇺🇸 美国 KVPR 89.3 Valley Public Radio
 https://playerservices.streamtheworld.com/api/livestream-redirect/KVPRFM_SC
+#EXTINF:-1 tvg-name="🇺🇸 美国 KVPR 89.3 Valley Public Radio" group-title="美国",🇺🇸 美国 KVPR 89.3 Valley Public Radio
+https://playerservices.streamtheworld.com/api/livestream-redirect/KVPRFMAAC_SC
 #EXTINF:-1 tvg-name="🇺🇸 美国 KXSU 102.1 Seattle University’s Student-Run Radio Station" group-title="美国",🇺🇸 美国 KXSU 102.1 Seattle University’s Student-Run Radio Station
 https://c556.fastserv.com/kxsu
 #EXTINF:-1 tvg-name="🇺🇸 美国 Miami Beach Radio" group-title="美国",🇺🇸 美国 Miami Beach Radio
@@ -533,6 +541,8 @@ http://stream.wbez.org/wbez128.mp3
 https://playerservices.streamtheworld.com/api/livestream-redirect/WBFOFM_SC
 #EXTINF:-1 tvg-name="🇺🇸 美国 WBUR 90.9" group-title="美国",🇺🇸 美国 WBUR 90.9
 http://wbur-sc.streamguys.com/wbur.aac
+#EXTINF:-1 tvg-name="🇺🇸 美国 WBUR 90.9" group-title="美国",🇺🇸 美国 WBUR 90.9
+http://wbur-sc.streamguys.com/wbur
 #EXTINF:-1 tvg-name="🇺🇸 美国 WCLK 91.9" group-title="美国",🇺🇸 美国 WCLK 91.9
 https://playerservices.streamtheworld.com/api/livestream-redirect/WCLKFM_SC
 #EXTINF:-1 tvg-name="🇺🇸 美国 WCLK HD2" group-title="美国",🇺🇸 美国 WCLK HD2
@@ -629,6 +639,8 @@ http://vprbbc.streamguys.net/vprbbc24.mp3
 http://vpr.streamguys.net/vpr64.mp3
 #EXTINF:-1 tvg-name="🇺🇸 美国 WXXI 1370" group-title="美国",🇺🇸 美国 WXXI 1370
 https://playerservices.streamtheworld.com/api/livestream-redirect/WXXIAMAAC.aac
+#EXTINF:-1 tvg-name="🇺🇸 美国 WXXI Classical 91.5" group-title="美国",🇺🇸 美国 WXXI Classical 91.5
+https://playerservices.streamtheworld.com/api/livestream-redirect/WXXIFMAAC.aac
 #EXTINF:-1 tvg-name="🇺🇸 美国 WXXI Classical 91.5" group-title="美国",🇺🇸 美国 WXXI Classical 91.5
 https://playerservices.streamtheworld.com/api/livestream-redirect/WXXIFM.mp3
 #EXTINF:-1 tvg-name="🇺🇸 美国 WYSO 91.3" group-title="美国",🇺🇸 美国 WYSO 91.3
@@ -781,6 +793,8 @@ https://streaming.exclusive.radio/er/whitneyhoustonhits/icecast.audio
 https://stream04.sigile.net/5pbs-128-mp3
 #EXTINF:-1 tvg-name="🇺🇸 美国 Freakquency" group-title="美国",🇺🇸 美国 Freakquency
 http://freakquency.stream.laut.fm/freakquency?pl=pls&t302=2021-12-21_19-26-00&uuid=89019aec-31db-4bf1-b09c-042878899592
+#EXTINF:-1 tvg-name="🇺🇸 美国 Freakquency" group-title="美国",🇺🇸 美国 Freakquency
+https://freakquency.stream.laut.fm/freakquency?pl=pls&t302=2021-12-21_15-53-35&uuid=c2e92a2f-c33d-4a20-b10c-9d0eab9fe534
 #EXTINF:-1 tvg-name="🇺🇸 美国 NOSTALGIE USA 80" group-title="美国",🇺🇸 美国 NOSTALGIE USA 80
 https://streaming.nrjaudio.fm/ounusuqn5eyc
 #EXTINF:-1 tvg-name="🇺🇸 美国 CNN Turk Radyo 92.5" group-title="美国",🇺🇸 美国 CNN Turk Radyo 92.5
@@ -819,12 +833,23 @@ https://playerservices.streamtheworld.com/api/livestream-redirect/WKYAM_SC
 http://wshu.streamguys.org/wshu-air
 #EXTINF:-1 tvg-name="🇺🇸 美国 WSJK ESPN 93.5" group-title="美国",🇺🇸 美国 WSJK ESPN 93.5
 https://playerservices.streamtheworld.com/api/livestream-redirect/WSJKFMAAC_SC
+
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 Champeta Cartagena" group-title="哥伦比亚",🇨🇴 哥伦比亚 Champeta Cartagena
 https://stream-285.surfernetwork.com/7p7dg6tuwchvv
+
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 Fiesta Estereo Medellin" group-title="哥伦比亚",🇨🇴 哥伦比亚 Fiesta Estereo Medellin
 https://stream-175.surfernetwork.com/nkp3d7237qzuv
+
+
+
+
+
+
+
 #EXTINF:-1 tvg-name="🇲🇽 墨西哥 WLKQ La Raza 102.3/107.1" group-title="墨西哥",🇲🇽 墨西哥 WLKQ La Raza 102.3/107.1
 https://crystalout.surfernetwork.com:8001/WLKQ-FM_MP3
+
+
 #EXTINF:-1 tvg-name="🇧🇷 巴西 104 104.1" group-title="巴西",🇧🇷 巴西 104 104.1
 http://cast4.audiostream.com.br:8651/mp3
 #EXTINF:-1 tvg-name="🇧🇷 巴西 Digital Jazz" group-title="巴西",🇧🇷 巴西 Digital Jazz
@@ -963,6 +988,9 @@ https://lakalle.egostreaming.pe/radio/a7b9c3e4567f8d0123456789/
 https://playerservices.streamtheworld.com/api/livestream-redirect/WBBRAMAAC_SC
 #EXTINF:-1 tvg-name="🇨🇱 智利 Radio Bío-Bío Valdivia" group-title="智利",🇨🇱 智利 Radio Bío-Bío Valdivia
 https://unlimited5-us.dps.live/biobiovaldivia/aac/icecast.audio
+#EXTINF:-1 tvg-name="🇨🇱 智利 Tele13 Radio 103.3" group-title="智利",🇨🇱 智利 Tele13 Radio 103.3
+https://us-b4-p-e-qg12-audio.cdn.mdstrm.com/live-audio-aw/5c915613519bce27671c4caa
+
 #EXTINF:-1 tvg-name="🇺🇾 乌拉圭 🇺🇾 UY Babel" group-title="乌拉圭",🇺🇾 乌拉圭 🇺🇾 UY Babel
 https://radios.iwstreaming.uy/8030/stream
 #EXTINF:-1 tvg-name="🇺🇾 乌拉圭 🇺🇾 UY Clasica 650" group-title="乌拉圭",🇺🇾 乌拉圭 🇺🇾 UY Clasica 650
@@ -971,6 +999,7 @@ https://radios.iwstreaming.uy/8032/stream
 http://radio1.dl.uy:9950/?type=http&nocache=2780
 #EXTINF:-1 tvg-name="🇺🇾 乌拉圭 🇺🇾 UY Emisora del Sur 1290" group-title="乌拉圭",🇺🇾 乌拉圭 🇺🇾 UY Emisora del Sur 1290
 https://radios.iwstreaming.uy/8034/stream
+
 #EXTINF:-1 tvg-name="🇦🇷 阿根廷 Radio 3 780" group-title="阿根廷",🇦🇷 阿根廷 Radio 3 780
 https://radio01.ferozo.com/proxy/ra01000981?mp=/stream
 #EXTINF:-1 tvg-name="🇦🇷 阿根廷 Radio Panorama 100.1" group-title="阿根廷",🇦🇷 阿根廷 Radio Panorama 100.1
@@ -1445,6 +1474,7 @@ https://cloud11.vsgtech.co/proxy/tangoradio/stream
 https://cloud11.vsgtech.co/proxy/zonalibre/stream
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 Univalle Estereo 105.3" group-title="哥伦比亚",🇨🇴 哥伦比亚 Univalle Estereo 105.3
 https://uv-stereo.univalle.edu.co:8000/envivo.mp3
+
 #EXTINF:-1 tvg-name="🇧🇷 巴西 Rádio Criatividade 98.9" group-title="巴西",🇧🇷 巴西 Rádio Criatividade 98.9
 https://s04.maxcast.com.br:8148/live
 #EXTINF:-1 tvg-name="🇧🇷 巴西 Rádio PT" group-title="巴西",🇧🇷 巴西 Rádio PT
@@ -1899,5 +1929,6 @@ https://sonic.portalfoxmix.cl:7128/;
 http://icecast.centaury.cl:7610/SSDEMO
 #EXTINF:-1 tvg-name="🇨🇱 智利 Retro Tops" group-title="智利",🇨🇱 智利 Retro Tops
 https://sonic.portalfoxmix.cl/9942/stream
+
 #EXTINF:-1 tvg-name="🇧🇷 巴西 Jovem Pan 103.3 Patos de Minas" group-title="巴西",🇧🇷 巴西 Jovem Pan 103.3 Patos de Minas
 https://shout25.crossradio.com.br:24030//1

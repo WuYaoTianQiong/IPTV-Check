@@ -71,6 +71,8 @@ https://live.ottiptv.cc/yy/1352475619
 https://live.ottiptv.cc/yy/1382749903
 #EXTINF:-1 tvg-name="西游记续集" group-title="影视轮播",西游记续集
 http://www.goodiptv.club/douyu/3113309
+#EXTINF:-1 tvg-name="三国演义" group-title="影视轮播",三国演义
+https://live.ottiptv.cc/huya/11602081
 #EXTINF:-1 tvg-name="新白娘子传奇" group-title="影视轮播",新白娘子传奇
 https://live.ottiptv.cc/yy/1354490667
 #EXTINF:-1 tvg-name="柳舟计" group-title="影视轮播",柳舟计
@@ -103,6 +105,8 @@ https://live.ottiptv.cc/huya/11342418
 https://live.ottiptv.cc/yy/1382735624
 #EXTINF:-1 tvg-name="芈月传" group-title="影视轮播",芈月传
 https://live.ottiptv.cc/huya/11352975
+#EXTINF:-1 tvg-name="天龙八部" group-title="影视轮播",天龙八部
+https://live.ottiptv.cc/yy/1351814644
 #EXTINF:-1 tvg-name="谈判专家" group-title="影视轮播",谈判专家
 https://live.ottiptv.cc/yy/1382735560
 #EXTINF:-1 tvg-name="龙门飞甲" group-title="影视轮播",龙门飞甲
@@ -111,14 +115,32 @@ http://jsmov2.a.yximgs.com/bs3/video-hls/5203346449046555193_hlsb.m3u8
 https://vip.ffzy-play7.com/20230116/11563_b9f44814/index.m3u8
 #EXTINF:-1 tvg-name="数码时代" group-title="影视轮播",数码时代
 http://ali-m-l.cztv.com/channels/lantian/channel12/720p.m3u8?zzhed
+#EXTINF:-1 tvg-name="七龙珠" group-title="影视轮播",七龙珠
+https://live.metshop.top/huya/11601966
 #EXTINF:-1 tvg-name="海绵宝宝" group-title="影视轮播",海绵宝宝
 https://live.metshop.top/douyu/3949681
+#EXTINF:-1 tvg-name="中华小当家" group-title="影视轮播",中华小当家
+https://live.metshop.top/huya/11342413
 #EXTINF:-1 tvg-name="漫画解说" group-title="影视轮播",漫画解说
 https://www.goodiptv.club/douyu/5907076
+#EXTINF:-1 tvg-name="猫和老鼠" group-title="影视轮播",猫和老鼠
+https://live.metshop.top/huya/11352879
+#EXTINF:-1 tvg-name="笑傲江湖" group-title="影视轮播",笑傲江湖
+https://live.metshop.top/huya/23865142
+#EXTINF:-1 tvg-name="笑傲江湖" group-title="影视轮播",笑傲江湖
+https://live.metshop.top/huya/26355790
+#EXTINF:-1 tvg-name="天龙八部" group-title="影视轮播",天龙八部
+https://live.metshop.top/huya/20985816
 #EXTINF:-1 tvg-name="三国演义" group-title="影视轮播",三国演义
 https://live.metshop.top/huya/11602081
+#EXTINF:-1 tvg-name="西游记" group-title="影视轮播",西游记
+https://live.metshop.top/huya/26355861
+#EXTINF:-1 tvg-name="封神榜" group-title="影视轮播",封神榜
+https://live.metshop.top/huya/29465849
 #EXTINF:-1 tvg-name="封神榜" group-title="影视轮播",封神榜
 https://live.ottiptv.cc/huya/29465849
+#EXTINF:-1 tvg-name="射雕英雄传" group-title="影视轮播",射雕英雄传
+https://live.metshop.top/huya/23824164
 #EXTINF:-1 tvg-name="射雕英雄传" group-title="影视轮播",射雕英雄传
 https://live.ottiptv.cc/huya/23824164
 #EXTINF:-1 tvg-name="飞碟之谜02" group-title="景区慢直播",飞碟之谜02

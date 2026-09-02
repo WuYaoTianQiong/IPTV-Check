@@ -13,12 +13,15 @@ https://video09.logicahost.com.br/redebrasiloficial/redebrasiloficial/playlist.m
 https://turnerlive.warnermediacdn.com/hls/live/586495/cnngo/cnn_slate/VIDEO_0_3564000.m3u8
 #EXTINF:-1 tvg-name="🇺🇸 美国 SABC News" group-title="美国",🇺🇸 美国 SABC News
 https://sabconetanw.cdn.mangomolo.com/news/smil:news.stream.smil/chunklist_b250000_t64MjQwcA==.m3u8
+
+
 #EXTINF:-1 tvg-name="🇧🇷 巴西 TV Câmara" group-title="巴西",🇧🇷 巴西 TV Câmara
 https://stream3.camara.gov.br/tv1/manifest.m3u8
 #EXTINF:-1 tvg-name="🇧🇷 巴西 TV Cultura" group-title="巴西",🇧🇷 巴西 TV Cultura
 https://player-tvcultura.stream.uol.com.br/live/tvcultura.m3u8
 #EXTINF:-1 tvg-name="🇦🇷 阿根廷 TV Universidad" group-title="阿根廷",🇦🇷 阿根廷 TV Universidad
 https://stratus.stream.cespi.unlp.edu.ar/hls/tvunlp.m3u8
+
 #EXTINF:-1 tvg-name="🇺🇸 美国 Bloomberg Asia" group-title="美国",🇺🇸 美国 Bloomberg Asia
 https://epg.pw/stream/d2edf469b9079064a283f4b0811cbf6f2597ebbb3d08dcf77036a4b5a791b7cf.m3u8
 #EXTINF:-1 tvg-name="🇺🇸 美国 Newsmax" group-title="美国",🇺🇸 美国 Newsmax

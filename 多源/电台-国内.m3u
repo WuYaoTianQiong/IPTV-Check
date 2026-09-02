@@ -18,11 +18,15 @@ https://rthkaudio1-lh.akamaihd.net/i/radio1_1@355864/index_56_a-p.m3u8
 #EXTINF:-1 tvg-name="🇭🇰 香港 RTHK Radio 6" group-title="香港",🇭🇰 香港 RTHK Radio 6
 http://satellitepull.cnr.cn/live/wxxgzs/playlist.m3u8
 #EXTINF:-1 tvg-name="🇭🇰 香港 RTHK Radio 3" group-title="香港",🇭🇰 香港 RTHK Radio 3
+https://rthkaudio3-lh.akamaihd.net/i/radio3_1@355866/master.m3u8
+#EXTINF:-1 tvg-name="🇭🇰 香港 RTHK Radio 3" group-title="香港",🇭🇰 香港 RTHK Radio 3
 https://rthkaudio3-lh.akamaihd.net/i/radio3_1@355866/index_56_a-p.m3u8
 #EXTINF:-1 tvg-name="🇭🇰 香港 RTHK Radio 5" group-title="香港",🇭🇰 香港 RTHK Radio 5
 https://rthkaudio5-lh.akamaihd.net/i/radio5_1@355868/index_56_a-p.m3u8
 #EXTINF:-1 tvg-name="🇨🇳 中国 广东珠江" group-title="地方/专业频道",🇨🇳 中国 广东珠江
 https://live.ximalaya.com/radio-first-page-app/live/252/64.m3u8?transcode=ts
+#EXTINF:-1 tvg-name="🇨🇳 中国 广东珠江" group-title="地方/专业频道",🇨🇳 中国 广东珠江
+http://live.xmcdn.com/live/252/64.m3u8
 #EXTINF:-1 tvg-name="🇨🇳 中国 浙江生活" group-title="地方/专业频道",🇨🇳 中国 浙江生活
 http://ls.qingting.fm/live/1099.m3u8
 #EXTINF:-1 tvg-name="🇨🇳 中国 北京生活" group-title="地方/专业频道",🇨🇳 中国 北京生活
@@ -35,6 +39,8 @@ http://ls.qingting.fm/live/1222.m3u8
 http://live.xmcdn.com/live/789/64.m3u8
 #EXTINF:-1 tvg-name="🇨🇳 中国 衡水公共" group-title="地方/专业频道",🇨🇳 中国 衡水公共
 http://ls.qingting.fm/live/2810.m3u8
+#EXTINF:-1 tvg-name="🇨🇳 中国 河北农民" group-title="地方/专业频道",🇨🇳 中国 河北农民
+https://radio.pull.hebtv.com/live/hebnczx.m3u8
 #EXTINF:-1 tvg-name="🇨🇳 中国 山东体育" group-title="地方/专业频道",🇨🇳 中国 山东体育
 http://live.xmcdn.com/live/805/64.m3u8
 #EXTINF:-1 tvg-name="🇨🇳 中国 六安公共" group-title="地方/专业频道",🇨🇳 中国 六安公共
@@ -43,6 +49,8 @@ http://ls.qingting.fm/live/1794199.m3u8
 http://live.xmcdn.com/live/1205/64.m3u8
 #EXTINF:-1 tvg-name="🇨🇳 中国 上海第一财经" group-title="地方/专业频道",🇨🇳 中国 上海第一财经
 https://satellitepull.cnr.cn/live/wx32dycjgb/playlist.m3u8
+#EXTINF:-1 tvg-name="🇨🇳 中国 福建经济" group-title="地方/专业频道",🇨🇳 中国 福建经济
+http://satellitepull.cnr.cn/live/wx32fjdnjjgb/playlist.m3u8
 #EXTINF:-1 tvg-name="🇨🇳 中国 河北农民" group-title="地方/专业频道",🇨🇳 中国 河北农民
 http://ls.qingting.fm/live/1650.m3u8
 #EXTINF:-1 tvg-name="🇨🇳 中国 甘肃经济" group-title="地方/专业频道",🇨🇳 中国 甘肃经济
@@ -75,6 +83,8 @@ http://sk.cri.cn/hxfh.m3u8
 http://sk.cri.cn/905.m3u8
 #EXTINF:-1 tvg-name="🇨🇳 中国 河南天籁之音" group-title="地方/专业频道",🇨🇳 中国 河南天籁之音
 http://stream.hndt.com/live/gudian/playlist.m3u8
+#EXTINF:-1 tvg-name="🇨🇳 中国 CCTV4" group-title="央视频道",🇨🇳 中国 CCTV4
+https://piccpndali.v.myalicdn.com/audio/cctvamerica_2.m3u8
 #EXTINF:-1 tvg-name="🇨🇳 中国 CCTV13" group-title="央视频道",🇨🇳 中国 CCTV13
 https://piccpndali.v.myalicdn.com/audio/cctv13_2.m3u8
 #EXTINF:-1 tvg-name="🇨🇳 中国 CCTV12" group-title="央视频道",🇨🇳 中国 CCTV12
@@ -116,6 +126,8 @@ https://live.ximalaya.com/radio-first-page-app/live/245/64.m3u8?transcode=ts
 #EXTINF:-1 tvg-name="🇨🇳 中国 杭州综合" group-title="新闻综合/教育纪录",🇨🇳 中国 杭州综合
 http://live.xmcdn.com/live/1845/64.m3u8
 #EXTINF:-1 tvg-name="🇨🇳 中国 北京新闻" group-title="新闻综合/教育纪录",🇨🇳 中国 北京新闻
+https://wstvcpudali.v.myalicdn.com/wstvcpud/udrmbtv9_1/index.m3u8?adapt=0&BR=audio
+#EXTINF:-1 tvg-name="🇨🇳 中国 北京新闻" group-title="新闻综合/教育纪录",🇨🇳 中国 北京新闻
 http://live.xmcdn.com/live/91/64.m3u8
 #EXTINF:-1 tvg-name="🇨🇳 中国 靖江新闻综合" group-title="新闻综合/教育纪录",🇨🇳 中国 靖江新闻综合
 http://ls.qingting.fm/live/23797.m3u8
@@ -143,8 +155,12 @@ http://stream3.jlntv.cn:80/aac_dfgb/playlist.m3u8
 http://stream3.jlntv.cn:80/aac_slgb/playlist.m3u8
 #EXTINF:-1 tvg-name="🇨🇳 中国 通化县综合" group-title="新闻综合/教育纪录",🇨🇳 中国 通化县综合
 http://stream3.jlntv.cn:80/aac_thxgb/playlist.m3u8
+#EXTINF:-1 tvg-name="🇨🇳 中国 北京新闻" group-title="新闻综合/教育纪录",🇨🇳 中国 北京新闻
+https://satellitepull.cnr.cn/live/wxbjxwgb/playlist.m3u8
 #EXTINF:-1 tvg-name="🇨🇳 中国 长沙新闻综合" group-title="新闻综合/教育纪录",🇨🇳 中国 长沙新闻综合
 http://ls.qingting.fm/live/4877.m3u8
+#EXTINF:-1 tvg-name="🇨🇳 中国 福建新闻" group-title="新闻综合/教育纪录",🇨🇳 中国 福建新闻
+http://satellitepull.cnr.cn/live/wx32fjxwgb/playlist.m3u8
 #EXTINF:-1 tvg-name="🇨🇳 中国 海南新闻" group-title="新闻综合/教育纪录",🇨🇳 中国 海南新闻
 http://ls.qingting.fm/live/1861.m3u8
 #EXTINF:-1 tvg-name="🇨🇳 中国 大宁综合" group-title="新闻综合/教育纪录",🇨🇳 中国 大宁综合
@@ -161,10 +177,13 @@ http://satellitepull.cnr.cn/live/wxnhzs/playlist.m3u8
 http://playtv-live.ifeng.com/live/06OLEGEGM4G_audio.m3u8
 #EXTINF:-1 tvg-name="🇨🇳 中国 港澳台 凤凰资讯" group-title="港澳台",🇨🇳 中国 港澳台 凤凰资讯
 http://playtv-live.ifeng.com/live/06OLEEWQKN4_audio.m3u8
+
+
 #EXTINF:-1 tvg-name="🇭🇰 中国香港 Phoenix Club" group-title="中国香港",🇭🇰 中国香港 Phoenix Club
 http://phoenix-club.stream.laut.fm/phoenix-club?t302=2021-12-21_17-44-21&uuid=cfe6c249-d62c-4629-a870-911d30648bd4
 #EXTINF:-1 tvg-name="🇭🇰 中国香港 Radio Phoenix 89.5 FM" group-title="中国香港",🇭🇰 中国香港 Radio Phoenix 89.5 FM
 https://29083.live.streamtheworld.com/RADIO_PHOENIXAAC_SC
+
 #EXTINF:-1 tvg-name="🇨🇳 中国 China Plus Radio" group-title="中国",🇨🇳 中国 China Plus Radio
 http://sk.cri.cn/am846.m3u8
 #EXTINF:-1 tvg-name="🇨🇳 中国 Kiangsu Health Radio" group-title="中国",🇨🇳 中国 Kiangsu Health Radio
@@ -225,12 +244,19 @@ http://satellitepull.cnr.cn/live/wx32qhzygb/playlist.m3u8
 http://satellitepull.cnr.cn/live/wx32hljajgb/playlist.m3u8
 #EXTINF:-1 tvg-name="🇨🇳 中国 Heilongjiang Urban Women's Radio 102.1 (HD Sound Quality)" group-title="中国",🇨🇳 中国 Heilongjiang Urban Women's Radio 102.1 (HD Sound Quality)
 http://satellitepull.cnr.cn/live/wx32hljnxgb/playlist.m3u8
+
 #EXTINF:-1 tvg-name="🇨🇳 中国 第一财经" group-title="国内电台",🇨🇳 中国 第一财经
 http://live.xmcdn.com/live/56/64.m3u8
+#EXTINF:-1 tvg-name="🇨🇳 中国 第一财经" group-title="国内电台",🇨🇳 中国 第一财经
+http://a1live.livecdn.yicai.com/live/radio_tv.m3u8
 #EXTINF:-1 tvg-name="🇨🇳 中国 知否知否" group-title="国内电台",🇨🇳 中国 知否知否
 https://live.ottiptv.cc/yy/21881901
 #EXTINF:-1 tvg-name="🇨🇳 中国 快乐垂钓" group-title="国内电台",🇨🇳 中国 快乐垂钓
 http://drive.mxmy.net:8888/udp/239.3.1.164:8001
+#EXTINF:-1 tvg-name="🇨🇳 中国 第一财经" group-title="中国",🇨🇳 中国 第一财经
+http://satellitepull.cnr.cn/live/wx32dycjgb/playlist.m3u8
+#EXTINF:-1 tvg-name="🇨🇳 中国 第一财经" group-title="国内电台",🇨🇳 中国 第一财经
+http://ls.qingting.fm/live/276.m3u8
 #EXTINF:-1 tvg-name="🇨🇳 中国 Qianan Comprehensive Broadcasting" group-title="中国",🇨🇳 中国 Qianan Comprehensive Broadcasting
 http://stream7.jlntv.cn/qagb/playlist.m3u8
 #EXTINF:-1 tvg-name="🇨🇳 中国 Yunnan Traffic Voice 91.8" group-title="中国",🇨🇳 中国 Yunnan Traffic Voice 91.8
