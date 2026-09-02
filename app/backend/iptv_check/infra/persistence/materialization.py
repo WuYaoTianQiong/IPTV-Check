@@ -1,6 +1,8 @@
 import json
 import logging
 import asyncio
+import re
+import threading
 from datetime import datetime
 from typing import Optional
 
@@ -34,23 +36,42 @@ class MaterializationService:
     def __init__(self, event_store: EventStore):
         self._store = event_store
         self._materialized_sessions: set[str] = set()
+        # 物化互斥锁：后台物化（检测完成）与按需物化（查询兜底）可能并发，
+        # 避免同一会话被两个线程同时物化导致 channel_results 重复行
+        self._lock = threading.Lock()
         self._load_materialized_sessions()
 
     def _load_materialized_sessions(self):
         try:
             with self._store.engine.connect() as conn:
+                # 物化表索引：加速按 session 过滤、频道分组/去重计数与延迟排序
+                for idx_sql in (
+                    "CREATE INDEX IF NOT EXISTS idx_chr_session ON channel_results(session_id)",
+                    "CREATE INDEX IF NOT EXISTS idx_chr_session_name ON channel_results(session_id, name)",
+                    "CREATE INDEX IF NOT EXISTS idx_chr_session_valid_latency ON channel_results(session_id, is_valid, latency)",
+                ):
+                    try:
+                        conn.execute(sa_text(idx_sql))
+                    except Exception:
+                        logger.debug("创建物化索引失败（可能已存在）: %s", idx_sql[:80])
+                conn.commit()
                 rows = conn.execute(
                     sa_text("SELECT DISTINCT session_id FROM channel_results")
                 ).fetchall()
                 self._materialized_sessions = {r[0] for r in rows}
                 logger.info("已物化会话数: %d", len(self._materialized_sessions))
-        except Exception:
+        except Exception as e:
+            logger.warning("加载物化会话失败，重置为空: %s", e)
             self._materialized_sessions = set()
 
     def is_materialized(self, session_id: str) -> bool:
         return session_id in self._materialized_sessions
 
     def materialize_session(self, session_id: str) -> int:
+        with self._lock:
+            return self._materialize_session_impl(session_id)
+
+    def _materialize_session_impl(self, session_id: str) -> int:
         if session_id in self._materialized_sessions:
             return 0
 
@@ -87,6 +108,7 @@ class MaterializationService:
                         json_extract(payload, '$.tvg_name'),
                         json_extract(payload, '$.clean_name'),
                         json_extract(payload, '$.frequency'),
+                        json_extract(payload, '$.media_type'),
                         created_at
                     FROM check_events
                     WHERE session_id = :sid AND event_type = 'channel_checked'
@@ -129,10 +151,20 @@ class MaterializationService:
 
                     is_valid = 1 if evt[3] else 0
                     is_radio = 1 if evt[4] else 0
+                    # 检测事实优先：流首包/Content-Type 判定的媒体类型是电视/电台的权威依据
+                    media_type = (evt[19] or "").lower()
+                    if media_type == "audio":
+                        is_radio = 1
+                    elif media_type == "video":
+                        is_radio = 0
 
                     quality_tier = evt[14] or ""
                     if not quality_tier:
                         quality_tier = "valid" if is_valid else "invalid"
+                    elif is_valid == 0 and quality_tier in ("valid", "likely_valid"):
+                        # 防御：明细中 is_valid 与 quality_tier 必须一致，
+                        # 否则"无效却标记有效"的脏组合会污染统计与导出
+                        quality_tier = "invalid"
 
                     url_key = evt[2] or ""
                     recheck = recheck_map.get(url_key)
@@ -151,6 +183,8 @@ class MaterializationService:
                         quality_tier = recheck[5] or ""
                         if not quality_tier:
                             quality_tier = "valid" if is_valid else "invalid"
+                        elif is_valid == 0 and quality_tier in ("valid", "likely_valid"):
+                            quality_tier = "invalid"
                         rc_resolution = recheck[6] or ""
 
                     name_val = evt[0] or ""
@@ -186,14 +220,17 @@ class MaterializationService:
                         tvg_name=evt[16] or "",
                         clean_name=evt[17] or "",
                         frequency=evt[18] or "",
-                        created_at=_parse_dt(evt[19]) or cn_now(),
+                        created_at=_parse_dt(evt[20]) or cn_now(),
                     )
                     session.add(result)
                 except Exception as e:
                     logger.warning("物化单条结果失败: %s", e)
 
-            self._upsert_summary(session, session_id, events)
             session.commit()
+
+        # 汇总计数一律从明细聚合，保证明细与汇总同源
+        # （避免 recheck 覆盖明细后 summary 仍按原始事件计算导致的长期漂移）
+        self._refresh_summary(session_id)
 
         self._materialized_sessions.add(session_id)
         logger.info("会话 %s 物化完成: %d 条结果", session_id, len(events))
@@ -210,6 +247,11 @@ class MaterializationService:
 
                 is_valid = 1 if payload.get("is_valid") else 0
                 is_radio = 1 if payload.get("is_radio") else 0
+                media_type = (payload.get("media_type") or "").lower()
+                if media_type == "audio":
+                    is_radio = 1
+                elif media_type == "video":
+                    is_radio = 0
 
                 ch = payload.get("channel", {})
                 name_val = ch.get("name", "")
@@ -278,51 +320,62 @@ class MaterializationService:
     async def materialize_session_async(self, session_id: str) -> int:
         return await asyncio.to_thread(self.materialize_session, session_id)
 
-    def _upsert_summary(self, session: Session, session_id: str, events: list) -> None:
-        total = len(events)
-        valid_count = sum(1 for e in events if e[3])
-        invalid_count = total - valid_count
-        tv_count = sum(1 for e in events if not e[4])
-        radio_count = sum(1 for e in events if e[4])
+    def _refresh_summary(self, session_id: str) -> None:
+        """从 channel_results 明细聚合该会话的汇总统计。
 
-        latencies = []
-        for e in events:
-            try:
-                lat = float(e[5]) if e[5] is not None and float(e[5]) >= 0 else None
-                if lat is not None:
-                    latencies.append(lat)
-            except (ValueError, TypeError):
-                pass
-        avg_latency = sum(latencies) / len(latencies) if latencies else 0
+        明细写入与汇总必须同源，否则 recheck 覆盖明细后 summary 仍按
+        原始事件计算，长期漂移（表现为 valid_count 与明细对不上）。
+        """
+        with Session(self._store.engine) as session:
+            row = session.exec(
+                sa_text("""
+                    SELECT
+                        COUNT(*) AS total,
+                        SUM(CASE WHEN is_valid = 1 THEN 1 ELSE 0 END) AS valid,
+                        SUM(CASE WHEN is_valid = 0 THEN 1 ELSE 0 END) AS invalid,
+                        SUM(CASE WHEN IFNULL(is_radio, 0) = 0 THEN 1 ELSE 0 END) AS tv,
+                        SUM(CASE WHEN is_radio = 1 THEN 1 ELSE 0 END) AS radio,
+                        AVG(CASE WHEN latency >= 0 THEN latency END) AS avg_lat
+                    FROM channel_results WHERE session_id = :sid
+                """).bindparams(sid=session_id)
+            ).one()
 
-        existing = session.exec(
-            select(SessionSummaryModel).where(SessionSummaryModel.session_id == session_id)
-        ).first()
+            total = row[0] or 0
+            valid_count = row[1] or 0
+            invalid_count = row[2] or 0
+            tv_count = row[3] or 0
+            radio_count = row[4] or 0
+            avg_latency = row[5] if row[5] is not None else 0
 
-        now = cn_now()
-        if existing:
-            existing.total_count = total
-            existing.valid_count = valid_count
-            existing.invalid_count = invalid_count
-            existing.tv_count = tv_count
-            existing.radio_count = radio_count
-            existing.avg_latency = avg_latency
-            existing.status = "completed"
-            existing.updated_at = now
-        else:
-            summary = SessionSummaryModel(
-                session_id=session_id,
-                total_count=total,
-                valid_count=valid_count,
-                invalid_count=invalid_count,
-                tv_count=tv_count,
-                radio_count=radio_count,
-                avg_latency=avg_latency,
-                status="completed",
-                created_at=now,
-                updated_at=now,
-            )
-            session.add(summary)
+            existing = session.exec(
+                select(SessionSummaryModel).where(SessionSummaryModel.session_id == session_id)
+            ).first()
+
+            now = cn_now()
+            if existing:
+                existing.total_count = total
+                existing.valid_count = valid_count
+                existing.invalid_count = invalid_count
+                existing.tv_count = tv_count
+                existing.radio_count = radio_count
+                existing.avg_latency = avg_latency
+                existing.status = "completed"
+                existing.updated_at = now
+            else:
+                summary = SessionSummaryModel(
+                    session_id=session_id,
+                    total_count=total,
+                    valid_count=valid_count,
+                    invalid_count=invalid_count,
+                    tv_count=tv_count,
+                    radio_count=radio_count,
+                    avg_latency=avg_latency,
+                    status="completed",
+                    created_at=now,
+                    updated_at=now,
+                )
+                session.add(summary)
+            session.commit()
 
     def repair_is_radio(self) -> int:
         with Session(self._store.engine) as session:
@@ -338,7 +391,9 @@ class MaterializationService:
                     lower(url) LIKE '%qingting.fm%' OR
                     lower(url) LIKE '%xmcdn.com%' OR
                     lower(url) LIKE '%ximalaya%' OR
-                    lower(url) LIKE '%lrc.la%'
+                    lower(url) LIKE '%lrc.la%' OR
+                    lower(url) GLOB '*://radio[0-9.:]*' OR
+                    lower(url) GLOB '*.radio[0-9.:]*'
                 )
             """))
             fixed = session.exec(sa_text("SELECT changes()")).scalar()
@@ -358,7 +413,9 @@ class MaterializationService:
                        lower(json_extract(payload, '$.url')) LIKE '%qingting.fm%' OR
                        lower(json_extract(payload, '$.url')) LIKE '%xmcdn.com%' OR
                        lower(json_extract(payload, '$.url')) LIKE '%ximalaya%' OR
-                       lower(json_extract(payload, '$.url')) LIKE '%lrc.la%'
+                       lower(json_extract(payload, '$.url')) LIKE '%lrc.la%' OR
+                       lower(json_extract(payload, '$.url')) GLOB '*://radio[0-9.:]*' OR
+                       lower(json_extract(payload, '$.url')) GLOB '*.radio[0-9.:]*'
                    )"""
             )).all()
 
@@ -376,8 +433,13 @@ class MaterializationService:
                 url = payload.get("url", "")
                 text_lower = f"{name} {group}".lower()
                 url_lower = (url or "").lower()
+                media_type = (payload.get("media_type") or "").lower()
+                if media_type in ("audio", "video"):
+                    # 已有检测事实（流首包/Content-Type 判定），无需启发式修复
+                    continue
                 if (any(kw in text_lower for kw in _RADIO_KEYWORDS) or
-                    any(kw in url_lower for kw in _RADIO_URL_KEYWORDS)):
+                    any(kw in url_lower for kw in _RADIO_URL_KEYWORDS) or
+                    re.search(r"://[^/]*radio(?:\d|\.|:)", url_lower)):
                     payload["is_radio"] = True
                     session.exec(sa_text(
                         "UPDATE check_events SET payload = :p WHERE id = :id"

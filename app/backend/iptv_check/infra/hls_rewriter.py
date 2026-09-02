@@ -4,10 +4,11 @@ HLS Playlist URL Rewriter — standalone, testable module.
 Rewrites segment and playlist URLs in M3U8 manifests so all requests
 route through the proxy, avoiding cross-origin and referer issues.
 """
-import base64
 import re
 import logging
 from urllib.parse import urljoin
+
+from iptv_check.infra.proxy_url import encode_proxy_param, encode_proxy_url
 
 logger = logging.getLogger(__name__)
 
@@ -29,8 +30,7 @@ _SEGMENT_EXTENSIONS = (".m3u8", ".ts", ".aac", ".mp4", ".mp3", ".m4s", ".m4a", "
 
 def _encode_proxy_url(url: str, proxy_base: str) -> str:
     """Encode a target URL into a proxy URL."""
-    encoded = base64.b64encode(url.encode("utf-8")).decode("utf-8")
-    return f"{proxy_base}?url={encoded}"
+    return encode_proxy_url(url, proxy_base)
 
 
 def rewrite_hls_urls(
@@ -118,5 +118,4 @@ def _resolve_and_encode(url: str, base_url: str, proxy_base: str) -> str:
         full_url = url
     else:
         full_url = urljoin(base_url, url)
-    encoded = base64.b64encode(full_url.encode("utf-8")).decode("utf-8")
-    return encoded
+    return encode_proxy_param(full_url)

@@ -1,12 +1,13 @@
 """
 Unified player HTML renderer — single source of truth for all player entry points.
 """
-import base64
-import json
 import logging
-import urllib.parse
 from pathlib import Path
 from typing import Optional
+
+from jinja2 import Environment
+
+from iptv_check.infra.proxy_url import encode_proxy_param
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +25,8 @@ class PlayerRenderer:
     def __init__(self, template_dir: Optional[Path] = None):
         self._template_dir = template_dir or _TEMPLATE_DIR
         self._cached_template: Optional[str] = None
+        # Jinja2 渲染：HTML 位置自动转义防 XSS；JS 位置由模板中的 |tojson 安全输出。
+        self._env = Environment(autoescape=True, keep_trailing_newline=True)
 
     @property
     def template_path(self) -> Path:
@@ -41,10 +44,7 @@ class PlayerRenderer:
 
     def _encode_proxy_url(self, stream_url: str) -> str:
         """Base64-encode then URL-quote for safe embedding in proxy query param."""
-        if not stream_url:
-            return ""
-        encoded = base64.b64encode(stream_url.encode("utf-8")).decode("utf-8")
-        return urllib.parse.quote(encoded, safe="")
+        return encode_proxy_param(stream_url)
 
     def render(
         self,
@@ -55,6 +55,8 @@ class PlayerRenderer:
         channel_group: str = "",
         country_flag: str = "",
         frequency: str = "",
+        tvg_id: str = "",
+        tvg_name: str = "",
     ) -> str:
         """
         Render the complete player HTML page.
@@ -66,30 +68,34 @@ class PlayerRenderer:
                      {url, latency, recommended (bool)}.
             is_radio: Whether this is a radio (audio-only) channel.
             frequency: Radio frequency info (e.g., "FM 104.5").
+            tvg_id: XMLTV channel id used for EPG lookup (fallback by channel name).
+            tvg_name: XMLTV display name used for EPG lookup (fallback by channel name).
         """
         template = self._read_template()
         proxy_url = f"/proxy?url={self._encode_proxy_url(stream_url)}" if stream_url else ""
 
         has_multi_sources = sources and len(sources) >= 1
+        # 节目单优先按 tvg-name 匹配（命中率更高），否则回退到频道名
+        epg_channel = tvg_name or channel_name
 
         variables = {
             "stream_url": stream_url,
             "channel_name": channel_name,
             "proxy_url": proxy_url,
             "sources": sources,
-            "sources_json": json.dumps(sources, ensure_ascii=False) if sources else "null",
             "recommended_idx": self._find_recommended_idx(sources) if sources else -1,
             "source_selector_class": "visible" if has_multi_sources else "",
-            "is_radio": "true" if is_radio else "false",
+            "is_radio": is_radio,
             "channel_group": channel_group,
             "country_flag": country_flag,
             "frequency": frequency,
+            "tvg_id": tvg_id,
+            "tvg_name": tvg_name,
+            "epg_channel": epg_channel,
         }
 
-        html = template
-        for key, value in variables.items():
-            html = html.replace("{{ " + key + " }}", str(value))
-        return html
+        template = self._env.from_string(self._read_template())
+        return template.render(**variables)
 
     @staticmethod
     def _find_recommended_idx(sources: list) -> int:

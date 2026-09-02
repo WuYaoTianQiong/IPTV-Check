@@ -13,6 +13,7 @@ from iptv_check.infra.disk_cache import DiskCacheManager
 from iptv_check.infra.event_bus import event_bus, Events
 from iptv_check.core.m3u8_validator import M3U8Validator
 from iptv_check.infra.config.settings import settings
+from iptv_check.infra.speed_measure import measure_speed_sync
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +57,7 @@ class ThreadPoolCheckEngine:
                             raise ValueError("非标准M3U8内容")
                         speed = self._m3u8.get_speed(channel.url, playlist_content, headers, timeout)
                     else:
-                        speed = self._test_speed(r.iter_content(chunk_size=8192), config.timeout_read)
+                        speed = measure_speed_sync(r.iter_content(chunk_size=8192), config.timeout_read, empty_result="∞")
                 else:
                     if is_m3u8:
                         playlist_content = r.text
@@ -157,25 +158,6 @@ class ThreadPoolCheckEngine:
         event_bus.emit(Events.CHANNEL_CHECKED, result=result)
         if on_result:
             on_result(result)
-
-    @staticmethod
-    def _test_speed(response_iterator, timeout: int) -> str:
-        try:
-            start_time = time.time()
-            downloaded_size = 0
-            for chunk in response_iterator:
-                downloaded_size += len(chunk)
-                if downloaded_size >= 256 * 1024:
-                    break
-                if time.time() - start_time > timeout / 2:
-                    return "N/A"
-            elapsed_time = time.time() - start_time
-            if elapsed_time > 0:
-                speed_kbps = (downloaded_size / 1024) / elapsed_time
-                return f"{speed_kbps:.2f}"
-            return "∞"
-        except Exception:
-            return "N/A"
 
     @staticmethod
     def _classify_error(exc: Exception) -> str:

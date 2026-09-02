@@ -8,7 +8,7 @@ from datetime import datetime
 
 from sqlmodel import SQLModel, Field, create_engine, Session, select
 from iptv_check.infra.cn_time import cn_now
-from sqlalchemy import Index, func, text as sa_text
+from sqlalchemy import Index, delete, func, text as sa_text
 
 logger = logging.getLogger(__name__)
 
@@ -110,8 +110,9 @@ class OnlineSourceModel(SQLModel, table=True):
 
 
 class EventStore:
-    def __init__(self, db_path: str):
+    def __init__(self, db_path: str = "", engine=None):
         self._db_path = db_path
+        self._injected_engine = engine
         self._engine = None
         self._current_session_id: str = ""
         self._write_semaphore = asyncio.Semaphore(1)
@@ -190,79 +191,24 @@ class EventStore:
     @property
     def engine(self):
         if self._engine is None:
-            db_dir = os.path.dirname(self._db_path)
-            os.makedirs(db_dir, exist_ok=True)
-            self._engine = create_engine(
-                f"sqlite:///{self._db_path}",
-                echo=False,
-                pool_pre_ping=True,
-                connect_args={"timeout": 30},
-            )
-            self._configure_pragma(self._engine)
-            SQLModel.metadata.create_all(self._engine)
-            # Ensure fetched_channels table exists
-            with self._engine.connect() as conn:
-                from sqlalchemy import text
-                conn.execute(
-                    text("""
-                        CREATE TABLE IF NOT EXISTS fetched_channels (
-                            id INTEGER PRIMARY KEY,
-                            url_key TEXT DEFAULT '',
-                            name TEXT DEFAULT '',
-                            url TEXT DEFAULT '',
-                            channel_group TEXT DEFAULT '',
-                            source_name TEXT DEFAULT '',
-                            source_id TEXT DEFAULT '',
-                            tvg_id TEXT DEFAULT '',
-                            tvg_name TEXT DEFAULT '',
-                            logo_url TEXT DEFAULT '',
-                            language TEXT DEFAULT '',
-                            country TEXT DEFAULT '',
-                            is_radio INTEGER DEFAULT 0,
-                            resolution TEXT DEFAULT '',
-                            fetched_at TEXT DEFAULT (datetime('now'))
-                        )
-                    """)
+            if self._injected_engine is not None:
+                # 生产环境复用应用共享引擎（schema 由 alembic 统一管理，
+                # 不再重复 create_all / 手写 DDL）
+                self._engine = self._injected_engine
+                logger.info("EventStore 复用共享引擎: %s", self._db_path or "injected")
+            else:
+                # 独立场景（测试/脚本）自建引擎，由 SQLModel 元数据建全部表
+                db_dir = os.path.dirname(self._db_path)
+                os.makedirs(db_dir, exist_ok=True)
+                self._engine = create_engine(
+                    f"sqlite:///{self._db_path}",
+                    echo=False,
+                    pool_pre_ping=True,
+                    connect_args={"timeout": 30},
                 )
-                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_fc_url_key ON fetched_channels(url_key)"))
-                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_fc_source_id ON fetched_channels(source_id)"))
-                conn.commit()
-            # Ensure check_history table exists (schema matches CheckHistoryModel in database.py)
-            with self._engine.connect() as conn:
-                from sqlalchemy import text
-                conn.execute(
-                    text("""
-                        CREATE TABLE IF NOT EXISTS check_history (
-                            session_id VARCHAR NOT NULL DEFAULT '',
-                            name VARCHAR NOT NULL DEFAULT '',
-                            total_count INTEGER NOT NULL DEFAULT 0,
-                            valid_count INTEGER NOT NULL DEFAULT 0,
-                            invalid_count INTEGER NOT NULL DEFAULT 0,
-                            elapsed_seconds FLOAT NOT NULL DEFAULT 0.0,
-                            created_at DATETIME NOT NULL,
-                            id INTEGER PRIMARY KEY AUTOINCREMENT
-                        )
-                    """)
-                )
-                conn.commit()
-                cr_cols = [row[1] for row in conn.execute(text("PRAGMA table_info(channel_results)")).fetchall()]
-                if "resolution" not in cr_cols:
-                    conn.execute(text("ALTER TABLE channel_results ADD COLUMN resolution TEXT DEFAULT ''"))
-                    conn.commit()
-                    logger.info("迁移: channel_results 增加 resolution 列")
-                if "tvg_name" not in cr_cols:
-                    conn.execute(text("ALTER TABLE channel_results ADD COLUMN tvg_name TEXT DEFAULT ''"))
-                    conn.commit()
-                    logger.info("迁移: channel_results 增加 tvg_name 列")
-                if "clean_name" not in cr_cols:
-                    conn.execute(text("ALTER TABLE channel_results ADD COLUMN clean_name TEXT DEFAULT ''"))
-                    conn.commit()
-                    logger.info("迁移: channel_results 增加 clean_name 列")
-                if "frequency" not in cr_cols:
-                    conn.execute(text("ALTER TABLE channel_results ADD COLUMN frequency TEXT DEFAULT ''"))
-                    conn.commit()
-                    logger.info("迁移: channel_results 增加 frequency 列")
-            logger.info("EventStore 初始化: %s", self._db_path)
+                self._configure_pragma(self._engine)
+                SQLModel.metadata.create_all(self._engine)
+                logger.info("EventStore 独立引擎初始化: %s", self._db_path)
         return self._engine
 
     def get_session(self) -> Session:
@@ -332,16 +278,18 @@ class EventStore:
                 for e in results
             ]
 
-    def save_history(self, session_id: str, total: int = 0, valid: int = 0, invalid: int = 0, elapsed: float = 0.0) -> None:
+    def save_history(self, session_id: str, total: int = 0, valid: int = 0, invalid: int = 0, elapsed: float = 0.0,
+                     check_mode: str = "", parent_session_id: str = "") -> None:
         """保存本次检测的历史记录到 check_history 表"""
         from sqlalchemy import text
         
         try:
             with self.engine.connect() as conn:
+                now = cn_now().isoformat()
                 conn.execute(
                     text("""
-                        INSERT OR REPLACE INTO check_history (session_id, name, total_count, valid_count, invalid_count, elapsed_seconds, created_at)
-                        VALUES (:session_id, :name, :total, :valid, :invalid, :elapsed, :created_at)
+                        INSERT OR REPLACE INTO check_history (session_id, name, total_count, valid_count, invalid_count, elapsed_seconds, created_at, last_updated, check_mode, parent_session_id)
+                        VALUES (:session_id, :name, :total, :valid, :invalid, :elapsed, :created_at, :last_updated, :check_mode, :parent_session_id)
                     """),
                     {
                         "session_id": session_id,
@@ -350,11 +298,15 @@ class EventStore:
                         "valid": valid,
                         "invalid": invalid,
                         "elapsed": elapsed,
-                        "created_at": cn_now().isoformat(),
+                        "created_at": now,
+                        "last_updated": now,
+                        "check_mode": check_mode,
+                        "parent_session_id": parent_session_id,
                     }
                 )
                 conn.commit()
-            logger.info("保存检测历史: session=%s, total=%d, valid=%d, invalid=%d", session_id, total, valid, invalid)
+            logger.info("保存检测历史: session=%s, total=%d, valid=%d, invalid=%d, mode=%s, parent=%s",
+                        session_id, total, valid, invalid, check_mode, parent_session_id)
         except Exception as e:
             logger.warning("保存检测历史失败: %s", e)
 
@@ -388,7 +340,7 @@ class EventStore:
         try:
             with self.engine.connect() as conn:
                 result = conn.execute(
-                    text("SELECT session_id, name, total_count, valid_count, invalid_count, elapsed_seconds, created_at FROM check_history ORDER BY created_at DESC LIMIT :limit"),
+                    text("SELECT session_id, name, total_count, valid_count, invalid_count, elapsed_seconds, created_at, last_updated, check_mode, parent_session_id FROM check_history ORDER BY created_at DESC LIMIT :limit"),
                     {"limit": limit}
                 ).fetchall()
                 return [
@@ -400,6 +352,10 @@ class EventStore:
                         "invalid": row[4],
                         "elapsed": row[5],
                         "created_at": row[6],
+                        # 二次复检完成后由 refresh-latency / thorough-check 更新
+                        "last_updated": row[7] or row[6],
+                        "check_mode": row[8] or "",
+                        "parent_session_id": row[9] or "",
                     }
                     for row in result
                 ]
@@ -471,10 +427,18 @@ class SourceStore:
                 seen_urls.add(s.url)
                 deduped.append(s)
         with Session(self._event_store.engine) as session:
-            session.exec(sa_text("DELETE FROM online_sources"))
+            incoming_ids = set()
             for source in deduped:
                 model = self._source_to_model(source)
-                session.add(model)
+                # 按主键 upsert：存在则更新、不存在则插入，
+                # 避免 DELETE 全表导致的 ID 失效、外键失效与写放大
+                session.merge(model)
+                incoming_ids.add(model.id)
+            # 删除本次同步未出现的旧行，保持「全量同步」语义
+            existing_ids = set(session.exec(select(OnlineSourceModel.id)).all())
+            stale = existing_ids - incoming_ids
+            if stale:
+                session.exec(delete(OnlineSourceModel).where(OnlineSourceModel.id.in_(stale)))
             session.commit()
         logger.info("保存 %d 个频道源到数据库（去重后）", len(deduped))
 
@@ -483,8 +447,8 @@ class SourceStore:
             return session.exec(select(func.count(OnlineSourceModel.id))).one()
 
     def migrate_from_json(self, json_path: str) -> int:
-        """从 local_sources.json 迁移到数据库"""
-        from iptv_check.models.source import OnlineSource
+        """从 local_sources.json 迁移到数据库（过滤历史遗留的 M3U 拆分频道级源）"""
+        from iptv_check.models.source import OnlineSource, is_legacy_channel_source
         if not os.path.exists(json_path):
             return 0
         existing = self.count()
@@ -497,7 +461,13 @@ class SourceStore:
             sources_data = data.get("sources", []) if isinstance(data, dict) else data
             if not isinstance(sources_data, list):
                 return 0
-            sources = [OnlineSource.from_dict(s) for s in sources_data]
+            sources = [
+                OnlineSource.from_dict(s) for s in sources_data
+                if not is_legacy_channel_source(s)
+            ]
+            if not sources:
+                logger.info("JSON 中无可迁移的源（历史遗留频道级源已全部过滤）")
+                return 0
             self.save_all(sources)
             count = self.count()
             logger.info("从 JSON 迁移 %d 个频道源到数据库", count)

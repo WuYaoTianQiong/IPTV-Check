@@ -88,7 +88,9 @@ class EPGParser:
             for ch_id, epg_ch in epg_data.items():
                 clean_id = ch_id.replace("-", "").replace("_", "").replace(" ", "").lower()
                 clean_name = name_lower.replace("-", "").replace("_", "").replace(" ", "")
-                if clean_id and clean_name and (clean_id in clean_name or clean_name in clean_id):
+                # 归一化后 id 太短（如 "C"）会误命中任意含该字母的频道名，
+                # 要求 id 至少 3 字符再参与子串匹配，避免单/双字符 id 的灾难性误匹配。
+                if clean_id and clean_name and len(clean_id) >= 3 and (clean_id in clean_name or clean_name in clean_id):
                     return epg_ch
 
         return None

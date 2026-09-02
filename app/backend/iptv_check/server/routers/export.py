@@ -26,6 +26,11 @@ class ExportRequest(BaseModel):
     country_scope: str = "all"
     countries: List[str] = []
     with_logo: bool = False
+    # 频道在播放器里的分组：original=保持原分组 / media=只按电视·广播
+    # / country=按国家地区 / media_country=电视·广播 × 国家地区（国内央视/卫视/省份，国外国家名）
+    group_mode: str = "original"
+    # 外语频道显示名加「国旗+中文归属」前缀（仅影响播放器显示名，不改 tvg-name，避免破坏 EPG）
+    annotate_country_name: bool = False
 
 
 class PlaylistEpgRequest(BaseModel):
@@ -40,6 +45,8 @@ class PlaylistEpgRequest(BaseModel):
     epg_url: str = ""
     local_isp: str = "未知"
     with_logo: bool = False
+    group_mode: str = "original"
+    annotate_country_name: bool = False
 
 
 class ConvertRequest(BaseModel):
@@ -160,6 +167,86 @@ def _sanitize_filename(name):
     return cleaned or "未命名"
 
 
+# 中国大陆“央视频道”类判断词（用于导出分组把央视台独立成组）
+_CN_CORE_TV_KW = ("cctv", "cgtn", "cri", "央视", "中央")
+
+
+def _media_label(ch) -> str:
+    return "广播" if ch.is_radio else "电视"
+
+
+def _annotate_results(results, group_mode: str = "original"):
+    """导出前补全归属地并可选改写 m3u 分组标题。
+
+    每个频道回填两个运行时字段：
+      - channel.country：ISO 国家码（对频道名/原分组兜底推断，非仅靠 m3u 自带 country）
+      - channel.region ：归属地中文标签（国外=国家名，港澳台=中国香港/澳门/台湾，
+                          国内=央视/卫视/省份，判不出为空串）
+
+    group_mode:
+      - original    不改写分组
+      - media       group-title 改为「电视/广播」
+      - country     group-title 改为归属地（日本/中国香港/央视…）
+      - media_country group-title 改为「电视·归属 / 广播·归属」
+    """
+    from iptv_check.core.parser import _infer_country_code, _COUNTRY_NAME_ZH
+    from iptv_check.infra.persistence.read_model import _infer_region
+    for r in results:
+        ch = r.channel
+        name = ch.name or ""
+        grp = ch.group or ""
+        code = _infer_country_code(name, grp, ch.country or "")
+        ch.country = code or ""
+        region = _infer_region(name, grp, code or "") if code else ""
+        ch.region = region or ""
+        if group_mode == "original":
+            continue
+        # 中国大陆：央视/卫视独立分组，其余用省份/中国
+        seg = ""
+        if code == "CN":
+            text = f"{name} {grp}".lower()
+            if any(kw in text for kw in _CN_CORE_TV_KW):
+                seg = "央视"
+            elif "卫视" in text:
+                seg = "卫视"
+            else:
+                seg = region or "中国"
+        else:
+            seg = region or (_COUNTRY_NAME_ZH.get((code or "").upper(), "") if code else "")
+        if not seg:
+            seg = "未识别"
+        media = _media_label(ch)
+        if group_mode == "media":
+            ch.group = media
+        elif group_mode == "country":
+            ch.group = seg
+        elif group_mode == "media_country":
+            ch.group = f"{media}·{seg}"
+    return results
+
+
+def _make_name_fn(annotate: bool):
+    """返回 m3u 显示名处理器：给外语/港澳台频道名加「国旗+中文归属」前缀。
+
+    只改 EXTINF 逗号后播放器显示名；tvg-name 属性保持原名，
+    从而 EPG 节目单瘦身导出与自动识别不受影响。国内频道不加（中文名已可辨）。
+    """
+    if not annotate:
+        return None
+    from iptv_check.core.parser import _COUNTRY_NAME_ZH, _country_to_flag
+
+    def name_fn(ch):
+        base = ch.tvg_name or ch.name or ""
+        code = (getattr(ch, "country", "") or "").strip().upper()
+        if code and code != "CN":
+            seg = getattr(ch, "region", "") or _COUNTRY_NAME_ZH.get(code, code)
+            flag = _country_to_flag(code)
+            return f"{flag} {seg} {base}" if flag else f"{seg} {base}"
+        return base
+
+    return name_fn
+
+
 def _merged_epg_from_state(state):
     """若网页已加载过 EPG 源（如用户配置的区域/自定义源），返回合并后的节目单；否则返回 None 回落默认全量源。"""
     svc = getattr(state, "_epg_service", None)
@@ -199,6 +286,10 @@ async def export_results(req: ExportRequest):
     if not check_results:
         raise HTTPException(400, "过滤后无可导出的频道")
 
+    # 补全归属地（country/region），按需把分组改写成 电视/广播 × 国家地区
+    check_results = await asyncio.to_thread(_annotate_results, check_results, req.group_mode)
+    name_fn = _make_name_fn(req.annotate_country_name)
+
     state = _get_state()
     from iptv_check.server.app import DATA_DIR
     export_dir = req.export_dir or os.path.join(DATA_DIR, "exports")
@@ -214,7 +305,7 @@ async def export_results(req: ExportRequest):
             exp = await asyncio.to_thread(
                 state.export_engine.export_batch,
                 [req.format], sub, export_dir, base, state.local_isp,
-                epg_data=epg_data, with_logo=req.with_logo,
+                epg_data=epg_data, with_logo=req.with_logo, name_fn=name_fn,
             )
             exported.extend(exp)
         return {"exported": exported, "dir": export_dir, "count": len(check_results), "groups": len(grouped)}
@@ -261,6 +352,10 @@ async def export_playlist_with_epg(req: PlaylistEpgRequest):
     if not check_results:
         raise HTTPException(400, "过滤后无可导出的频道")
 
+    # 补全归属地并可选改写分组（与 /export 一致）
+    check_results = await asyncio.to_thread(_annotate_results, check_results, req.group_mode)
+    name_fn = _make_name_fn(req.annotate_country_name)
+
     state = _get_state()
     local_isp = req.local_isp or getattr(state, "local_isp", "未知") or "未知"
     epg_url = req.epg_url or _FANMINGMING_EPG_URL
@@ -269,7 +364,8 @@ async def export_playlist_with_epg(req: PlaylistEpgRequest):
     valid_results = [r for r in check_results if r.is_valid]
     m3u_name = f"{req.base_name}.m3u"
     epg_name = f"{req.base_name}_节目单.epg.xml"
-    m3u_content = M3uExporter().render(valid_results, local_isp, epg_url=epg_name, with_logo=req.with_logo)
+    m3u_content = M3uExporter().render(valid_results, local_isp, epg_url=epg_name,
+                                       with_logo=req.with_logo, name_fn=name_fn)
     channels = [(r.channel.tvg_name, r.channel.tvg_id, r.channel.name) for r in valid_results]
     try:
         epg_content = await asyncio.to_thread(build_slim_epg_xml, channels, epg_url, epg_data)

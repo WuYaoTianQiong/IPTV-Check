@@ -11,6 +11,7 @@ class CheckResult:
     latency: float = -1
     speed: str = "-"
     details: str = ""
+    media_type: str = ""  # 检测事实："video" / "audio" / ""（未知）
     timestamp: float = 0.0
 
     @property
@@ -59,6 +60,7 @@ class CheckResult:
             "timestamp": self.timestamp,
             "quality_tier": self.quality_tier,
             "is_valid": self.is_valid,
+            "media_type": self.media_type,
         }
 
     @classmethod
@@ -72,7 +74,21 @@ class CheckResult:
                 quality_tier = "likely_valid"
             else:
                 quality_tier = "invalid"
-        is_valid = quality_tier in ("valid", "likely_valid")
+
+        # 以缓存中显式保存的 is_valid 为准（避免仅凭 tier 重算导致
+        # "无效却标记有效"的误判）；旧缓存无该字段时回退到 tier 推断
+        cached_is_valid = cache_data.get("is_valid")
+        if cached_is_valid is not None:
+            is_valid = bool(cached_is_valid)
+        else:
+            is_valid = quality_tier in ("valid", "likely_valid")
+
+        # 防御：is_valid 与 quality_tier 冲突时保持一致
+        if not is_valid and quality_tier in ("valid", "likely_valid"):
+            quality_tier = "invalid"
+        elif is_valid and quality_tier == "invalid":
+            quality_tier = "likely_valid"
+
         return cls(
             channel=channel,
             is_valid=is_valid,
@@ -80,5 +96,6 @@ class CheckResult:
             latency=float(cache_data.get("latency", -1)) if cache_data.get("latency", "-") != "-" else -1,
             speed=cache_data.get("speed", "-"),
             details=cache_data.get("details", "缓存结果"),
+            media_type=cache_data.get("media_type", ""),
             timestamp=cache_data.get("timestamp", 0),
         )

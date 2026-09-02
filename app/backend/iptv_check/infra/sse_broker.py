@@ -22,7 +22,7 @@ class SSESubscriber:
         self.messages_sent = 0
         self.messages_dropped = 0
     
-    async def put(self, message: str, timeout: float = 1.0) -> bool:
+    async def put(self, message: str, timeout: float = 0.1) -> bool:
         """Put message to queue with backpressure handling"""
         try:
             await asyncio.wait_for(self.queue.put(message), timeout=timeout)
@@ -31,7 +31,9 @@ class SSESubscriber:
             return True
         except asyncio.TimeoutError:
             self.messages_dropped += 1
-            logger.warning(
+            # 队列满属于正常背压（事件密度高于前端消费速度时必然发生），
+            # 降为 debug 避免刷屏；前端会收到 queue_overflow 事件自行修正
+            logger.debug(
                 "SSE subscriber %s queue full, message dropped (sent=%d, dropped=%d)",
                 self.subscriber_id,
                 self.messages_sent,
@@ -135,17 +137,24 @@ class SSEBroker:
                     len(self._subscribers),
                 )
     
+    @staticmethod
+    def _format_sse(event: str, message: dict) -> str:
+        """按 SSE 规范序列化帧：data 含换行时拆为多行 `data:` 前缀。"""
+        import json
+        counter = message.get("id", "")
+        data_lines = json.dumps(message, ensure_ascii=False).splitlines() or [""]
+        data_block = "\n".join(f"data: {line}" for line in data_lines)
+        return f"id: {counter}\nevent: {event}\n{data_block}\n\n"
+
     async def broadcast(self, event: str, data: dict):
         """Broadcast event to all subscribers with backpressure handling"""
-        import json
-        
         self._counter += 1
         message = {
             "id": self._counter,
             "event": event,
             **data,
         }
-        sse_message = f"id: {self._counter}\nevent: {event}\ndata: {json.dumps(message, ensure_ascii=False)}\n\n"
+        sse_message = self._format_sse(event, message)
         
         dead_subscribers = []
         overflow_subscribers = []
@@ -153,7 +162,7 @@ class SSEBroker:
         async with self._lock:
             subs = list(self._subscribers.items())
         
-        logger.info("[SSE-BROKER] broadcast event=%s subscribers=%d", event, len(subs))
+        logger.debug("[SSE-BROKER] broadcast event=%s subscribers=%d", event, len(subs))
         
         for sub_id, subscriber in subs:
             try:
@@ -161,7 +170,8 @@ class SSEBroker:
                 if success:
                     logger.debug("[SSE-BROKER] message sent to %s", sub_id)
                 else:
-                    logger.warning("[SSE-BROKER] message dropped for %s (queue full)", sub_id)
+                    # 已通过 queue_overflow 事件通知前端，不再逐条打 warning
+                    logger.debug("[SSE-BROKER] message dropped for %s (queue full)", sub_id)
                     overflow_subscribers.append(subscriber)
                     if subscriber.is_stale(self.stale_timeout):
                         dead_subscribers.append(sub_id)
@@ -175,7 +185,7 @@ class SSEBroker:
                 "event": "queue_overflow",
                 "message": "部分实时更新因处理速度不足被跳过，数据将在下次轮询时自动修正",
             }
-            overflow_sse = f"id: {self._counter}\nevent: queue_overflow\ndata: {json.dumps(overflow_msg, ensure_ascii=False)}\n\n"
+            overflow_sse = self._format_sse("queue_overflow", overflow_msg)
             for subscriber in overflow_subscribers:
                 try:
                     await subscriber.put(overflow_sse)

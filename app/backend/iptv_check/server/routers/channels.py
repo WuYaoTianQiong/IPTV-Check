@@ -33,6 +33,39 @@ def _get_check_service():
     return getattr(state, "_check_service", None)
 
 
+_TAB_KEYS = ("all", "valid", "likely_valid", "invalid")
+
+
+async def _compute_tab_counts(read_model, session_id: str, view_mode: str, **kwargs) -> dict:
+    """并行计算当前会话+筛选条件下 4 个 tab 的 total，返回 {all, valid, likely_valid, invalid}。
+
+    保证 tab 栏计数与列表查询走完全相同的筛选逻辑（同会话、同筛选、同视图模式），
+    避免"全部 846 个频道、无效 28121 个"这类不同口径数字混在一起显示。
+    """
+    def _count(tab: str) -> int:
+        if view_mode == "grouped":
+            r = read_model.get_grouped_channels(session_id=session_id, tab=tab, page=1, per_page=1, **kwargs)
+        else:
+            r = read_model.get_checked_channels(session_id=session_id, tab=tab, page=1, per_page=1, **kwargs)
+        return r.get("total", 0) or 0
+
+    values = await asyncio.gather(*(asyncio.to_thread(_count, t) for t in _TAB_KEYS))
+    return dict(zip(_TAB_KEYS, values))
+
+
+def _touch_session_last_updated(state, session_id: str) -> None:
+    """复检完成后更新 check_history.last_updated，供前端"最后更新"时间展示"""
+    from sqlalchemy import text as sa_text
+    from iptv_check.infra.cn_time import cn_now
+    try:
+        with state.event_store.get_session() as s:
+            s.exec(sa_text("UPDATE check_history SET last_updated = :ts WHERE session_id = :sid")
+                   .bindparams(ts=cn_now().isoformat(), sid=session_id))
+            s.commit()
+    except Exception:
+        pass
+
+
 
 
 @router.get("/results")
@@ -47,6 +80,7 @@ async def get_results(
     media_type: str = "all",
     language: str = "",
     country: str = "",
+    country_exclude: str = "",
     region: str = "",
     category: str = "",
     quality: str = "",
@@ -56,9 +90,13 @@ async def get_results(
     latency_max: float = -1,
     speed_min: float = -1,
     speed_max: float = -1,
+    hide_vod: int = 0,
     session_id: str = "",
 ):
-    """获取检测结果，支持通过 session_id 查看历史会话"""
+    """获取检测结果，支持通过 session_id 查看历史会话
+    country_exclude：排除指定国家（反向筛选），如 country_exclude=CN 表示只看非中国频道。
+    hide_vod=1：隐藏点播/轮播类假台（mp4 单文件循环、分集/合集点播等）。"""
+    _hide_vod = bool(hide_vod)
     import traceback
     try:
         state = _get_state()
@@ -70,7 +108,7 @@ async def get_results(
         if effective_session_id:
             try:
                 if view_mode == "grouped":
-                    return await asyncio.to_thread(
+                    result = await asyncio.to_thread(
                         state.read_model.get_grouped_channels,
                         session_id=effective_session_id,
                         tab=tab, group_path=group_path, page=page, per_page=per_page,
@@ -79,8 +117,45 @@ async def get_results(
                         source=source,
                         latency_min=latency_min, latency_max=latency_max,
                         speed_min=speed_min, speed_max=speed_max,
+                        with_tab_counts=True,
+                        country_exclude=country_exclude,
+                        hide_vod=_hide_vod,
                     )
-                return await asyncio.to_thread(
+                    # 未物化（check_events 路径）时 get_grouped_channels 不返回 tab_counts，
+                    # 回退到逐 tab 计数（该路径数据量通常较小，性能可接受）
+                    if not result.get("tab_counts"):
+                        result["tab_counts"] = await _compute_tab_counts(
+                            state.read_model, effective_session_id, "grouped",
+                            group_path=group_path, search=search, sort=sort, media_type=media_type,
+                            language=language, country=country, region=region, category=category,
+                            quality=quality, protocol=protocol, source=source,
+                            latency_min=latency_min, latency_max=latency_max,
+                            speed_min=speed_min, speed_max=speed_max,
+                            country_exclude=country_exclude,
+                            hide_vod=_hide_vod,
+                        )
+                    # 附加源地址统计（flat 口径），供前端同时展示"频道数 / 源地址数"
+                    try:
+                        flat_res = await asyncio.to_thread(
+                            state.read_model.get_checked_channels,
+                            session_id=effective_session_id,
+                            tab="all", page=1, per_page=1,
+                            search=search, sort=sort, media_type=media_type, language=language,
+                            country=country, region=region, category=category, quality=quality, protocol=protocol,
+                            source=source,
+                            latency_min=latency_min, latency_max=latency_max,
+                            speed_min=speed_min, speed_max=speed_max,
+                            with_tab_counts=True,
+                            country_exclude=country_exclude,
+                            hide_vod=_hide_vod,
+                        )
+                        flat_tc = flat_res.get("tab_counts") or {}
+                        if isinstance(flat_tc, dict) and isinstance(result.get("tab_counts"), dict):
+                            result["tab_counts"]["source"] = flat_tc.get("source") or flat_tc
+                    except Exception as e:
+                        logger.error("计算源地址统计失败: %s", e)
+                    return result
+                result = await asyncio.to_thread(
                     state.read_model.get_checked_channels,
                     session_id=effective_session_id,
                     tab=tab, page=page, per_page=per_page, search=search, sort=sort,
@@ -89,7 +164,22 @@ async def get_results(
                     source=source,
                     latency_min=latency_min, latency_max=latency_max,
                     speed_min=speed_min, speed_max=speed_max,
+                    with_tab_counts=True,
+                    country_exclude=country_exclude,
+                    hide_vod=_hide_vod,
                 )
+                if not result.get("tab_counts"):
+                    result["tab_counts"] = await _compute_tab_counts(
+                        state.read_model, effective_session_id, "flat",
+                        search=search, sort=sort, media_type=media_type,
+                        language=language, country=country, region=region, category=category,
+                        quality=quality, protocol=protocol, source=source,
+                        latency_min=latency_min, latency_max=latency_max,
+                        speed_min=speed_min, speed_max=speed_max,
+                        country_exclude=country_exclude,
+                        hide_vod=_hide_vod,
+                    )
+                return result
             except Exception as e:
                 logger.error("获取检测结果失败: %s\n%s", e, traceback.format_exc())
                 return {"total": 0, "page": page, "per_page": per_page, "items": [], "error": str(e)}
@@ -107,74 +197,59 @@ async def get_results(
 
 
 @router.get("/results/category-tree")
-async def get_category_tree(media_type: str = "all"):
+async def get_category_tree(session_id: str = "", media_type: str = "all"):
     state = _get_state()
     service = _get_check_service()
-    session_id = ""
-    if service and service.session_id:
-        session_id = service.session_id
-    elif state and state.event_store:
-        session_id = state.event_store.current_session_id
-    if not session_id:
+    effective_session_id = session_id or (service.session_id if service else "") or (state.event_store.current_session_id if state else "")
+    if not effective_session_id:
         return []
     try:
-        return await asyncio.to_thread(state.read_model.get_category_tree, session_id=session_id, media_type=media_type)
+        return await asyncio.to_thread(state.read_model.get_category_tree, session_id=effective_session_id, media_type=media_type)
     except Exception as e:
         logger.error("获取分类树失败: %s", e, exc_info=True)
         return []
 
 
 @router.get("/results/languages")
-async def get_available_languages():
+async def get_available_languages(session_id: str = ""):
+    """返回指定会话（或当前会话）中出现过的语言列表"""
     state = _get_state()
     service = _get_check_service()
-    session_id = ""
-    if service and service.session_id:
-        session_id = service.session_id
-    elif state and state.event_store:
-        session_id = state.event_store.current_session_id
-    if not session_id:
+    effective_session_id = session_id or (service.session_id if service else "") or (state.event_store.current_session_id if state else "")
+    if not effective_session_id:
         return []
     try:
-        return await asyncio.to_thread(state.read_model.get_available_languages, session_id)
+        return await asyncio.to_thread(state.read_model.get_available_languages, effective_session_id)
     except Exception as e:
         logger.error("获取语言列表失败: %s", e, exc_info=True)
         return []
 
 
 @router.get("/results/countries")
-async def get_available_countries():
+async def get_available_countries(session_id: str = ""):
     """获取当前数据中可用的国家/地区列表（基于实际数据推断）"""
     state = _get_state()
     service = _get_check_service()
-    session_id = ""
-    if service and service.session_id:
-        session_id = service.session_id
-    elif state and state.event_store:
-        session_id = state.event_store.current_session_id
-    if not session_id:
+    effective_session_id = session_id or (service.session_id if service else "") or (state.event_store.current_session_id if state else "")
+    if not effective_session_id:
         return []
     try:
-        return await asyncio.to_thread(state.read_model.get_available_countries, session_id)
+        return await asyncio.to_thread(state.read_model.get_available_countries, effective_session_id)
     except Exception as e:
         logger.error("获取国家列表失败: %s", e, exc_info=True)
         return []
 
 
 @router.get("/results/regions")
-async def get_available_regions():
+async def get_available_regions(session_id: str = ""):
     """获取中国各省级行政区的频道统计（用于二级筛选联动）"""
     state = _get_state()
     service = _get_check_service()
-    session_id = ""
-    if service and service.session_id:
-        session_id = service.session_id
-    elif state and state.event_store:
-        session_id = state.event_store.current_session_id
-    if not session_id:
+    effective_session_id = session_id or (service.session_id if service else "") or (state.event_store.current_session_id if state else "")
+    if not effective_session_id:
         return []
     try:
-        return await asyncio.to_thread(state.read_model.get_available_regions, session_id)
+        return await asyncio.to_thread(state.read_model.get_available_regions, effective_session_id)
     except Exception as e:
         logger.error("获取地区列表失败: %s", e, exc_info=True)
         return []
@@ -217,6 +292,27 @@ async def get_results_stats():
         "total": 0, "checked": 0, "valid": 0, "likely_valid": 0, "invalid": 0,
         "is_running": False, "db_stats": db_stats,
     }
+
+
+@router.get("/results/latency-summary")
+async def get_latency_summary(session_id: str = ""):
+    """复检后延迟汇总：当前会话有效频道的平均延迟（供前端复检摘要横幅展示）"""
+    state = _get_state()
+    sid = session_id or (state.event_store.current_session_id if state and state.event_store else "")
+    if not sid:
+        return {"count": 0, "avg_latency": 0}
+
+    def _query():
+        from sqlalchemy import text as sa_text
+        with state.event_store.get_session() as s:
+            row = s.exec(sa_text("""
+                SELECT COUNT(*) cnt, ROUND(AVG(latency), 0) avg_latency
+                FROM channel_results
+                WHERE session_id = :sid AND is_valid = 1 AND latency > 0
+            """).bindparams(sid=sid)).first()
+            return {"count": row[0] or 0, "avg_latency": row[1] or 0}
+
+    return await asyncio.to_thread(_query)
 
 
 @router.get("/results/history")
@@ -296,6 +392,8 @@ async def refresh_results_latency(
     tab: str = "all",
     media_type: str = "all",
     country: str = "",
+    country_exclude: str = "",
+    hide_vod: int = 0,
     region: str = "",
     category: str = "",
     quality: str = "",
@@ -308,7 +406,7 @@ async def refresh_results_latency(
     speed_max: float = -1,
 ):
     """触发异步全量延迟刷新（HEAD 探测），立即返回202。
-    传入 tab/country 等筛选参数时仅刷新符合条件子集，否则刷新整个 session。"""
+    传入 tab/country/country_exclude 等筛选参数时仅刷新符合条件子集，否则刷新整个 session。"""
     state = _get_state()
 
     if state._refresh_latency_task is not None and not state._refresh_latency_task.done():
@@ -349,17 +447,23 @@ async def refresh_results_latency(
     def _fetch_filtered_urls():
         if state.read_model:
             return state.read_model.fetch_filtered_urls(
-                session_id, tab, media_type, "", country, region, category,
-                quality, protocol, source, latency_min, latency_max, speed_min, speed_max, search,
+                session_id=session_id, tab=tab, media_type=media_type, language="",
+                country=country, region=region, category=category,
+                quality=quality, protocol=protocol, source=source,
+                latency_min=latency_min, latency_max=latency_max,
+                speed_min=speed_min, speed_max=speed_max, search=search,
+                country_exclude=country_exclude,
+                hide_vod=bool(hide_vod),
             )
-        return []
+        return [], 0
 
+    # hide_vod 属内容质量偏好，不计入"是否有筛选"：空筛选（仅默认 hide_vod=1）仍走全量
     _has_filter = (
-        tab != "all" or media_type != "all" or country or region or category
+        tab != "all" or media_type != "all" or country or country_exclude or region or category
         or quality or protocol or source or search
         or latency_min >= 0 or latency_max >= 0 or speed_min >= 0 or speed_max >= 0
     )
-    urls = await asyncio.to_thread(_fetch_filtered_urls if _has_filter else _fetch_urls)
+    urls, channel_count = await asyncio.to_thread(_fetch_filtered_urls if _has_filter else _fetch_urls)
     total = len(urls)
     if total == 0:
         return {"total": 0, "checked": 0, "updated": 0}
@@ -377,13 +481,13 @@ async def refresh_results_latency(
     await asyncio.to_thread(_reset_latency)
 
     state._refresh_latency_task = asyncio.create_task(
-        _run_refresh_latency_background(state, session_id, urls, task_id)
+        _run_refresh_latency_background(state, session_id, urls, task_id, channel_count)
     )
 
-    return {"task_id": task_id, "total": total, "status": "running"}
+    return {"task_id": task_id, "total": total, "channel_count": channel_count, "status": "running"}
 
 
-async def _run_refresh_latency_background(state, session_id, urls, task_id):
+async def _run_refresh_latency_background(state, session_id, urls, task_id, channel_count=0):
     """后台执行全量延迟检测，通过SSE推送进度"""
     import aiohttp, ssl, time
 
@@ -406,7 +510,7 @@ async def _run_refresh_latency_background(state, session_id, urls, task_id):
         nonlocal last_broadcast_time
         now = time.time()
         if checked % BROADCAST_BATCH_SIZE == 0 or (now - last_broadcast_time >= BROADCAST_INTERVAL):
-            progress = {"checked": checked, "total": total, "updated": updated}
+            progress = {"checked": checked, "total": total, "updated": updated, "channel_count": channel_count}
             state._refresh_latency_progress = progress
             await state.broadcast("refresh_latency_progress", progress)
             last_broadcast_time = now
@@ -452,15 +556,18 @@ async def _run_refresh_latency_background(state, session_id, urls, task_id):
                     def _write(batch):
                         from iptv_check.infra.repository.results_repo import ResultsRepository
                         with state.event_store.get_session() as s:
-                            repo = ResultsRepository(s)
-                            for lat, url in batch:
-                                repo.update_channel_result(session_id, url, lat, True, "valid")
-                                repo.update_event_payload_latency(session_id, url, lat, True, "valid")
+                            ResultsRepository(s).update_batch_valid(session_id, batch)
                             s.commit()
                     await asyncio.to_thread(_write, batch)
 
-            final_progress = {"checked": total, "total": total, "updated": updated}
+            final_progress = {"checked": total, "total": total, "updated": updated, "channel_count": channel_count}
             state._refresh_latency_progress = final_progress
+            if state.read_model:
+                try:
+                    state.read_model.clear_filter_cache()
+                except Exception:
+                    pass
+            await asyncio.to_thread(_touch_session_last_updated, state, session_id)
             await state.broadcast("refresh_latency_completed", {
                 **final_progress,
                 "task_id": task_id,
@@ -470,10 +577,7 @@ async def _run_refresh_latency_background(state, session_id, urls, task_id):
                 def _write_last(batch):
                     from iptv_check.infra.repository.results_repo import ResultsRepository
                     with state.event_store.get_session() as s:
-                        repo = ResultsRepository(s)
-                        for lat, url in batch:
-                            repo.update_channel_result(session_id, url, lat, True, "valid")
-                            repo.update_event_payload_latency(session_id, url, lat, True, "valid")
+                        ResultsRepository(s).update_batch_valid(session_id, batch)
                         s.commit()
                 await asyncio.to_thread(_write_last, ok_urls)
 
@@ -497,6 +601,8 @@ async def get_filtered_urls(
     tab: str = "all",
     media_type: str = "all",
     country: str = "",
+    country_exclude: str = "",
+    hide_vod: int = 0,
     region: str = "",
     category: str = "",
     quality: str = "",
@@ -507,34 +613,49 @@ async def get_filtered_urls(
     latency_max: float = -1,
     speed_min: float = -1,
     speed_max: float = -1,
+    count_only: int = 0,
 ):
-    """返回符合当前筛选条件的全部频道 URL（跨页全集），供前端跨页全选用。"""
+    """返回符合当前筛选条件的全部频道 URL（跨页全集），供前端跨页全选用。
+    count_only=1 时只返回数量（频道数/源地址数），不返回 URL 列表。"""
     state = _get_state()
     sid = session_id or (state.event_store.current_session_id if state else "")
     if not sid or not state.read_model:
-        return {"urls": [], "total": 0}
-    urls = await asyncio.to_thread(
+        return {"urls": [], "total": 0, "channel_count": 0}
+    if count_only:
+        channel_count, source_count = await asyncio.to_thread(
+            state.read_model.fetch_filtered_counts,
+            session_id=sid, tab=tab, media_type=media_type, language="",
+            country=country, region=region, category=category,
+            quality=quality, protocol=protocol, source=source,
+            latency_min=latency_min, latency_max=latency_max,
+            speed_min=speed_min, speed_max=speed_max, search=search,
+            country_exclude=country_exclude,
+            hide_vod=bool(hide_vod),
+        )
+        return {"urls": [], "total": source_count, "channel_count": channel_count}
+    urls, channel_count = await asyncio.to_thread(
         state.read_model.fetch_filtered_urls,
-        sid, tab, media_type, "", country, region, category,
-        quality, protocol, source, latency_min, latency_max, speed_min, speed_max, search,
+        session_id=sid, tab=tab, media_type=media_type, language="",
+        country=country, region=region, category=category,
+        quality=quality, protocol=protocol, source=source,
+        latency_min=latency_min, latency_max=latency_max,
+        speed_min=speed_min, speed_max=speed_max, search=search,
+        country_exclude=country_exclude,
+        hide_vod=bool(hide_vod),
     )
-    return {"urls": urls, "total": len(urls)}
+    return {"urls": urls, "total": len(urls), "channel_count": channel_count}
 
 
 @router.get("/results/sources")
-async def get_available_sources():
-    """返回当前 session 数据中出现过的来源源列表"""
+async def get_available_sources(session_id: str = ""):
+    """返回指定会话（或当前会话）数据中出现过的来源源列表"""
     state = _get_state()
     service = _get_check_service()
-    session_id = ""
-    if service and service.session_id:
-        session_id = service.session_id
-    elif state and state.event_store:
-        session_id = state.event_store.current_session_id
-    if not session_id:
+    effective_session_id = session_id or (service.session_id if service else "") or (state.event_store.current_session_id if state else "")
+    if not effective_session_id:
         return []
     try:
-        return await asyncio.to_thread(state.read_model.get_available_sources, session_id)
+        return await asyncio.to_thread(state.read_model.get_available_sources, effective_session_id)
     except Exception as e:
         logger.error("获取来源列表失败: %s", e, exc_info=True)
         return []
@@ -547,6 +668,8 @@ async def thorough_check(
     tab: str = "all",
     media_type: str = "all",
     country: str = "",
+    country_exclude: str = "",
+    hide_vod: int = 0,
     region: str = "",
     category: str = "",
     quality: str = "",
@@ -559,7 +682,7 @@ async def thorough_check(
     speed_max: float = -1,
 ):
     """触发彻底版检测(GET+Range)。
-    urls 为逗号分隔的 base64 编码 URL 列表；为空时按 tab/country 等筛选条件取子集，
+    urls 为逗号分隔的 base64 编码 URL 列表；为空时按 tab/country/country_exclude 等筛选条件取子集，
     无任何筛选则取整个 session 全量。"""
     state = _get_state()
 
@@ -601,10 +724,15 @@ async def thorough_check(
     def _fetch_filtered_urls():
         if state.read_model:
             return state.read_model.fetch_filtered_urls(
-                session_id, tab, media_type, "", country, region, category,
-                quality, protocol, source, latency_min, latency_max, speed_min, speed_max, search,
+                session_id=session_id, tab=tab, media_type=media_type, language="",
+                country=country, region=region, category=category,
+                quality=quality, protocol=protocol, source=source,
+                latency_min=latency_min, latency_max=latency_max,
+                speed_min=speed_min, speed_max=speed_max, search=search,
+                country_exclude=country_exclude,
+                hide_vod=bool(hide_vod),
             )
-        return []
+        return [], 0
 
     if urls:
         try:
@@ -616,15 +744,16 @@ async def thorough_check(
             logger.warning(f"thorough_check: url decode failed: {e}")
             selected_urls = []
         if selected_urls:
-            all_urls = await asyncio.to_thread(_fetch_urls)
+            all_urls, _ = await asyncio.to_thread(_fetch_urls)
             all_set = set(all_urls)
             matched = [u for u in selected_urls if u in all_set]
             logger.info(f"thorough_check: {len(selected_urls)} selected, {len(all_urls)} total, {len(matched)} matched")
             urls = matched if matched else selected_urls
+            channel_count = len(urls)  # 显式 URL 场景无法精确去重频道，回退为 URL 数
         else:
-            urls = await asyncio.to_thread(_fetch_filtered_urls)
+            urls, channel_count = await asyncio.to_thread(_fetch_filtered_urls)
     else:
-        urls = await asyncio.to_thread(_fetch_filtered_urls)
+        urls, channel_count = await asyncio.to_thread(_fetch_filtered_urls)
     total = len(urls)
     if total == 0:
         return {"total": 0, "checked": 0, "updated": 0}
@@ -633,6 +762,7 @@ async def thorough_check(
     state._refresh_latency_task_id = task_id
     state._refresh_latency_progress = {"checked": 0, "total": total, "updated": 0}
     state._refresh_latency_started_at = datetime.datetime.now().isoformat()
+    state._refresh_latency_error = None
 
     def _reset_latency():
         from iptv_check.infra.repository.results_repo import ResultsRepository
@@ -641,13 +771,13 @@ async def thorough_check(
     await asyncio.to_thread(_reset_latency)
 
     state._refresh_latency_task = asyncio.create_task(
-        _run_thorough_check_background(state, session_id, urls, task_id)
+        _run_thorough_check_background(state, session_id, urls, task_id, channel_count)
     )
 
-    return {"task_id": task_id, "total": total, "status": "running"}
+    return {"task_id": task_id, "total": total, "channel_count": channel_count, "status": "running"}
 
 
-async def _run_thorough_check_background(state, session_id, urls, task_id):
+async def _run_thorough_check_background(state, session_id, urls, task_id, channel_count=0):
     """后台执行彻底版检测(GET+Range)，通过SSE推送进度"""
     import aiohttp, ssl, time as _time
 
@@ -664,26 +794,79 @@ async def _run_thorough_check_background(state, session_id, urls, task_id):
     ssl_ctx.verify_mode = ssl.CERT_NONE
 
     connector = aiohttp.TCPConnector(ssl=ssl_ctx, limit=100, force_close=True, ttl_dns_cache=300)
-    timeout = aiohttp.ClientTimeout(total=8, connect=3)
+    timeout = aiohttp.ClientTimeout(total=6, connect=3)
 
     async def _maybe_broadcast_progress():
         nonlocal last_broadcast_time
         now = _time.time()
         if checked % BROADCAST_BATCH_SIZE == 0 or (now - last_broadcast_time >= BROADCAST_INTERVAL):
-            progress = {"checked": checked, "total": total, "updated": updated}
+            progress = {"checked": checked, "total": total, "updated": updated, "channel_count": channel_count}
             state._refresh_latency_progress = progress
             await state.broadcast("refresh_latency_progress", progress)
             last_broadcast_time = now
 
+    _DEEP_VERIFY_SECONDS = 3.0
+    _DEEP_VERIFY_BYTES = 128 * 1024
+
+    async def _deep_verify_stream(url, resp, body):
+        """深度验证：m3u8 校验连续分段可拉；非 m3u8 持续拉流确认非空壳/一次性响应。
+        2026-09-01: 原彻底版检测只要求 status<400 且响应体≥1 字节，导致返回
+        HTML/JS 跳转页的源被判"有效"，播放时却长时间无内容。"""
+        if body[:7] == b"#EXTM3U":
+            try:
+                text = body.decode("utf-8", "replace")
+                segs = []
+                for line in text.splitlines():
+                    line = line.strip()
+                    if line and not line.startswith("#"):
+                        segs.append(urllib.parse.urljoin(url, line))
+            except Exception:
+                segs = []
+            if not segs:
+                return False
+            checked = 0
+            for seg in segs[:3]:
+                try:
+                    async with session.get(seg, ssl=False, timeout=aiohttp.ClientTimeout(total=6, connect=3)) as sr:
+                        if sr.status < 400:
+                            chunk = await sr.content.read(1024)
+                            if chunk:
+                                checked += 1
+                except Exception:
+                    pass
+            return checked >= 1
+        # 非 m3u8：持续拉流（最长 3 秒），确认连接不会立刻断、有持续数据输出
+        try:
+            deadline = _time.time() + _DEEP_VERIFY_SECONDS
+            total = len(body)
+            while _time.time() < deadline and total < _DEEP_VERIFY_BYTES * 4:
+                chunk = await resp.content.read(4096)
+                if not chunk:
+                    break
+                total += len(chunk)
+                if total >= _DEEP_VERIFY_BYTES:
+                    return True
+            return total > len(body)
+        except Exception:
+            return False
+
     async def probe_thorough(url):
+        """彻底版检测：拉流校验流头 + 深度验证（m3u8 连续分段 / 非 m3u8 持续输出 3 秒）。"""
         try:
             start_t = _time.time()
-            async with session.get(url, headers={"Range": "bytes=0-4095"}, ssl=False, timeout=aiohttp.ClientTimeout(total=8, connect=3)) as r:
-                body = await r.content.read(4096)
+            async with session.get(url, ssl=False, timeout=aiohttp.ClientTimeout(total=8, connect=3)) as r:
+                if r.status >= 400:
+                    return (url, -1, False)
+                body = await r.content.read(65536)
+                if not body:
+                    return (url, -1, False)
+                from iptv_check.infra.check_engine.async_engine import AsyncCheckEngine
+                if not AsyncCheckEngine._validate_stream_header(body):
+                    return (url, -1, False)
+                ok = await _deep_verify_stream(url, r, body)
                 elapsed_ms = int((_time.time() - start_t) * 1000)
-                ok = r.status < 400 and len(body) >= 1
                 return (url, elapsed_ms, ok)
-        except:
+        except Exception:
             return (url, -1, False)
 
     sem = asyncio.Semaphore(100)
@@ -718,15 +901,18 @@ async def _run_thorough_check_background(state, session_id, urls, task_id):
                     def _write(batch):
                         from iptv_check.infra.repository.results_repo import ResultsRepository
                         with state.event_store.get_session() as s:
-                            repo = ResultsRepository(s)
-                            for lat, url in batch:
-                                repo.update_channel_result(session_id, url, lat, True, "valid")
-                                repo.update_event_payload_latency(session_id, url, lat, True, "valid")
+                            ResultsRepository(s).update_batch_valid(session_id, batch)
                             s.commit()
                     await asyncio.to_thread(_write, batch)
 
-            final_progress = {"checked": total, "total": total, "updated": updated}
+            final_progress = {"checked": total, "total": total, "updated": updated, "channel_count": channel_count}
             state._refresh_latency_progress = final_progress
+            if state.read_model:
+                try:
+                    state.read_model.clear_filter_cache()
+                except Exception:
+                    pass
+            await asyncio.to_thread(_touch_session_last_updated, state, session_id)
             await state.broadcast("refresh_latency_completed", {
                 **final_progress,
                 "task_id": task_id,
@@ -736,10 +922,7 @@ async def _run_thorough_check_background(state, session_id, urls, task_id):
                 def _write_last(batch):
                     from iptv_check.infra.repository.results_repo import ResultsRepository
                     with state.event_store.get_session() as s:
-                        repo = ResultsRepository(s)
-                        for lat, url in batch:
-                            repo.update_channel_result(session_id, url, lat, True, "valid")
-                            repo.update_event_payload_latency(session_id, url, lat, True, "valid")
+                        ResultsRepository(s).update_batch_valid(session_id, batch)
                         s.commit()
                 await asyncio.to_thread(_write_last, ok_urls)
 
@@ -747,6 +930,7 @@ async def _run_thorough_check_background(state, session_id, urls, task_id):
 
     except Exception as e:
         logger.error("彻底版检测失败: task_id=%s, error=%s", task_id, e, exc_info=True)
+        state._refresh_latency_error = f"{type(e).__name__}: {e}"
         await state.broadcast("refresh_latency_failed", {
             "error": str(e)[:200],
             "task_id": task_id,
@@ -779,6 +963,7 @@ async def get_refresh_latency_status():
         "is_running": is_running,
         "progress": state._refresh_latency_progress,
         "task_id": state._refresh_latency_task_id if is_running else None,
+        "error": state._refresh_latency_error,
     }
 
 

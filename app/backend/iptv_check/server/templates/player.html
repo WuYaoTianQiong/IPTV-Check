@@ -72,9 +72,39 @@ body{font-family:'Noto Sans SC','Inter',sans-serif;background:#000;color:#f2f2f2
 }
 .top-bar .stream-info-panel.show{display:block}
 .top-bar #stream-info-btn.active{background:rgba(255,255,255,0.12);color:#fff}
+.top-bar #epg-btn.active{background:rgba(255,255,255,0.12);color:#fff}
 .info-row{display:flex;justify-content:space-between;gap:12px;padding:4px 0;font-size:13px;font-weight:500}
 .info-label{color:rgba(255,255,255,0.7);font-weight:600}
 .info-value{color:#fff;font-weight:500}
+
+.epg-panel{
+  display:none;position:absolute;top:0;right:0;bottom:0;width:360px;max-width:85vw;z-index:40;
+  background:rgba(16,16,18,0.96);backdrop-filter:blur(16px);
+  border-left:1px solid rgba(255,255,255,0.1);
+  box-shadow:-8px 0 32px rgba(0,0,0,0.5);
+  flex-direction:column;
+  transform:translateX(100%);transition:transform .25s ease;
+}
+.epg-panel.open{display:flex;transform:translateX(0)}
+.epg-panel-head{display:flex;align-items:center;gap:8px;padding:14px 16px;border-bottom:1px solid rgba(255,255,255,0.1);flex-shrink:0}
+.epg-panel-title{font-size:14px;font-weight:600;color:#fff;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.epg-panel-close{background:none;border:none;color:rgba(255,255,255,0.75);cursor:pointer;width:28px;height:28px;border-radius:6px;font-size:16px;line-height:1;display:flex;align-items:center;justify-content:center}
+.epg-panel-close:hover{background:rgba(255,255,255,0.12);color:#fff}
+.epg-body{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px}
+.epg-msg{color:rgba(255,255,255,0.6);font-size:13px;text-align:center;padding:40px 16px}
+.epg-loading{display:flex;align-items:center;justify-content:center;gap:8px;color:rgba(255,255,255,0.6);font-size:13px;padding:40px 0}
+.epg-spin{width:16px;height:16px;border:2px solid rgba(255,255,255,0.15);border-top-color:#6366f1;border-radius:50%;animation:spin .8s linear infinite}
+.epg-now{flex-shrink:0;border:1px solid rgba(99,102,241,0.4);background:rgba(99,102,241,0.1);border-radius:10px;padding:10px 12px;margin-bottom:4px}
+.epg-now-label{font-size:11px;color:#818cf8;font-weight:600;margin-bottom:4px}
+.epg-now-title{font-size:14px;font-weight:600;color:#fff}
+.epg-now-desc{font-size:12px;color:rgba(255,255,255,0.6);margin-top:4px;line-height:1.5}
+.epg-item{border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:8px 12px;flex-shrink:0}
+.epg-item.current{border-color:rgba(99,102,241,0.45);background:rgba(99,102,241,0.08)}
+.epg-item-time{display:flex;align-items:center;gap:8px;font-size:11px;color:rgba(255,255,255,0.55);flex-wrap:wrap}
+.epg-item-cat{background:rgba(255,255,255,0.08);border-radius:4px;padding:1px 6px;font-size:10px;color:rgba(255,255,255,0.6)}
+.epg-item-current-badge{background:rgba(99,102,241,0.25);color:#a5b4fc;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:600}
+.epg-item-title{font-size:13px;font-weight:500;color:#fff;margin-top:4px}
+.epg-item-desc{font-size:11px;color:rgba(255,255,255,0.55);margin-top:2px;line-height:1.4}
 
 .video-area{flex:1;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;background:#000}
 .video-area video{width:100%;height:100%}
@@ -200,6 +230,9 @@ body{font-family:'Noto Sans SC','Inter',sans-serif;background:#000;color:#f2f2f2
     <select id="source-selector" class="source-selector {{ source_selector_class }}" onchange="switchSource(this.value)"></select>
     <span class="badge" id="type-badge" style="background:rgba(231,76,60,0.12);color:#e74c3c">电台</span>
     <div class="spacer"></div>
+    <button id="epg-btn" class="epg-btn" title="节目单" aria-label="节目单">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/></svg>
+    </button>
     <button id="stream-info-btn" title="流信息" aria-label="流信息">⏱</button>
     <div class="stream-info-panel" id="stream-info-panel">
       <div class="info-row"><span class="info-label">码率</span><span class="info-value" id="info-bitrate">-</span></div>
@@ -262,6 +295,7 @@ body{font-family:'Noto Sans SC','Inter',sans-serif;background:#000;color:#f2f2f2
         <button class="copy-btn" onclick="copyText('info-proxy-url',this)">复制</button>
       </div>
     </div>
+    <div id="radio-unmute-hint" style="display:none;position:absolute;bottom:26%;left:50%;transform:translateX(-50%);z-index:60;background:rgba(0,0,0,0.78);color:#fff;padding:10px 22px;border-radius:22px;font-size:14px;font-weight:600;cursor:pointer;align-items:center;gap:8px;box-shadow:0 4px 20px rgba(0,0,0,0.35);border:1px solid rgba(255,255,255,0.15)">&#x1f507; 点击开启声音</div>
     <audio id="radio-audio" preload="auto" style="display:none"></audio>
   </div>
 
@@ -269,17 +303,31 @@ body{font-family:'Noto Sans SC','Inter',sans-serif;background:#000;color:#f2f2f2
     <p>播放器加载失败</p>
     <button onclick="location.reload()">刷新重试</button>
   </div>
+
+  <div class="epg-panel" id="epg-panel">
+    <div class="epg-panel-head">
+      <span class="epg-panel-title" id="epg-panel-title">节目单</span>
+      <button class="epg-panel-close" id="epg-panel-close" title="关闭">✕</button>
+    </div>
+    <div class="epg-body" id="epg-body"></div>
+  </div>
 </div>
 
 <script src="/static/hls.min.js"></script>
+<script src="/static/mpegts.min.js"></script>
 <script>
 (function(){
-var isRadio = {{ is_radio }} === true || {{ is_radio }} === 'true';
-var channelName = '{{ channel_name }}';
-var streamUrl = '{{ stream_url }}';
-var proxyUrl = '{{ proxy_url }}';
-var channelGroup = '{{ channel_group }}';
-var frequency = '{{ frequency }}';
+var isRadio = {{ is_radio | tojson }} === true || {{ is_radio | tojson }} === 'true';
+var channelName = {{ channel_name | tojson }};
+var streamUrl = {{ stream_url | tojson }};
+var proxyUrl = {{ proxy_url | tojson }};
+var channelGroup = {{ channel_group | tojson }};
+var frequency = {{ frequency | tojson }};
+var tvgId = {{ tvg_id | tojson }};
+var tvgName = {{ tvg_name | tojson }};
+var epgChannel = {{ epg_channel | tojson }};
+// EPG 模块位于独立的 IIFE 中无法访问本作用域变量，显式暴露到 window 供其解构
+window.__playerEpgCtx={isRadio:isRadio,channelName:channelName,epgChannel:epgChannel,tvgId:tvgId,tvgName:tvgName};
 var loadingScreen = document.getElementById('loading-screen');
 var typeBadge = document.getElementById('type-badge');
 var videoArea = document.getElementById('video-area');
@@ -324,8 +372,8 @@ function waitForLib(name,timeout){
   });
 }
 
-var sourcesList = {{ sources_json }};
-var recommendedIdx = {{ recommended_idx }};
+var sourcesList = {{ sources | tojson }};
+var recommendedIdx = {{ recommended_idx | tojson }};
 
 function encodeProxyUrl(url){
   if(!url)return'';
@@ -362,25 +410,26 @@ function switchSource(idx){
   if(isRadio){
     if(window._radioHls){try{window._radioHls.destroy()}catch(e){}window._radioHls=null}
     var radioAudio=document.getElementById('radio-audio');
-    if(typeof Hls!=='undefined'&&Hls.isSupported()){
-      var rh=new Hls({enableWorker:true,lowLatencyMode:false,manifestLoadingTimeOut:15000,levelLoadingTimeOut:10000});
-      window._radioHls=rh;
-      rh.loadSource(newUrl);rh.attachMedia(radioAudio);
-      rh.on(Hls.Events.MANIFEST_PARSED,function(){radioAudio.play().catch(function(){})});
-      rh.on(Hls.Events.ERROR,function(e,d){if(d.fatal){if(d.type===Hls.ErrorTypes.NETWORK_ERROR)rh.startLoad();else if(d.type===Hls.ErrorTypes.MEDIA_ERROR)rh.recoverMediaError()}});
-    }else{radioAudio.src=newUrl;radioAudio.play().catch(function(){})}
+    radioAudio.src='';radioAudio.load();
+    hideRadioUnmuteHint();
+    if(typeof Hls==='undefined'||!Hls.isSupported()){
+      radioAudio.src=newUrl;requestRadioPlay();
+    }else{
+      detectStreamType(newUrl,function(type){
+        if(type.native){
+          radioAudio.src=newUrl;requestRadioPlay();
+          return;
+        }
+        var rh=new Hls({enableWorker:true,lowLatencyMode:false,manifestLoadingTimeOut:15000,levelLoadingTimeOut:10000});
+        window._radioHls=rh;
+        rh.loadSource(newUrl);rh.attachMedia(radioAudio);
+        rh.on(Hls.Events.MANIFEST_PARSED,function(){requestRadioPlay()});
+        rh.on(Hls.Events.ERROR,function(e,d){if(d.fatal){if(d.type===Hls.ErrorTypes.NETWORK_ERROR)rh.startLoad();else if(d.type===Hls.ErrorTypes.MEDIA_ERROR)rh.recoverMediaError()}});
+      });
+    }
   }else{
-    if(window._tvHls){try{window._tvHls.destroy()}catch(e){}window._tvHls=null}
-    var tvVideo=document.getElementById('tv-video');
-    tvNetErrorCount=0;
-    if(typeof Hls!=='undefined'&&Hls.isSupported()){
-      var th=new Hls({enableWorker:true,lowLatencyMode:false,manifestLoadingTimeOut:15000,levelLoadingTimeOut:10000});
-      window._tvHls=th;
-      th.loadSource(newUrl);th.attachMedia(tvVideo);
-      th.on(Hls.Events.MANIFEST_PARSED,function(){tvNetErrorCount=0;tvVideo.play().catch(function(){})});
-      th.on(Hls.Events.ERROR,function(e,d){if(d.fatal){if(d.type===Hls.ErrorTypes.NETWORK_ERROR){tvNetErrorCount++;if(tvNetErrorCount>=3){hideLoading();document.getElementById('load-error').style.display='block';document.getElementById('loading-ring').style.display='none';document.getElementById('loading-text').style.display='none';return}th.startLoad()}else if(d.type===Hls.ErrorTypes.MEDIA_ERROR){th.recoverMediaError()}}});
-    }else{tvVideo.src=newUrl;tvVideo.play().catch(function(){})}
     document.getElementById('load-error').style.display='none';
+    playTv(newUrl);
   }
   document.getElementById('info-stream-url').textContent=src.url;
   document.getElementById('info-proxy-url').textContent=newUrl;
@@ -389,6 +438,79 @@ window.switchSource=switchSource;
 
 var validUrl = proxyUrl || streamUrl;
 if(!validUrl){showFallback();return}
+
+// 2026-09-01: 支持 FLV 直连流（虎牙/斗鱼等直播源）与 HLS/原生音频区分。
+// 播放前探测流类型：FLV → mpegts.js；HLS → HLS.js；原生音频流（MP3/AAC 等）→ 浏览器原生播放。
+// 注意：必须定义在 if(isRadio)/else 顶层作用域——电视与电台两条播放路径都会调用它。
+// 此前定义在 else（电视）分支内部，电台播放走 isRadio 分支时函数从未定义，
+// 导致 "detectStreamType is not a function"（player 页面 522 行报错）。
+function detectStreamType(url,cb){
+  if(/\.flv(\?|$)/i.test(url)){cb({flv:true});return}
+  if(/\.m3u8(\?|$)/i.test(url)){cb({flv:false});return}
+  try{
+    fetch(url,{headers:{'Range':'bytes=0-64'}}).then(function(r){
+      var ct=(r.headers.get('content-type')||'').toLowerCase();
+      var reader=r.body.getReader();
+      reader.read().then(function(res){
+        var u=res.value||new Uint8Array(0);
+        var head='';
+        for(var i=0;i<Math.min(u.length,16);i++)head+=String.fromCharCode(u[i]);
+        try{reader.cancel()}catch(e){}
+        // MP3 帧同步：首字节 0xFF，次字节高 5 位为 11111（0xE0 mask）
+        var mp3Sync=u.length>=2&&u[0]===0xFF&&(u[1]&0xE0)===0xE0;
+        // MP4 直连点播源（moov/ftyp box 开头）：此前无对应分支被错误路由到 HLS.js 导致无法播放
+        cb({
+          flv:head.indexOf('FLV')===0||ct.indexOf('flv')>=0,
+          hls:head.indexOf('#EXTM3U')===0||ct.indexOf('mpegurl')>=0,
+          native:ct.indexOf('audio/')===0||head.indexOf('ID3')===0||head.indexOf('OggS')===0||mp3Sync,
+          mp4:head.indexOf('ftyp')>=0||ct.indexOf('mp4')>=0,
+          html:ct.indexOf('text/html')>=0
+        });
+      }).catch(function(){cb({flv:false,hls:true})});
+    }).catch(function(){cb({flv:false,hls:true})});
+  }catch(e){cb({flv:false,hls:true})}
+}
+
+// ===== 电台自动播放兜底 =====
+// Chrome/Edge 等要求用户手势才允许"带声音"的自动播放；页面通常由 window.open 新开，
+// 无用户激活时 audio.play() 会以 NotAllowedError 拒绝，且不触发 playing/error 事件，
+// 用户只会一直看到"加载中..."并误以为不能播放。
+// 策略：带声试播 → 被拦则静音起播（浏览器允许）证明流可用 + 显示"点击开启声音"提示 →
+//       用户点击后恢复声音继续播放。
+function getRadioAudio(){return document.getElementById('radio-audio')}
+function getRadioHint(){return document.getElementById('radio-unmute-hint')}
+function getRadioVol(){return document.getElementById('vol-slider')}
+function hideRadioUnmuteHint(){var h=getRadioHint();if(h)h.style.display='none'}
+function showRadioUnmuteHint(){var h=getRadioHint();if(h)h.style.display='flex'}
+function unmuteRadioAudio(){
+  var a=getRadioAudio();
+  if(!a)return;
+  a.muted=false;
+  var v=getRadioVol();
+  a.volume=(v&&v.value?Number(v.value):80)/100;
+  hideRadioUnmuteHint();
+}
+function requestRadioPlay(){
+  var a=getRadioAudio();
+  if(!a)return;
+  var p=a.play();
+  if(p&&p.catch){
+    p.catch(function(err){
+      if(err&&err.name==='NotAllowedError'){
+        // 自动播放被浏览器拦截：静音起播证明流可播，并提示用户点击开启声音
+        a.muted=true;
+        showRadioUnmuteHint();
+        var p2=a.play();
+        if(p2&&p2.catch)p2.catch(function(){});
+      }else{
+        // 其它播放失败交由 audio error 事件统一处理（显示"播放出错"+重试）
+        hideLoading();
+        var ps=document.getElementById('play-status');
+        if(ps){ps.textContent='播放出错';ps.classList.remove('green')}
+      }
+    });
+  }
+}
 
 if(isRadio){
   videoArea.style.display='none';
@@ -432,10 +554,23 @@ if(isRadio){
 
   function formatTime(s){var m=Math.floor(s/60);var sec=Math.floor(s%60);return m+':'+(sec<10?'0':'')+sec}
 
-  btnPlay.addEventListener('click',function(){if(isPlaying)radioAudio.pause();else radioAudio.play()});
+  btnPlay.addEventListener('click',function(){
+    if(isPlaying){radioAudio.pause()}
+    else{
+      // 用户主动点击播放：若处于静音兜底态先恢复声音（点击即用户手势，带声播放可放行）
+      unmuteRadioAudio();
+      requestRadioPlay();
+    }
+  });
   document.getElementById('btn-prev').addEventListener('click',function(){radioAudio.currentTime=Math.max(0,radioAudio.currentTime-10)});
   document.getElementById('btn-next').addEventListener('click',function(){radioAudio.currentTime=radioAudio.currentTime+10});
-  volSlider.addEventListener('input',function(){radioAudio.volume=this.value/100});
+  volSlider.addEventListener('input',function(){
+    radioAudio.volume=this.value/100;
+    // 用户拖动音量即表示要听声音：顺带退出静音兜底态
+    if(radioAudio.muted)unmuteRadioAudio();
+  });
+  var radioUnmuteHintEl=getRadioHint();
+  if(radioUnmuteHintEl){radioUnmuteHintEl.addEventListener('click',function(){unmuteRadioAudio();requestRadioPlay()})}
   radioAudio.volume=0.8;
 
   radioAudio.addEventListener('playing',function(){updatePlayUI(true);hideLoading()});
@@ -456,15 +591,28 @@ if(isRadio){
     var ra=document.getElementById('radio-audio');
     if(ra){ra.src='';ra.load()}
     if(typeof switchSource==='function'&&sourceSelector){switchSource(sourceSelector.value)}
-    else{ra.src=validUrl;ra.play().catch(function(){})}
+    else{ra.src=validUrl;requestRadioPlay()}
   };
 
   waitForLib('Hls',6000).then(function(HlsLib){
-    if(!HlsLib){radioAudio.src=validUrl;radioAudio.play().catch(function(){});return}
-    if(HlsLib.isSupported()){
+    var playNativeRadio=function(){
+      radioAudio.src=validUrl;requestRadioPlay();
+      setInterval(function(){
+        var bufEl=document.getElementById('info-buffer');
+        if(bufEl&&radioAudio.buffered&&radioAudio.buffered.length>0){
+          var bufEnd=radioAudio.buffered.end(radioAudio.buffered.length-1);
+          var bufLen=bufEnd-radioAudio.currentTime;
+          bufEl.textContent=Math.round(bufLen)+'s';
+        }
+      },2000);
+    };
+    if(!HlsLib){playNativeRadio();return}
+    detectStreamType(validUrl,function(type){
+      if(type.native||!HlsLib.isSupported()){playNativeRadio();return}
       var hls=new HlsLib({enableWorker:true,lowLatencyMode:false,manifestLoadingTimeOut:15000,levelLoadingTimeOut:10000});
+      window._radioHls=hls;
       hls.loadSource(validUrl);hls.attachMedia(radioAudio);
-      hls.on(HlsLib.Events.MANIFEST_PARSED,function(){radioAudio.play().catch(function(){})});
+      hls.on(HlsLib.Events.MANIFEST_PARSED,function(){requestRadioPlay()});
       hls.on(HlsLib.Events.ERROR,function(e,d){if(d.fatal){if(d.type===HlsLib.ErrorTypes.NETWORK_ERROR)hls.startLoad();else if(d.type===HlsLib.ErrorTypes.MEDIA_ERROR)hls.recoverMediaError()}});
       var emaKbps=0;
       var lastCodec='';
@@ -503,9 +651,7 @@ if(isRadio){
           document.getElementById('info-buffer').textContent=Math.round(bufLen)+'s';
         }
       },2000);
-    }else if(radioAudio.canPlayType('application/vnd.apple.mpegurl')){
-      radioAudio.src=validUrl;radioAudio.play().catch(function(){});
-    }else{radioAudio.src=validUrl;radioAudio.play().catch(function(){})}
+    });
   });
 }else{
   radioView.style.display='none';
@@ -536,91 +682,199 @@ if(isRadio){
     document.getElementById('loading-text').style.display='block';
     if(window._tvHls){
       window._tvHls.startLoad();
+    }else if(window._tvMpegts){
+      try{window._tvMpegts.unload();window._tvMpegts.load()}catch(e){}
     }else if(tvVideo.src){
       tvVideo.load();tvVideo.play().catch(function(){});
     }
   };
-  waitForLib('Hls',8000).then(function(HlsLib){
-    if(!HlsLib||!HlsLib.isSupported()){
-      if(tvVideo.canPlayType('application/vnd.apple.mpegurl')){tvVideo.src=validUrl;tvVideo.play().catch(function(){})}
-      else{tvVideo.src=validUrl;tvVideo.play().catch(function(){})}
+  function startNativeTv(url){
+    tvVideo.src=url;
+    tvVideo.play().then(function(){hideLoading();tvNetErrorCount=0}).catch(function(){});
+    tvVideo.addEventListener('playing',function(){
+      tvNetErrorCount=0;hideLoading();
+      var uel=document.getElementById('unmute-hint');
+      if(uel)uel.style.display='flex';
+    },{once:true});
+    // 原生播放无法读取码率/编码，仅更新缓冲
+    setInterval(function(){
+      var bufEl=document.getElementById('info-buffer');
+      if(bufEl&&tvVideo.buffered&&tvVideo.buffered.length>0){
+        var bufEnd=tvVideo.buffered.end(tvVideo.buffered.length-1);
+        var bufLen=bufEnd-tvVideo.currentTime;
+        bufEl.textContent=Math.round(bufLen)+'s';
+      }
+    },2000);
+  }
+  function startMpegtsTv(url){
+    if(!window.mpegts){
+      tvVideo.src=url;tvVideo.play().catch(function(){});
       hideLoading();return;
     }
-    var hls=new HlsLib({enableWorker:true,lowLatencyMode:false,manifestLoadingTimeOut:15000,levelLoadingTimeOut:10000});
-    window._tvHls=hls;
-    hls.loadSource(validUrl);hls.attachMedia(tvVideo);
-    hls.on(HlsLib.Events.MANIFEST_PARSED,function(){tvNetErrorCount=0;tvVideo.muted=true;tvVideo.play().catch(function(){});var uel=document.getElementById('unmute-hint');if(uel)uel.style.display='flex'});
-    var emaKbps=0;
-    var lastCodec='';
-    function refreshCodec(){
-      try{
-        var lvl=hls.levels[hls.currentLevel>=0?hls.currentLevel:0];
-        if(!lvl)return;
-        var parts=[];
-        if(lvl.videoCodec)parts.push(lvl.videoCodec);
-        if(lvl.audioCodec)parts.push(lvl.audioCodec);
-        if(parts.length)lastCodec=parts.join(' / ');
-      }catch(e){}
-    }
-    hls.on(HlsLib.Events.FRAG_LOADED,function(e,d){var fg=d&&d.frag;if(!fg||!fg.duration||fg.duration<=0)return;var inst=(fg.byteLength||0)*8/fg.duration/1000;emaKbps=emaKbps?(emaKbps*0.7+inst*0.3):inst});
-    hls.on(HlsLib.Events.FRAG_PARSED,refreshCodec);
-    hls.on(HlsLib.Events.LEVEL_UPDATED,refreshCodec);
-    hls.on(HlsLib.Events.ERROR,function(e,d){
-      if(d.fatal){
-        if(d.type===HlsLib.ErrorTypes.NETWORK_ERROR){
-          tvNetErrorCount++;
-          if(tvNetErrorCount>=3){
-            hideLoading();
-            document.getElementById('load-error').style.display='block';
-            document.getElementById('loading-ring').style.display='none';
-            document.getElementById('loading-text').style.display='none';
-            return;
-          }
-          hls.startLoad();
-        }else if(d.type===HlsLib.ErrorTypes.MEDIA_ERROR){
-          hls.recoverMediaError();
+    // mpegts.js 在 Web Worker 中 fetch 无法解析相对路径（/proxy?url=...），
+    // 报 "Failed to parse URL"。必须传入绝对 URL，并关闭 Worker 避免该问题。
+    if(/^https?:\/\//i.test(url)===false){url=location.origin+url}
+    var player=mpegts.createPlayer({type:'flv',isLive:true,url:url},{enableWorker:false,liveBufferLatencyChasing:true});
+    window._tvMpegts=player;
+    player.attachMediaElement(tvVideo);
+    player.load();
+    player.play().catch(function(){});
+    player.on(mpegts.Events.ERROR,function(type,detail,info){
+      if(type===mpegts.ErrorTypes.NETWORK_ERROR){
+        tvNetErrorCount++;
+        if(tvNetErrorCount>=3){
+          hideLoading();
+          document.getElementById('load-error').style.display='block';
+          document.getElementById('loading-ring').style.display='none';
+          document.getElementById('loading-text').style.display='none';
+          return;
         }
+        try{player.unload();player.load()}catch(e){}
+      }else if(type===mpegts.ErrorTypes.MEDIA_ERROR){
+        try{player.destroy()}catch(e){}
       }
     });
-    tvVideo.addEventListener('playing',function(){tvNetErrorCount=0;hideLoading()});
-    setTimeout(function(){
-      if(tvNetErrorCount===0&&tvVideo.paused){
-        var lt=document.getElementById('loading-text');
-        if(lt)lt.textContent='缓冲中，请稍候...';
+    tvVideo.addEventListener('playing',function(){tvNetErrorCount=0;hideLoading()},{once:true});
+    // 2026-09-01: FLV 分支也更新流信息面板（码率/编码/缓冲）。
+    var lastCodecTxt='';
+    player.on(mpegts.Events.MEDIA_INFO,function(media){
+      try{
+        if(media&&media.videoCodec){
+          lastCodecTxt=media.videoCodec+(media.audioCodec?(' / '+media.audioCodec):'');
+        }else if(media&&(media.width||media.height)){
+          lastCodecTxt=media.width+'x'+media.height;
+        }
+      }catch(e){}
+    });
+    var emaSpeedKbps=0;
+    player.on(mpegts.Events.STATISTICS_INFO,function(stat){
+      try{
+        // stat.speed 单位为 KB/s（下载速率），*8 得到 kbps，直播源下近似实时码率
+        var kbps=(stat&&stat.speed?stat.speed:0)*8;
+        emaSpeedKbps=emaSpeedKbps?(emaSpeedKbps*0.7+kbps*0.3):kbps;
+      }catch(e){}
+    });
+    setInterval(function(){
+      var brEl=document.getElementById('info-bitrate');
+      if(brEl&&emaSpeedKbps>0)brEl.textContent=Math.round(emaSpeedKbps)+' kbps';
+      var cdEl=document.getElementById('info-codec');
+      if(cdEl){
+        var txt=lastCodecTxt;
+        if(!txt&&tvVideo.videoWidth>0&&tvVideo.videoHeight>0)txt=tvVideo.videoWidth+'x'+tvVideo.videoHeight;
+        cdEl.textContent=txt||'';
       }
-    },4000);
-    setTimeout(function(){
-      if(tvNetErrorCount===0&&tvVideo.paused){
+      var bufEl=document.getElementById('info-buffer');
+      if(bufEl&&tvVideo.buffered&&tvVideo.buffered.length>0){
+        var bufEnd=tvVideo.buffered.end(tvVideo.buffered.length-1);
+        var bufLen=bufEnd-tvVideo.currentTime;
+        bufEl.textContent=Math.round(bufLen)+'s';
+      }
+    },2000);
+  }
+  function startHlsTv(url){
+    waitForLib('Hls',8000).then(function(HlsLib){
+      if(!HlsLib||!HlsLib.isSupported()){
+        tvVideo.src=url;tvVideo.play().catch(function(){});
+        hideLoading();return;
+      }
+      var hls=new HlsLib({enableWorker:true,lowLatencyMode:false,manifestLoadingTimeOut:15000,levelLoadingTimeOut:10000});
+      window._tvHls=hls;
+      hls.loadSource(url);hls.attachMedia(tvVideo);
+      hls.on(HlsLib.Events.MANIFEST_PARSED,function(){tvNetErrorCount=0;tvVideo.muted=true;tvVideo.play().catch(function(){});var uel=document.getElementById('unmute-hint');if(uel)uel.style.display='flex'});
+      var emaKbps=0;
+      var lastCodec='';
+      function refreshCodec(){
+        try{
+          var lvl=hls.levels[hls.currentLevel>=0?hls.currentLevel:0];
+          if(!lvl)return;
+          var parts=[];
+          if(lvl.videoCodec)parts.push(lvl.videoCodec);
+          if(lvl.audioCodec)parts.push(lvl.audioCodec);
+          if(parts.length)lastCodec=parts.join(' / ');
+        }catch(e){}
+      }
+      hls.on(HlsLib.Events.FRAG_LOADED,function(e,d){var fg=d&&d.frag;if(!fg||!fg.duration||fg.duration<=0)return;var inst=(fg.byteLength||0)*8/fg.duration/1000;emaKbps=emaKbps?(emaKbps*0.7+inst*0.3):inst});
+      hls.on(HlsLib.Events.FRAG_PARSED,refreshCodec);
+      hls.on(HlsLib.Events.LEVEL_UPDATED,refreshCodec);
+      hls.on(HlsLib.Events.ERROR,function(e,d){
+        if(d.fatal){
+          if(d.type===HlsLib.ErrorTypes.NETWORK_ERROR){
+            tvNetErrorCount++;
+            if(tvNetErrorCount>=3){
+              hideLoading();
+              document.getElementById('load-error').style.display='block';
+              document.getElementById('loading-ring').style.display='none';
+              document.getElementById('loading-text').style.display='none';
+              return;
+            }
+            hls.startLoad();
+          }else if(d.type===HlsLib.ErrorTypes.MEDIA_ERROR){
+            hls.recoverMediaError();
+          }
+        }
+      });
+      tvVideo.addEventListener('playing',function(){tvNetErrorCount=0;hideLoading()});
+      setTimeout(function(){
+        if(tvNetErrorCount===0&&tvVideo.paused){
+          var lt=document.getElementById('loading-text');
+          if(lt)lt.textContent='缓冲中，请稍候...';
+        }
+      },4000);
+      setTimeout(function(){
+        if(tvNetErrorCount===0&&tvVideo.paused){
+          hideLoading();
+          document.getElementById('load-error').style.display='block';
+          document.getElementById('loading-ring').style.display='none';
+          document.getElementById('loading-text').style.display='none';
+        }
+      },15000);
+      setInterval(function(){
+        var brEl=document.getElementById('info-bitrate');
+        var cdEl=document.getElementById('info-codec');
+        var lv=(hls&&hls.currentLevel>=0&&hls.levels)?hls.levels[hls.currentLevel]:null;
+        var codecTxt=lastCodec;
+        if(!codecTxt&&lv){
+          var parts=[];
+          if(lv.videoCodec)parts.push(lv.videoCodec);
+          if(lv.audioCodec)parts.push(lv.audioCodec);
+          if(parts.length)codecTxt=parts.join(' / ');
+        }
+        if(!codecTxt&&tvVideo.videoWidth>0&&tvVideo.videoHeight>0)codecTxt=tvVideo.videoWidth+'x'+tvVideo.videoHeight;
+        if(cdEl)cdEl.textContent=codecTxt||'未知';
+        if(lv){
+          if(lv.bitrate>0&&brEl)brEl.textContent=Math.round(lv.bitrate/1000)+' kbps';
+        }
+        if(brEl&&(!lv||!lv.bitrate||lv.bitrate<=0)&&emaKbps>0)brEl.textContent=Math.round(emaKbps)+' kbps';
+        if(tvVideo.buffered&&tvVideo.buffered.length>0){
+          var bufEnd=tvVideo.buffered.end(tvVideo.buffered.length-1);
+          var bufLen=bufEnd-tvVideo.currentTime;
+          document.getElementById('info-buffer').textContent=Math.round(bufLen)+'s';
+        }
+      },2000);
+    });
+  }
+  function playTv(url){
+    if(window._tvHls){try{window._tvHls.destroy()}catch(e){}window._tvHls=null}
+    if(window._tvMpegts){try{window._tvMpegts.destroy()}catch(e){}window._tvMpegts=null}
+    tvNetErrorCount=0;
+    document.getElementById('load-error').style.display='none';
+    detectStreamType(url,function(type){
+      if(type.mp4){startNativeTv(url)}
+      else if(type.flv&&window.mpegts){startMpegtsTv(url)}
+      else if(type.native){startNativeTv(url)}
+      else if(type.html){
+        // 源返回网页而非流媒体（如 Icecast 目录页/防盗链跳转页），明确报错而非一直卡加载
         hideLoading();
+        var de=document.getElementById('load-error-desc');
+        if(de)de.textContent='该源返回的是网页而非流媒体（可能是重定向到播放器页面），无法直接播放';
         document.getElementById('load-error').style.display='block';
         document.getElementById('loading-ring').style.display='none';
         document.getElementById('loading-text').style.display='none';
       }
-    },15000);
-    setInterval(function(){
-      var brEl=document.getElementById('info-bitrate');
-      var cdEl=document.getElementById('info-codec');
-      var lv=(hls&&hls.currentLevel>=0&&hls.levels)?hls.levels[hls.currentLevel]:null;
-      var codecTxt=lastCodec;
-      if(!codecTxt&&lv){
-        var parts=[];
-        if(lv.videoCodec)parts.push(lv.videoCodec);
-        if(lv.audioCodec)parts.push(lv.audioCodec);
-        if(parts.length)codecTxt=parts.join(' / ');
-      }
-      if(!codecTxt&&tvVideo.videoWidth>0&&tvVideo.videoHeight>0)codecTxt=tvVideo.videoWidth+'x'+tvVideo.videoHeight;
-      if(cdEl)cdEl.textContent=codecTxt||'未知';
-      if(lv){
-        if(lv.bitrate>0&&brEl)brEl.textContent=Math.round(lv.bitrate/1000)+' kbps';
-      }
-      if(brEl&&(!lv||!lv.bitrate||lv.bitrate<=0)&&emaKbps>0)brEl.textContent=Math.round(emaKbps)+' kbps';
-      if(tvVideo.buffered&&tvVideo.buffered.length>0){
-        var bufEnd=tvVideo.buffered.end(tvVideo.buffered.length-1);
-        var bufLen=bufEnd-tvVideo.currentTime;
-        document.getElementById('info-buffer').textContent=Math.round(bufLen)+'s';
-      }
-    },2000);
-  });
+      else{startHlsTv(url)}
+    });
+  }
+  playTv(validUrl);
 }
 })();
 
@@ -639,6 +893,88 @@ document.addEventListener('click',function(e){
 });
 document.addEventListener('keydown',function(e){
   if(e.key==='Escape')hideStreamInfo();
+});
+})();
+
+(function(){
+var __epgCtx=window.__playerEpgCtx||{};
+var isRadio=__epgCtx.isRadio,channelName=__epgCtx.channelName,epgChannel=__epgCtx.epgChannel,tvgId=__epgCtx.tvgId,tvgName=__epgCtx.tvgName;
+var epgBtn=document.getElementById('epg-btn');
+var epgPanel=document.getElementById('epg-panel');
+var epgBody=document.getElementById('epg-body');
+var epgPanelTitle=document.getElementById('epg-panel-title');
+if(!epgBtn||!epgPanel)return;
+function fmtTime(x){if(!x||x.length<14)return x||'';return x.slice(0,4)+'-'+x.slice(4,6)+'-'+x.slice(6,8)+' '+x.slice(8,10)+':'+x.slice(10,12)}
+function esc(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+var epgOpen=false;
+var epgRetryCount=0;
+function hideEpg(){epgOpen=false;epgRetryCount=0;epgPanel.classList.remove('open');epgBtn.classList.remove('active')}
+function loadEpg(){
+  epgPanel.classList.add('open');
+  epgBtn.classList.add('active');
+  if(isRadio){
+    epgPanelTitle.textContent='节目单 · '+channelName;
+    epgBody.innerHTML='<div class="epg-msg">该电台暂无节目单（EPG 暂未覆盖电台）</div>';
+    return;
+  }
+  epgPanelTitle.textContent='节目单 · '+epgChannel;
+  epgBody.innerHTML='<div class="epg-loading"><div class="epg-spin"></div>加载节目单中...</div>';
+  var url='/api/epg/channel/'+encodeURIComponent(epgChannel);
+  var params=[];
+  if(tvgId)params.push('tvg_id='+encodeURIComponent(tvgId));
+  if(tvgName&&tvgName!==epgChannel)params.push('tvg_name='+encodeURIComponent(tvgName));
+  if(params.length)url+='?'+params.join('&');
+  fetch(url,{cache:'no-store'}).then(function(res){
+    if(!res.ok)throw new Error('HTTP '+res.status);
+    return res.json();
+  }).then(function(data){
+    if(data&&data.loading){
+      // 首次按需拉取全量 EPG 时后端立即返回，后台加载完成后自动重查
+      epgBody.innerHTML='<div class="epg-msg">节目单加载中（首次需拉取全量数据，约几秒）...</div>';
+      if(epgOpen&&epgRetryCount<8){epgRetryCount++;setTimeout(loadEpg,3000);return}
+      epgBody.innerHTML='<div class="epg-msg">节目单加载超时，请稍后重试</div>';
+      return;
+    }
+    epgRetryCount=0;
+    var epg=data&&data.epg;
+    if(!epg||!epg.programs||!epg.programs.length){
+      epgBody.innerHTML='<div class="epg-msg">未匹配到该频道的节目单数据</div>';
+      return;
+    }
+    var html='';
+    if(epg.current){
+      html+='<div class="epg-now"><div class="epg-now-label">正在播出</div><div class="epg-now-title">'+esc(epg.current.title)+'</div>';
+      if(epg.current.desc)html+='<div class="epg-now-desc">'+esc(epg.current.desc)+'</div>';
+      html+='</div>';
+    }
+    for(var i=0;i<epg.programs.length;i++){
+      var p=epg.programs[i];
+      html+='<div class="epg-item'+(p.is_current?' current':'')+'">';
+      html+='<div class="epg-item-time">'+fmtTime(p.start)+' ~ '+fmtTime(p.stop);
+      if(p.category)html+='<span class="epg-item-cat">'+esc(p.category)+'</span>';
+      if(p.is_current)html+='<span class="epg-item-current-badge">当前</span>';
+      html+='</div>';
+      html+='<div class="epg-item-title">'+esc(p.title)+'</div>';
+      if(p.desc)html+='<div class="epg-item-desc">'+esc(p.desc)+'</div>';
+      html+='</div>';
+    }
+    epgBody.innerHTML=html;
+  }).catch(function(){
+    epgBody.innerHTML='<div class="epg-msg">节目单服务暂不可用，请稍后再试</div>';
+  });
+}
+epgBtn.addEventListener('click',function(e){
+  e.stopPropagation();
+  if(epgOpen){hideEpg();return}
+  epgOpen=true;
+  loadEpg();
+});
+document.getElementById('epg-panel-close').addEventListener('click',hideEpg);
+document.addEventListener('click',function(e){
+  if(epgOpen&&!epgPanel.contains(e.target)&&e.target!==epgBtn)hideEpg();
+});
+document.addEventListener('keydown',function(e){
+  if(e.key==='Escape'&&epgOpen)hideEpg();
 });
 })();
 </script>

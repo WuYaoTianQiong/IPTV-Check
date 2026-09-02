@@ -1,13 +1,13 @@
 import asyncio
-import base64
 import logging
-import time
 from urllib.parse import urljoin
 from typing import Optional, Tuple
 
 import aiohttp
 
 from iptv_check.infra.network import HttpClient
+from iptv_check.infra.proxy_url import encode_proxy_url
+from iptv_check.infra.speed_measure import measure_speed_async, measure_speed_sync
 
 logger = logging.getLogger(__name__)
 
@@ -51,8 +51,8 @@ class M3U8Validator:
                         if nested_segment:
                             with self._http.get(nested_segment, headers=headers, timeout=timeout, stream=True) as nested_r:
                                 nested_r.raise_for_status()
-                                return self._test_speed(nested_r.iter_content(chunk_size=8192), timeout[1])
-                return self._test_speed(seg_r.iter_content(chunk_size=8192), timeout[1])
+                                return measure_speed_sync(nested_r.iter_content(chunk_size=8192), timeout[1], empty_result="∞")
+                return measure_speed_sync(seg_r.iter_content(chunk_size=8192), timeout[1], empty_result="∞")
         except Exception:
             return "-"
 
@@ -63,25 +63,6 @@ class M3U8Validator:
             if line and not line.startswith("#"):
                 return urljoin(base_url, line)
         return None
-
-    @staticmethod
-    def _test_speed(response_iterator, timeout: int) -> str:
-        import time
-        try:
-            start_time = time.time()
-            downloaded_size = 0
-            for chunk in response_iterator:
-                downloaded_size += len(chunk)
-                if downloaded_size >= 256 * 1024:
-                    break
-                if time.time() - start_time > timeout / 2:
-                    return "N/A"
-            elapsed_time = time.time() - start_time
-            if elapsed_time > 0:
-                return f"{(downloaded_size / 1024) / elapsed_time:.2f}"
-            return "∞"
-        except Exception:
-            return "N/A"
 
     async def validate_recursive_async(self, base_url: str, playlist_content: str,
                                        headers: dict, timeout_connect: int, timeout_read: int,
@@ -118,14 +99,14 @@ class M3U8Validator:
     def _maybe_proxy_url(self, url: str, proxy_base: str) -> str:
         """If proxy_base is set, encode the URL for the proxy endpoint."""
         if proxy_base:
-            enc = base64.b64encode(url.encode("utf-8")).decode("utf-8")
-            return f"{proxy_base}?url={enc}"
+            return encode_proxy_url(url, proxy_base)
         return url
 
     async def get_speed_async(self, base_url: str, playlist_content: str,
                               headers: dict, timeout_connect: int, timeout_read: int,
                               http_session: aiohttp.ClientSession = None,
-                              proxy_base: str = "") -> str:
+                              proxy_base: str = "",
+                              max_bytes: int = 256 * 1024, max_seconds: Optional[float] = None) -> str:
         segment_url = self._find_segment_url(base_url, playlist_content)
         if not segment_url:
             return "-"
@@ -152,8 +133,10 @@ class M3U8Validator:
                             proxy_nested = self._maybe_proxy_url(nested_segment, proxy_base)
                             async with http_session.get(proxy_nested, headers=headers, timeout=timeout, ssl=False) as nested_resp:
                                 nested_resp.raise_for_status()
-                                return await self._test_speed_async(nested_resp.content.iter_any(), timeout_read)
-                return await self._test_speed_async(seg_resp.content.iter_any(), timeout_read)
+                                return await measure_speed_async(nested_resp.content.iter_any(), timeout_read,
+                                                                 max_bytes=max_bytes, max_seconds=max_seconds)
+                return await measure_speed_async(seg_resp.content.iter_any(), timeout_read,
+                                                 max_bytes=max_bytes, max_seconds=max_seconds)
         except Exception:
             return "-"
 
@@ -171,8 +154,7 @@ class M3U8Validator:
 
         Returns the HTTP status code, or raises on failure.
         """
-        import base64 as _b64
-        proxy_url = f"{proxy_base}?url={_b64.b64encode(segment_url.encode('utf-8')).decode('utf-8')}"
+        proxy_url = encode_proxy_url(segment_url, proxy_base)
         timeout = aiohttp.ClientTimeout(
             total=timeout_connect + timeout_read,
             connect=timeout_connect,
@@ -198,21 +180,3 @@ class M3U8Validator:
                 if len(segments) >= limit:
                     break
         return segments
-
-    @staticmethod
-    async def _test_speed_async(content_iterator, timeout: int) -> str:
-        try:
-            start_time = time.time()
-            downloaded_size = 0
-            async for chunk in content_iterator:
-                downloaded_size += len(chunk)
-                if downloaded_size >= 256 * 1024:
-                    break
-                if time.time() - start_time > timeout / 2:
-                    return "N/A"
-            elapsed_time = time.time() - start_time
-            if elapsed_time > 0:
-                return f"{(downloaded_size / 1024) / elapsed_time:.2f}"
-            return "∞"
-        except Exception:
-            return "N/A"

@@ -32,8 +32,14 @@ class TestPlayerRenderer:
         assert "{{" not in html
 
     def test_special_chars_in_name(self):
+        """频道名中的 HTML/JS 特殊字符必须被安全转义，不能原样注入（防 XSS）。"""
         html = self.renderer.render("http://x.com/a.m3u8", "测试 <>&\"' 频道")
-        assert "测试 <>&\"' 频道" in html
+        # HTML 位置：Jinja2 autoescape 转义为实体
+        assert "测试 &lt;&gt;&amp;&#34;&#39; 频道" in html
+        # JS 位置：tojson 将 < > & ' 转义为 \uXXXX，防止 script 注入
+        assert r'channelName = "\u6d4b\u8bd5 \u003c\u003e\u0026\"\u0027 \u9891\u9053"' in html
+        # 原始尖括号不得直接出现在输出中
+        assert "测试 <" not in html
 
     # ── proxy URL encoding round-trip ──
 
@@ -42,8 +48,8 @@ class TestPlayerRenderer:
         stream_url = "http://hls.example.com/live/stream.m3u8?token=abc+123"
         html = self.renderer.render(stream_url, "Test")
 
-        # Extract the proxy URL from the template
-        m = re.search(r"var proxyUrl = '([^']+)'", html)
+        # Extract the proxy URL from the template (tojson 输出双引号形式)
+        m = re.search(r'var proxyUrl = "([^"]+)"', html)
         assert m, "proxyUrl not found in rendered HTML"
         proxy_url = m.group(1)
 
@@ -60,12 +66,14 @@ class TestPlayerRenderer:
 
     def test_no_sources(self):
         html = self.renderer.render("http://x.com/a.m3u8", "Ch")
-        assert "var sources = null" in html
+        assert "var sourcesList = null" in html
+        assert "var recommendedIdx = -1" in html
 
     def test_single_source(self):
         sources = [{"url": "http://x.com/a.m3u8", "latency": 26, "recommended": True}]
         html = self.renderer.render("http://x.com/a.m3u8", "Ch", sources=sources)
-        assert "var sources = [" in html
+        assert "var sourcesList = [" in html
+        assert "var recommendedIdx = 0" in html
 
     def test_multiple_sources_selector_class(self):
         sources = [
@@ -77,7 +85,9 @@ class TestPlayerRenderer:
         assert "a.com" in html
         assert "b.com" in html
         # Recommended index should be 1 (second source)
-        assert "var currentSourceIdx = 1" in html
+        assert "var recommendedIdx = 1" in html
+        # Source selector should be visible for multi-source channels
+        assert 'class="source-selector visible' in html
 
     def test_recommended_idx_default(self):
         sources = [
@@ -85,24 +95,24 @@ class TestPlayerRenderer:
             {"url": "http://b.com/2.m3u8", "latency": 20},
         ]
         html = self.renderer.render("http://a.com/1.m3u8", "Ch", sources=sources)
-        assert "var currentSourceIdx = 0" in html
+        assert "var recommendedIdx = 0" in html
 
     # ── error overlay & fault tolerance ──
 
     def test_error_overlay_present(self):
         html = self.renderer.render("http://x.com/a.m3u8", "Ch")
-        assert "error-overlay" in html
-        assert "播放失败" in html
+        assert 'id="load-error"' in html
+        assert "源服务器不可达" in html
 
     def test_fallback_div_present(self):
         html = self.renderer.render("http://x.com/a.m3u8", "Ch")
-        assert "hls-fallback" in html
+        assert 'class="fallback"' in html
         assert "location.reload" in html
 
     def test_script_onerror(self):
         html = self.renderer.render("http://x.com/a.m3u8", "Ch")
-        assert "onerror=" in html
-        assert "__hlsLoadFailed" in html
+        assert "HlsLib.Events.ERROR" in html
+        assert "window.retryPlay" in html
 
     # ── template caching ──
 

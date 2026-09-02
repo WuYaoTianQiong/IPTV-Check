@@ -16,6 +16,7 @@ from iptv_check.models.settings import CheckConfig
 from iptv_check.infra.check_engine.base import CheckEngineProtocol
 from iptv_check.core.m3u8_validator import M3U8Validator
 from iptv_check.infra.event_bus import event_bus, Events
+from iptv_check.infra.speed_measure import measure_speed_async
 
 logger = logging.getLogger(__name__)
 
@@ -168,6 +169,10 @@ class StreamCheckEngine:
                     content_type = resp.headers.get("Content-Type", "").lower()
                     is_m3u8 = "mpegurl" in content_type or channel.url.lower().endswith(".m3u8")
 
+                    # 返回网页而非流媒体（如 Icecast 目录页/JS 跳转页）：判定无效
+                    if "text/html" in content_type and not is_m3u8:
+                        raise ValueError("非流媒体响应(HTML页面)")
+
                     if self._config.run_speed_test:
                         if is_m3u8:
                             playlist_content = await resp.text()
@@ -179,7 +184,7 @@ class StreamCheckEngine:
                                 http_session=self._http,
                             )
                         else:
-                            speed = await self._test_speed_async(resp.content.iter_any(), self._config.timeout_read)
+                            speed = await measure_speed_async(resp.content.iter_any(), self._config.timeout_read, empty_result="∞")
                     else:
                         if is_m3u8:
                             playlist_content = await resp.text()
@@ -235,23 +240,6 @@ class StreamCheckEngine:
                 result.is_valid = False
 
         return result
-
-    async def _test_speed_async(self, content_iterator, timeout: int) -> str:
-        try:
-            start_time = time.time()
-            downloaded_size = 0
-            async for chunk in content_iterator:
-                downloaded_size += len(chunk)
-                if downloaded_size >= 256 * 1024:
-                    break
-                if time.time() - start_time > timeout / 2:
-                    return "N/A"
-            elapsed_time = time.time() - start_time
-            if elapsed_time > 0:
-                return f"{(downloaded_size / 1024) / elapsed_time:.2f}"
-            return "∞"
-        except Exception:
-            return "N/A"
 
     def add_channels(self, channels: List[Channel], config: CheckConfig,
                      on_result: Optional[Callable[[CheckResult], None]] = None) -> None:

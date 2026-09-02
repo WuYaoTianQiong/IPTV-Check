@@ -1,6 +1,7 @@
 """收藏夹 / 收藏夹管理 / 自定义频道 路由。"""
 import asyncio
 import logging
+import re
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Response
@@ -55,7 +56,9 @@ async def get_favorites(folder_id: Optional[int] = None, page: int = 1, per_page
     def _is_radio(name, group, url):
         text = f"{name or ''} {group or ''} {url or ''}".lower()
         url_lower = (url or "").lower()
-        return any(kw in text for kw in _RADIO_KW) or any(kw in url_lower for kw in _RADIO_URL_KW)
+        return (any(kw in text for kw in _RADIO_KW) or
+                any(kw in url_lower for kw in _RADIO_URL_KW) or
+                bool(re.search(r"://[^/]*radio(?:\d|\.|:)", url_lower)))
 
     def _query():
         from iptv_check.infra.repository.favorite_repo import FavoriteRepository

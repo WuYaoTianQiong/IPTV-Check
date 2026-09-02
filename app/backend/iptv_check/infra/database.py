@@ -57,6 +57,11 @@ class CheckHistoryBase(SQLModel):
     invalid_count: int = Field(default=0)
     elapsed_seconds: float = Field(default=0)
     created_at: datetime = Field(default_factory=cn_now, index=True)
+    # 二次复检完成时间（前端"最后更新"展示；由 alembic 迁移补充到已有库）
+    last_updated: Optional[datetime] = Field(default=None)
+    # 检测方案（quick/standard/deep）与来源会话（细筛自哪个粗筛 session；由 alembic 迁移补充）
+    check_mode: str = Field(default="")
+    parent_session_id: str = Field(default="", index=True)
 
 
 class CheckHistoryModel(CheckHistoryBase, table=True):
@@ -328,7 +333,7 @@ class DatabaseManager:
     def get_channel_trend(self, channel_id: int, days: int = 7) -> List[dict]:
         """获取频道历史检测趋势"""
         with self.get_session() as session:
-            cutoff = cn_now() - __import__('datetime', fromlist=['timedelta']).timedelta(days=days)
+            cutoff = cn_now() - timedelta(days=days)
             results = session.exec(
                 select(CheckResultModel)
                 .where(CheckResultModel.channel_id == channel_id)
@@ -348,7 +353,7 @@ class DatabaseManager:
 
     def get_channel_stability_stats(self, channel_id: int, days: int = 7) -> dict:
         with self.get_session() as session:
-            cutoff = cn_now() - __import__('datetime', fromlist=['timedelta']).timedelta(days=days)
+            cutoff = cn_now() - timedelta(days=days)
             results = session.exec(
                 select(CheckResultModel)
                 .where(CheckResultModel.channel_id == channel_id)
@@ -395,7 +400,7 @@ class DatabaseManager:
     def get_top_stable_channels(self, days: int = 7, limit: int = 50) -> List[dict]:
         """获取最稳定的频道列表"""
         with self.get_session() as session:
-            cutoff = cn_now() - __import__('datetime', fromlist=['timedelta']).timedelta(days=days)
+            cutoff = cn_now() - timedelta(days=days)
             
             # 获取所有频道在该时间段内的检测结果
             query = text("""

@@ -1,8 +1,9 @@
 """Tests for HlsRewriter — URL rewriting in M3U8 playlists and circuit breaking."""
 import base64
 import sys
-import time
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from urllib import parse as urllib_parse
 from unittest.mock import Mock, AsyncMock, patch
 
 import pytest
@@ -20,7 +21,13 @@ from iptv_check.infra.hls_rewriter import (
 def decode_proxy_url(proxy_url: str) -> str:
     """Helper: extract and decode the target URL from a proxy URL."""
     encoded = proxy_url.split("?url=")[1]
-    return base64.b64decode(encoded).decode("utf-8")
+    # 统一编码后的 base64 含 URL 编码（%XX），解码时先 unquote
+    return base64.b64decode(urllib_parse.unquote(encoded)).decode("utf-8")
+
+
+def _decode_uri_value(value: str) -> str:
+    """Decode a base64 URI value (may be URL-encoded)."""
+    return base64.b64decode(urllib_parse.unquote(value)).decode("utf-8")
 
 
 class TestHlsRewriter:
@@ -83,8 +90,7 @@ class TestHlsRewriter:
         assert 'URI="' in result
         m = __import__("re").search(r'URI="([^"]+)"', result)
         assert m is not None
-        encoded = m.group(1)
-        decoded = base64.b64decode(encoded).decode("utf-8")
+        decoded = _decode_uri_value(m.group(1))
         assert decoded == "http://example.com/live/init.mp4"
 
     def test_ext_x_map_with_byterange(self):
@@ -92,9 +98,9 @@ class TestHlsRewriter:
             '#EXT-X-MAP:URI="init.mp4",BYTERANGE="0-999"\n', self.BASE, self.PROXY
         )
         assert 'BYTERANGE=' in result
-        decoded = base64.b64decode(
+        decoded = _decode_uri_value(
             __import__("re").search(r'URI="([^"]+)"', result).group(1)
-        ).decode("utf-8")
+        )
         assert decoded == "http://example.com/live/init.mp4"
 
     # ── EXT-X-KEY ──
@@ -107,7 +113,7 @@ class TestHlsRewriter:
         assert 'METHOD=AES-128' in result
         assert 'URI="' in result
         m = __import__("re").search(r'URI="([^"]+)"', result)
-        decoded = base64.b64decode(m.group(1)).decode("utf-8")
+        decoded = _decode_uri_value(m.group(1))
         assert decoded == "http://example.com/live/key.bin"
 
     # ── relative paths ──
@@ -198,7 +204,7 @@ class TestHlsRewriter:
         # init segment rewritten (URI value is base64 of the full URL)
         m = __import__("re").search(r'URI="([^"]+)"', lines[4])
         assert m is not None
-        decoded_uri = base64.b64decode(m.group(1)).decode("utf-8")
+        decoded_uri = _decode_uri_value(m.group(1))
         assert decoded_uri == "http://example.com/live/init.mp4"
         # TS segments rewritten (proxy URL format)
         assert decode_proxy_url(lines[6].strip()) == "http://example.com/live/segment-000.ts"
@@ -227,7 +233,7 @@ class TestHlsRewriterHelpers:
         assert result is not None
         assert result.startswith("#EXT-X-MAP:URI=")
         encoded = result.split('URI="')[1].rstrip('"')
-        decoded = base64.b64decode(encoded).decode()
+        decoded = _decode_uri_value(encoded)
         assert decoded == "http://example.com/live/init.mp4"
 
     def test_rewrite_tag_uri_no_match(self):
@@ -235,17 +241,17 @@ class TestHlsRewriterHelpers:
 
     def test_rewrite_bare_url_relative(self):
         result = _rewrite_bare_url("segment.ts", "http://x.com/live/", "/proxy")
-        decoded = base64.b64decode(result.split("?url=")[1]).decode()
+        decoded = _decode_uri_value(result.split("?url=")[1])
         assert decoded == "http://x.com/live/segment.ts"
 
     def test_rewrite_bare_url_absolute(self):
         result = _rewrite_bare_url("https://cdn.com/video.ts", "", "/proxy")
-        decoded = base64.b64decode(result.split("?url=")[1]).decode()
+        decoded = _decode_uri_value(result.split("?url=")[1])
         assert decoded == "https://cdn.com/video.ts"
 
 
 class TestStreamProxyBreaker:
-    """Circuit breaker behavior on StreamProxy."""
+    """Circuit breaker behavior on StreamProxy (pybreaker)."""
 
     @pytest.fixture
     def proxy(self):
@@ -255,33 +261,41 @@ class TestStreamProxyBreaker:
         p._circuit_cooldown_secs = 30
         return p
 
+    @staticmethod
+    def _fail(proxy, domain="example.com"):
+        proxy._record_source_error(domain, Exception("boom"))
+
     def test_initial_state(self, proxy):
         assert proxy._is_source_circuit_open("example.com") is False
-        assert len(proxy._source_circuit_open) == 0
+        # 状态检查会懒创建对应 domain 的熔断器
+        assert len(proxy._circuit_breakers) == 1
 
     def test_circuit_opens_after_threshold(self, proxy):
-        proxy._record_source_error("example.com")
-        proxy._record_source_error("example.com")
+        self._fail(proxy)
+        self._fail(proxy)
         assert proxy._is_source_circuit_open("example.com") is True
 
     def test_circuit_not_open_below_threshold(self, proxy):
-        proxy._record_source_error("example.com")
+        self._fail(proxy)
         assert proxy._is_source_circuit_open("example.com") is False
 
     def test_success_resets_consecutive(self, proxy):
-        proxy._record_source_error("example.com")
+        self._fail(proxy)
         proxy._record_source_ok("example.com")
-        proxy._record_source_error("example.com")
-        # Consecutive was reset, so only 1 consecutive error
+        self._fail(proxy)
+        # 成功调用会重置 pybreaker 失败计数，仅 1 次失败不会熔断
         assert proxy._is_source_circuit_open("example.com") is False
 
     def test_circuit_cooldown(self, proxy):
-        proxy._record_source_error("example.com")
-        proxy._record_source_error("example.com")
+        self._fail(proxy)
+        self._fail(proxy)
         assert proxy._is_source_circuit_open("example.com") is True
 
-        # Fast-forward past cooldown
-        proxy._source_circuit_open["example.com"] = time.time() - 31
+        # 快进冷却期（pybreaker 以 opened_at 记录打开时刻）
+        breaker = proxy._get_circuit_breaker("example.com")
+        breaker._state_storage.opened_at = datetime.now(timezone.utc) - timedelta(seconds=31)
+        # 冷却到期后成功请求会触发 half-open 试探并关闭熔断
+        proxy._record_source_ok("example.com")
         assert proxy._is_source_circuit_open("example.com") is False
 
     def test_extract_domain_https(self, proxy):

@@ -27,6 +27,32 @@ _EXTINF_ATTR_PATTERNS = {
 
 _RADIO_KEYWORDS = {"广播", "电台", "radio", "fm", "am", "broadcast"}
 _RADIO_CATEGORY_KEYWORDS = {"广播电台", "广播", "radio"}
+_RADIO_NAME_PATTERN = re.compile(r'\b(?:fm|am)\b|radio|broadcast|广播|电台', re.IGNORECASE)
+_RADIO_URL_PATTERN = re.compile(
+    r'://[^/]*radio(?:\d|\.|:)|qingting\.fm|ximalaya|lrc\.la',
+    re.IGNORECASE,
+)
+
+
+def infer_is_radio(name: str = "", group: str = "", url: str = "",
+                   category: str = "", frequency: str = "") -> bool:
+    """统一电视/电台判定（启发式兜底层，供各解析入口复用）。
+
+    信号强度：FM/AM 频率 > 分组/源分类关键词 > 频道名关键词 > URL 域名。
+    检测期 media_type 事实（audio/video）拥有更高优先级，可覆盖本函数结果。
+    """
+    if frequency:
+        return True
+    group_text = f"{group or ''} {category or ''}".lower()
+    if group_text and any(kw in group_text for kw in _RADIO_KEYWORDS):
+        return True
+    if name and _RADIO_NAME_PATTERN.search(name):
+        return True
+    if url and _RADIO_URL_PATTERN.search(url.lower()):
+        return True
+    return False
+
+
 _IPV6_PATTERN = re.compile(r"https?://\[?[0-9a-f]{4}:", re.IGNORECASE)
 _CLEAN_NAME_PATTERN = re.compile(r'^["\',;]+|["\',;]+$')
 _CLEAN_GROUP_PATTERN = re.compile(r'^["\',;]+|["\',;]+$')
@@ -342,9 +368,14 @@ _COUNTRY_CODE_MAP = {
     "bbc": "GB", "itv": "GB", "sky": "GB", "channel 4": "GB", "channel 5": "GB",
     "cnn": "US", "fox": "US", "abc": "US", "nbc": "US", "cbs": "US",
     "hbo": "US", "espn": "US", "pbs": "US", "npr": "US", "cnbc": "US",
-    "bloomberg": "US", "mtv": "US", "vh1": "US",
+    "bloomberg": "US", "mtv": "US", "mtv3": "FI", "vh1": "US",
     "nhk": "JP", "tbs": "JP", "fuji": "JP", "asahi": "JP", "tv asahi": "JP",
     "kbs": "KR", "sbs": "KR", "mbc": "KR", "jtbc": "KR",
+    "mbc every1": "KR",
+    # 阿联酋 MBC Group 与韩国 MBC 同名，按频道后缀区分（MBC 1~5/Action/Max/Bollywood/Persia/Drama/Cinema 等）
+    "mbc bollywood": "AE", "mbc persia": "AE", "mbc max": "AE",
+    "mbc action": "AE", "mbc drama": "AE", "mbc cinema": "AE",
+    "mbc 1": "AE", "mbc 2": "AE", "mbc 3": "AE", "mbc 4": "AE", "mbc 5": "AE",
     "dw": "DE", "zdf": "DE", "ard": "DE",
     "france": "FR", "rfi": "FR", "tf1": "FR", "canal+": "FR",
     "rt": "RU", "channel one": "RU",
@@ -363,7 +394,40 @@ _COUNTRY_CODE_MAP = {
     "mexico": "MX", "televisa": "MX", "azteca": "MX",
     "australia": "AU", "abc au": "AU",
     "canada": "CA", "cbc": "CA", "ctv": "CA",
-    "star": "SG", "mediacorp": "SG",
+    "mediacorp": "SG",
+    # ---- 常见外语媒体/国家标识（中文国名、地区名，供分组与频道名直接识别）----
+    "美国": "US", "英国": "GB", "日本": "JP", "韩国": "KR",
+    "法国": "FR", "德国": "DE", "俄罗斯": "RU", "意大利": "IT",
+    "西班牙": "ES", "葡萄牙": "PT", "荷兰": "NL", "比利时": "BE",
+    "瑞典": "SE", "挪威": "NO", "芬兰": "FI", "丹麦": "DK",
+    "爱尔兰": "IE", "奥地利": "AT", "瑞士": "CH", "波兰": "PL",
+    "捷克": "CZ", "匈牙利": "HU", "罗马尼亚": "RO", "保加利亚": "BG",
+    "乌克兰": "UA", "克罗地亚": "HR", "塞尔维亚": "RS", "希腊": "GR",
+    "印度": "IN", "巴基斯坦": "PK", "孟加拉": "BD", "孟加拉国": "BD",
+    "斯里兰卡": "LK", "泰国": "TH", "越南": "VN", "菲律宾": "PH",
+    "马来西亚": "MY", "新加坡": "SG", "印尼": "ID", "印度尼西亚": "ID",
+    "缅甸": "MM", "柬埔寨": "KH", "老挝": "LA", "土耳其": "TR",
+    "伊朗": "IR", "伊拉克": "IQ", "沙特": "SA", "沙特阿拉伯": "SA",
+    "阿联酋": "AE", "卡塔尔": "QA", "以色列": "IL", "埃及": "EG",
+    "尼日利亚": "NG", "南非": "ZA", "肯尼亚": "KE", "摩洛哥": "MA",
+    "澳大利亚": "AU", "新西兰": "NZ", "加拿大": "CA",
+    "巴西": "BR", "阿根廷": "AR", "墨西哥": "MX", "哥伦比亚": "CO",
+    "智利": "CL", "秘鲁": "PE", "委内瑞拉": "VE", "古巴": "CU",
+    "台湾": "TW", "香港": "HK", "澳门": "MO", "中国台湾": "TW",
+    "中国香港": "HK", "中国澳门": "MO",
+    # 常见外语广播电视（对外/本语频道）
+    "france24": "FR", "tv5monde": "FR", "tv5 monde": "FR",
+    "rthk": "HK", "trt": "TR", "arirang": "KR",
+    "wion": "IN", "times now": "IN",
+    "sky news arabia": "AE",
+    "radio bio bio": "CL", "biobio": "CL", "bío-bío": "CL", "tele13": "CL",
+    "foxtel": "AU", "abs-cbn": "PH", "channel 3 thailand": "TH",
+    "deutsche welle": "DE", "radio france": "FR", "russia today": "RU",
+    "nhk radio": "JP", "cbc radio": "CA", "bbc radio": "GB",
+    "aljazeera": "QA", "vtv": "VN", "vov": "VN", "htv": "VN",
+    "polsat": "PL", "prosieben": "DE", "tokyo mx": "JP",
+    "sky news": "GB", "fox news": "US", "tg4": "IE",
+    "alemania": "DE",
 }
 
 _CN_KEYWORDS = {"cctv", "cgtn", "cri", "卫视", "央视", "中央", "湖南", "浙江", "江苏",
@@ -371,6 +435,22 @@ _CN_KEYWORDS = {"cctv", "cgtn", "cri", "卫视", "央视", "中央", "湖南", "
     "安徽", "江西", "河南", "河北", "山西", "陕西", "甘肃", "青海", "宁夏", "新疆",
     "内蒙古", "广西", "西藏", "贵州", "云南", "海南", "吉林", "黑龙江", "福建",
     "上海", "广州", "成都", "武汉", "杭州", "南京", "苏州", "长沙"}
+
+
+def _country_kw_matches(text_lower: str, kw: str) -> bool:
+    """国家关键词匹配：纯英文/数字关键词要求「词边界」。
+
+    否则 `rt`(俄) 会命中 `puerto`、`abc` 命中任意含 abc 的拉丁词等，
+    把大量西语/葡语台误判成俄/美。中文关键词允许作为其它词的后缀
+    （如「美国」在「美国中文台」中仍应命中美国）。
+    """
+    if not kw:
+        return False
+    if re.fullmatch(r"[a-z0-9][a-z0-9 \-]*", kw):
+        # 左边界拒绝字母数字（如 puerto 中的 rt）；右边界只拒绝字母、
+        # 允许「台标+频道编号」（ITV1/Sky2），避免漏识。
+        return re.search(r"(?<![a-z0-9])" + re.escape(kw) + r"(?![a-z])", text_lower) is not None
+    return kw in text_lower
 
 
 def _infer_country_code(name: str, group: str = "", country: str = "") -> str:
@@ -383,11 +463,11 @@ def _infer_country_code(name: str, group: str = "", country: str = "") -> str:
         if kw.lower() in lower_name:
             return "CN"
     for kw, code in sorted(_COUNTRY_CODE_MAP.items(), key=lambda x: -len(x[0])):
-        if kw in lower_name:
+        if _country_kw_matches(lower_name, kw):
             return code
     lower_group = group.lower()
     for kw, code in sorted(_COUNTRY_CODE_MAP.items(), key=lambda x: -len(x[0])):
-        if kw in lower_group:
+        if _country_kw_matches(lower_group, kw):
             return code
     return ""
 
@@ -852,19 +932,17 @@ def _parse_extinf_line(line: str, source_category: str = "") -> dict:
     if re.search(r'catchup="[^"]*"', line):
         attrs["category"] = "catchup"
 
-    group = attrs.get("group", "")
-    if group and any(kw in group.lower() for kw in _RADIO_KEYWORDS):
-        attrs["is_radio"] = True
-    elif not attrs.get("is_radio") and source_category and any(kw in source_category.lower() for kw in _RADIO_CATEGORY_KEYWORDS):
-        attrs["is_radio"] = True
-
     name = attrs.get("name", "")
-    tvg_name = attrs.get("tvg_name", "")
-    attrs["clean_name"] = _translate_channel_name(name, tvg_name)
-
+    group = attrs.get("group", "")
     frequency = Channel._extract_frequency(name, group)
     if frequency:
         attrs["frequency"] = frequency
+    # 统一启发式判定：FM/AM 频率 > 分组/源分类 > 频道名；URL 信号在 _create_channel 补充
+    if infer_is_radio(name=name, group=group, category=source_category, frequency=frequency):
+        attrs["is_radio"] = True
+
+    tvg_name = attrs.get("tvg_name", "")
+    attrs["clean_name"] = _translate_channel_name(name, tvg_name)
 
     return attrs
 
@@ -878,6 +956,10 @@ def _is_ipv6(url: str) -> bool:
 
 def _create_channel(name: str, url: str, group: str, sources: List[str],
                     index: int, extinf_attrs: dict) -> Channel:
+    is_radio = bool(extinf_attrs.get("is_radio", False))
+    # 域名形如 http://radio.xxx / http://radio11.xxx / http://xxx.radio.xxx 的裸流基本是网络电台
+    if not is_radio and infer_is_radio(url=url):
+        is_radio = True
     return Channel(
         name=name,
         url=url,
@@ -890,7 +972,7 @@ def _create_channel(name: str, url: str, group: str, sources: List[str],
         language=extinf_attrs.get("language", ""),
         country=extinf_attrs.get("country", ""),
         category=extinf_attrs.get("category", ""),
-        is_radio=extinf_attrs.get("is_radio", False),
+        is_radio=is_radio,
         frequency=extinf_attrs.get("frequency", ""),
         clean_name=extinf_attrs.get("clean_name", ""),
     )

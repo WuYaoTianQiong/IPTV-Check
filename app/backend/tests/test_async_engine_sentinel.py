@@ -177,6 +177,85 @@ async def test_no_deadlock_with_mixed_cache():
 
 
 @pytest.mark.asyncio
+async def test_streaming_batch_feed_with_complete():
+    """测试：流式模式 start + add_channels + complete 流程，批次跨多个调用仍能全部检测"""
+    mock_http = MagicMock()
+    mock_cache = MagicMock()
+    mock_cache.has.return_value = False  # 所有频道都需要检测
+    mock_m3u8 = MagicMock()
+
+    engine = AsyncCheckEngine(
+        http_session=mock_http,
+        cache=mock_cache,
+        m3u8_validator=mock_m3u8,
+    )
+
+    config = CheckConfig(max_threads=5)
+
+    result_collected = []
+    complete_called = asyncio.Event()
+
+    def on_result(result):
+        result_collected.append(result)
+
+    def on_complete():
+        complete_called.set()
+
+    # 流式启动第一批
+    engine.start(create_test_channels(3), config, on_result=on_result, on_complete=on_complete, streaming=True)
+    # 中途追加两批
+    engine.add_channels(create_test_channels(4), config)
+    engine.add_channels(create_test_channels(3), config)
+    # 结束接收，触发完成标记
+    engine.complete()
+
+    try:
+        await asyncio.wait_for(complete_called.wait(), timeout=5.0)
+        completed = True
+    except asyncio.TimeoutError:
+        completed = False
+
+    assert completed, "流式模式下 on_complete 未被调用"
+    assert len(result_collected) == 10, f"应该收集 10 个结果，实际收集 {len(result_collected)} 个"
+
+
+@pytest.mark.asyncio
+async def test_streaming_no_complete_keeps_waiting():
+    """测试：流式模式未调用 complete() 时不会提前触发 on_complete"""
+    mock_http = MagicMock()
+    mock_cache = MagicMock()
+    mock_cache.has.return_value = False
+    mock_m3u8 = MagicMock()
+
+    engine = AsyncCheckEngine(
+        http_session=mock_http,
+        cache=mock_cache,
+        m3u8_validator=mock_m3u8,
+    )
+
+    config = CheckConfig(max_threads=5)
+    complete_called = asyncio.Event()
+
+    def on_complete():
+        complete_called.set()
+
+    engine.start(create_test_channels(3), config, on_complete=on_complete, streaming=True)
+
+    # 不调用 complete()，短暂等待后 on_complete 不应触发
+    await asyncio.sleep(0.6)
+    assert not complete_called.is_set(), "未调用 complete() 时不应触发 on_complete"
+
+    # 再调用 complete() 后应正常完成
+    engine.complete()
+    try:
+        await asyncio.wait_for(complete_called.wait(), timeout=5.0)
+        completed = True
+    except asyncio.TimeoutError:
+        completed = False
+    assert completed, "调用 complete() 后 on_complete 应被触发"
+
+
+@pytest.mark.asyncio
 async def test_queue_not_blocked_by_sentinel():
     """测试：_SENTINEL 不会阻塞队列处理"""
     from iptv_check.infra.check_engine.async_engine import _SENTINEL

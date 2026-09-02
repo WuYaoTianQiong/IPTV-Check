@@ -180,3 +180,35 @@ async def update_user_settings(req: dict):
     for key, value in req.items():
         state.settings.set(key, value)
     return {"saved": True}
+
+
+# ============================================================
+# 风险源黑名单管理
+# ============================================================
+
+
+class BlockedDomainRequest(BaseModel):
+    domain: str = ""
+    reason: str = "手动添加"
+
+
+@router.get("/blocked-domains")
+async def get_blocked_domains():
+    from iptv_check.infra.config import source_filter
+    return source_filter.all_entries()
+
+
+@router.post("/blocked-domains")
+async def add_blocked_domain(req: BlockedDomainRequest):
+    from iptv_check.infra.config import source_filter
+    if not req.domain.strip():
+        raise HTTPException(400, "域名不能为空")
+    created = source_filter.add_manual(req.domain, req.reason)
+    return {"created": created, **source_filter.all_entries()}
+
+
+@router.delete("/blocked-domains/{domain}")
+async def remove_blocked_domain(domain: str):
+    from iptv_check.infra.config import source_filter
+    removed = source_filter.remove(domain)
+    return {"removed": removed, **source_filter.all_entries()}

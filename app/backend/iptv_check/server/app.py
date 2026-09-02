@@ -126,7 +126,8 @@ class AppState:
 
         db_path = settings.db_path or os.path.join(DATA_DIR, "events.db")
         self.database = DatabaseManager(db_path=db_path)
-        self.event_store = EventStore(db_path=db_path)
+        # 复用共享引擎：消除双 engine 连接同一 SQLite 的锁竞争，schema 统一由 alembic 管理
+        self.event_store = EventStore(db_path=db_path, engine=self.database.engine)
         self.source_store = SourceStore(self.event_store)
         self.read_model = ReadModel(self.event_store)
         self.materialization = MaterializationService(self.event_store)
@@ -159,6 +160,9 @@ class AppState:
         self._refresh_latency_task_id: Optional[str] = None
         self._refresh_latency_progress: dict = {"checked": 0, "total": 0, "updated": 0}
         self._refresh_latency_started_at: Optional[str] = None
+        # 后台任务异常终止时记录原因，供 /results/refresh-latency/status 查询
+        # （任务跑在后台且日志可能未落盘，否则中途失败无从排查）
+        self._refresh_latency_error: Optional[str] = None
 
         self._load_online_sources()
 
@@ -172,7 +176,12 @@ class AppState:
                 migrated = self.source_store.migrate_from_json(os.path.join(DATA_DIR, "local_sources.json"))
                 if migrated > 0:
                     logger.info("数据库已有 %d 个源，跳过 JSON 迁移", migrated)
-            self.online_sources = self.source_store.load_all() if self.source_store else self._load_online_sources_from_json()
+            loaded = self.source_store.load_all() if self.source_store else self._load_online_sources_from_json()
+            # 2026-09-01: 不再过滤"从M3U源解析"的频道级源。
+            # 这些源（央视频道/卫视频道/广播电台等分类）是用户在检测时按频道类型
+            # 直接选源的基础（check_service._is_channel_url 会将其作为单频道检测），
+            # 此前过滤导致前端只剩几个列表级源、分类严重缺失。保留全部源展示与使用。
+            self.online_sources = loaded
             logger.info("加载了 %d 个在线直播源", len(self.online_sources))
         except Exception as e:
             logger.warning("加载在线源失败: %s", e)
@@ -185,9 +194,10 @@ class AppState:
                 if migrated > 0:
                     logger.info("数据库已有 %d 个源，跳过 JSON 迁移", migrated)
             if self.source_store:
-                self.online_sources = await asyncio.to_thread(self.source_store.load_all)
+                loaded = await asyncio.to_thread(self.source_store.load_all)
             else:
-                self.online_sources = self._load_online_sources_from_json()
+                loaded = self._load_online_sources_from_json()
+            self.online_sources = loaded
             logger.info("加载了 %d 个在线直播源", len(self.online_sources))
         except Exception as e:
             logger.warning("加载在线源失败: %s", e)
@@ -343,7 +353,9 @@ class AppState:
         await self.broadcast("isp_updated", {"local_isp": isp})
 
     async def broadcast(self, event: str, data: dict):
-        logger.info("[SSE-BROKER] 广播事件: %s, 数据: %s", event, data)
+        # 高频日志降级：每条 SSE 广播（检测时 1 秒 1 条 progress_update + 阶段事件）
+        # 都打 info 会累积大量同步日志，阻塞事件循环
+        logger.debug("[SSE-BROKER] 广播事件: %s, 数据: %s", event, data)
         await self._sse_broker.broadcast(event, data)
 
     def _wal_checkpoint(self):
@@ -405,8 +417,9 @@ def create_app() -> FastAPI:
         app.state.limiter = limiter
         app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
         app.add_middleware(SlowAPIMiddleware)
-        logger.info("API限流已启用: 60次/分钟/IP")
+        logger.info("API限流已启用: 60次/分钟/IP（/proxy 端点单独提额）")
     except ImportError:
+        limiter = None
         logger.warning("slowapi未安装，API限流未启用")
 
     # Register middleware (correlation ID, request logging)
@@ -504,7 +517,7 @@ def create_app() -> FastAPI:
     from iptv_check.infra.config.settings import render_player_html  # keep compat
 
     @app.get("/player")
-    async def player_page(url: str = "", name: str = "", sources: str = "", radio: str = "", region: str = "", freq: str = ""):
+    async def player_page(url: str = "", name: str = "", sources: str = "", radio: str = "", region: str = "", freq: str = "", tvg_id: str = "", tvg_name: str = ""):
         try:
             decoded = base64.b64decode(url).decode("utf-8") if url else ""
             stream_url = urllib.parse.unquote(decoded)
@@ -521,10 +534,11 @@ def create_app() -> FastAPI:
             except Exception:
                 pass
 
-        html = player_renderer.render(stream_url, channel_name, sources=source_list, is_radio=is_radio, channel_group=region, frequency=freq)
+        html = player_renderer.render(stream_url, channel_name, sources=source_list, is_radio=is_radio, channel_group=region, frequency=freq, tvg_id=tvg_id, tvg_name=tvg_name)
         return HTMLResponse(html)
 
     @app.get("/proxy")
+    @limiter.limit("100000/minute")
     async def proxy_unified(request: Request, url: str = "", referer: str = "", origin: str = "", cookie: str = ""):
         if not url:
             raise HTTPException(400, "缺少代理 URL 参数")
@@ -543,6 +557,7 @@ def create_app() -> FastAPI:
             raise StreamProxyError(str(e)[:100])
 
     @app.get("/proxy/hls")
+    @limiter.limit("100000/minute")
     async def proxy_hls_playlist_new(request: Request, url: str = ""):
         if not url:
             raise HTTPException(400, "缺少代理 URL 参数")
@@ -645,7 +660,8 @@ def create_app() -> FastAPI:
         return app_state._sse_broker.get_stats()
 
     @app.get("/{full_path:path}")
-    async def spa_fallback(full_path: str):
+    @limiter.limit("100000/minute")
+    async def spa_fallback(request: Request, full_path: str):
         """SPA fallback - serve index.html for all non-API frontend routes (MUST be last)"""
         index_file = static_dir / "index.html"
         if index_file.is_file():

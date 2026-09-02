@@ -9,7 +9,11 @@ from sqlmodel import SQLModel, Field, Session, create_engine, select
 from sqlalchemy import Index, text as sa_text
 
 from iptv_check.models.channel import Channel
+from iptv_check.models.source import is_legacy_channel_source, is_channel_url
+from iptv_check.core.parser import infer_is_radio
+from iptv_check.infra.async_download import fetch_text_with_retry
 from iptv_check.infra.cn_time import cn_now
+from iptv_check.infra.config import source_filter
 
 logger = logging.getLogger(__name__)
 
@@ -133,7 +137,16 @@ class FetchService:
         self._fetched_count = 0
         self._done_sources = 0
 
-        sources_to_fetch = [src for src in self._app_state.online_sources if src.id in online_source_ids]
+        sources_to_fetch = [
+            src for src in self._app_state.online_sources
+            if src.id in online_source_ids and not is_legacy_channel_source(src)
+        ]
+        filtered_legacy = sum(
+            1 for src in self._app_state.online_sources
+            if src.id in online_source_ids and is_legacy_channel_source(src)
+        )
+        if filtered_legacy:
+            logger.info("[拉取] 过滤掉 %d 个历史遗留频道级源（M3U拆分产物）", filtered_legacy)
 
         if min_valid_rate > 0:
             from iptv_check.infra.persistence.event_store import EventStore
@@ -152,8 +165,8 @@ class FetchService:
 
         self.clear_fetched_channels(source_ids=[s.id for s in sources_to_fetch])
 
-        channel_sources = [s for s in sources_to_fetch if s.category.endswith("频道") or s.category.endswith("电台")]
-        list_sources = [s for s in sources_to_fetch if not (s.category.endswith("频道") or s.category.endswith("电台"))]
+        channel_sources = [s for s in sources_to_fetch if is_channel_url(s)]
+        list_sources = [s for s in sources_to_fetch if not is_channel_url(s)]
 
         logger.info("[拉取] %d 个频道级 + %d 个列表级", len(channel_sources), len(list_sources))
 
@@ -167,7 +180,8 @@ class FetchService:
             url = src.url
             if src.mirror_url and self._app_state.local_isp not in src.isp:
                 url = src.mirror_url
-            is_radio = src.category.endswith("电台") or "广播" in src.category or "radio" in src.category.lower()
+            frequency = Channel._extract_frequency(src.name or "", src.category or "")
+            is_radio = infer_is_radio(name=src.name, group=src.category, url=url, frequency=frequency)
             group = src.category
             if is_radio:
                 from iptv_check.application.services.check_service import CheckService
@@ -181,6 +195,7 @@ class FetchService:
                 sources=[src.name],
                 country=getattr(src, 'country', ''),
                 is_radio=is_radio,
+                frequency=frequency,
             )
             if ch.url_key not in seen:
                 seen.add(ch.url_key)
@@ -247,24 +262,20 @@ class FetchService:
                         connect=10,
                         sock_read=settings.download_timeout,
                     )
-                    async with self._app_state._async_session.get(url, timeout=timeout, ssl=False) as resp:
-                        if resp.status == 200:
-                            text = await resp.text()
-                            new_channels = await asyncio.to_thread(PlaylistParser.parse_m3u_content, text, src.name, src.category or "")
-                            if use_cache and text and cache:
-                                await asyncio.to_thread(cache.set, cache_key, text, 6 * 3600)
-                            async with lock:
-                                raw_counts.append(len(new_channels))
-                            for ch in new_channels:
-                                if ch.url_key not in seen:
-                                    seen.add(ch.url_key)
-                                    fresh.append(ch)
-                            if fresh:
-                                logger.info("[拉取] 在线源 %s 下载完成, %d 个频道", src.name, len(fresh))
-                            else:
-                                logger.info("[拉取] 在线源 %s 下载完成, 0 个新频道", src.name)
-                        else:
-                            logger.warning("[拉取] 在线源 %s HTTP %d", src.name, resp.status)
+                    text = await fetch_text_with_retry(self._app_state._async_session, url, timeout)
+                    new_channels = await asyncio.to_thread(PlaylistParser.parse_m3u_content, text, src.name, src.category or "")
+                    if use_cache and text and cache:
+                        await asyncio.to_thread(cache.set, cache_key, text, 6 * 3600)
+                    async with lock:
+                        raw_counts.append(len(new_channels))
+                    for ch in new_channels:
+                        if ch.url_key not in seen:
+                            seen.add(ch.url_key)
+                            fresh.append(ch)
+                    if fresh:
+                        logger.info("[拉取] 在线源 %s 下载完成, %d 个频道", src.name, len(fresh))
+                    else:
+                        logger.info("[拉取] 在线源 %s 下载完成, 0 个新频道", src.name)
                 except Exception as e:
                     logger.warning("[拉取] 在线源 %s 失败: %s", src.name, e)
 
@@ -295,11 +306,15 @@ class FetchService:
             await self._broadcast_fn("stage_changed", {"stage": "fetch_done", "message": f"拉取完成，共获取 {len(results)} 个频道"})
 
     def _persist_direct_channels(self, channel_sources, seen: set):
+        filtered = 0
         with self._session_factory() as session:
             for src in channel_sources:
                 url = src.url
                 if src.mirror_url:
                     url = src.mirror_url
+                if source_filter.is_blocked(url):
+                    filtered += 1
+                    continue
                 url_key = Channel(name=src.name, url=url).url_key
                 if url_key in seen:
                     row = FetchedChannelModel(
@@ -313,10 +328,16 @@ class FetchService:
                     )
                     session.add(row)
             session.commit()
+        if filtered:
+            logger.info("[拉取] 频道级源过滤掉 %d 个黑名单频道", filtered)
 
     def _persist_batch(self, channels: List[Channel], source):
+        filtered = 0
         with self._session_factory() as session:
             for ch in channels:
+                if source_filter.is_blocked(ch.url):
+                    filtered += 1
+                    continue
                 row = FetchedChannelModel(
                     url_key=ch.url_key,
                     name=ch.name,
@@ -334,6 +355,8 @@ class FetchService:
                 )
                 session.add(row)
             session.commit()
+        if filtered:
+            logger.info("[拉取] 在线源 %s 过滤掉 %d 个黑名单频道", source.name, filtered)
 
     def _get_source_health_map(self) -> dict:
         health = {}

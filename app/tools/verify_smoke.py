@@ -93,6 +93,21 @@ def main():
         r = c.post("/api/results/thorough-check", params={"session_id": "no_such_session_abc"})
         check("thorough-check: 400 on bad session", r.status_code == 400)
 
+        # --- 细筛检测入口的安全分支（不触发真实检测任务） ---
+        r = c.post("/api/check/detail", json={"source_session_id": ""})
+        check("check/detail: 400 on empty session", r.status_code == 400)
+        r = c.post("/api/check/detail", json={"source_session_id": "no_such_session_abc", "check_mode": "deep"})
+        check("check/detail: 400 on bad session", r.status_code == 400)
+
+        # --- 历史记录含细筛字段（check_mode / parent_session_id） ---
+        r = c.get("/api/results/history")
+        hist = r.json() if r.status_code == 200 else []
+        if hist:
+            check("results/history: has check_mode", "check_mode" in hist[0])
+            check("results/history: has parent_session_id", "parent_session_id" in hist[0])
+        else:
+            check("results/history: has check_mode", True, "(空历史，跳过)")
+
     return _finish()
 
 

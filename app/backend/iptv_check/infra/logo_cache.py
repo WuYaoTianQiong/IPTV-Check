@@ -30,33 +30,26 @@ class LogoCacheManager:
         cache = self._get_cache()
         if not cache:
             return None
-        key = f"logo:{channel_name.lower()}"
-        entry = cache.get(key)
-        if entry and time.time() - entry.get("timestamp", 0) < LOGO_CACHE_TTL:
-            return entry.get("data")
-        return None
+        return cache.get(f"logo:{channel_name.lower()}")
 
     def set_logo(self, channel_name: str, data: bytes) -> None:
         cache = self._get_cache()
         if not cache:
             return
-        cache.set(f"logo:{channel_name.lower()}", {"data": data, "timestamp": time.time()})
+        # 利用 diskcache 内建 TTL 过期，替代手写 timestamp 比较
+        cache.set(f"logo:{channel_name.lower()}", data, expire=LOGO_CACHE_TTL)
 
     def get_logo_url_cache(self, url: str) -> Optional[bytes]:
         cache = self._get_cache()
         if not cache:
             return None
-        key = f"logo_url:{url}"
-        entry = cache.get(key)
-        if entry and time.time() - entry.get("timestamp", 0) < LOGO_CACHE_TTL:
-            return entry.get("data")
-        return None
+        return cache.get(f"logo_url:{url}")
 
     def set_logo_url_cache(self, url: str, data: bytes) -> None:
         cache = self._get_cache()
         if not cache:
             return
-        cache.set(f"logo_url:{url}", {"data": data, "timestamp": time.time()})
+        cache.set(f"logo_url:{url}", data, expire=LOGO_CACHE_TTL)
 
     def has_logo(self, channel_name: str) -> bool:
         return self.get_logo(channel_name) is not None
@@ -65,11 +58,18 @@ class LogoCacheManager:
         cache = self._get_cache()
         if not cache:
             return 0
+        if max_age_days <= 0:
+            # max_age_days<=0 语义为「清空全部」（routers/cache.py 调用 cleanup_stale(0)）
+            removed = len(cache)
+            cache.clear()
+            if removed:
+                logger.info("台标缓存已清空: %d 条", removed)
+            return removed
         cutoff = time.time() - max_age_days * 24 * 3600
         removed = 0
         for key in list(cache.iterkeys()):
-            entry = cache.get(key)
-            if entry and entry.get("timestamp", 0) < cutoff:
+            _, exp = cache.get(key, expire_time=True) or (None, None)
+            if exp is not None and exp < cutoff:
                 cache.delete(key)
                 removed += 1
         if removed:

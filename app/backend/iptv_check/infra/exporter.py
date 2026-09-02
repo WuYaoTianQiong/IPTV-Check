@@ -24,8 +24,32 @@ _EPG_CACHE_TTL = 21600
 
 
 def _esc_attr(value: str) -> str:
-    """转义 M3U / XML 属性值中的特殊字符。"""
-    return (value or "").replace("&", "&amp;").replace("<", "&lt;").replace('"', "&quot;")
+    """清洗 M3U 属性值。
+
+    M3U 行内属性（tvg-id/tvg-name/group-title）不是 XML，无需实体转义——
+    实体转义反而会让播放器显示字面 `&amp;`。只需：
+    1. 移除换行/控制字符，避免破坏 M3U 行结构；
+    2. 值内双引号会提前终止 `tvg-name="..."` 属性，统一替换为单引号。
+    """
+    if not value:
+        return ""
+    cleaned = value.replace("\r", "").replace("\n", " ").strip()
+    return cleaned.replace('"', "'")
+
+
+def _region_label(ch) -> str:
+    """导出表格用的「国家/地区」列值：优先导出前推断好的归属地，其次国家代码转中文名。"""
+    v = getattr(ch, "region", "") or ""
+    if v:
+        return v
+    code = (getattr(ch, "country", "") or "").upper().strip()
+    if not code or len(code) != 2:
+        return ""
+    try:
+        from iptv_check.core.parser import _COUNTRY_NAME_ZH
+        return _COUNTRY_NAME_ZH.get(code, code)
+    except Exception:
+        return code
 
 
 class ExportStrategy(ABC):
@@ -36,7 +60,12 @@ class ExportStrategy(ABC):
 
 class M3uExporter(ExportStrategy):
     def render(self, results: List[CheckResult], local_isp: str = "未知", epg_url: str = "",
-               with_logo: bool = False) -> str:
+               with_logo: bool = False, name_fn=None) -> str:
+        """渲染 M3U 文本。
+
+        `name_fn(ch)` 若提供，则只用于 EXTINF 逗号后的「播放器显示名」（如加国家前缀），
+        `tvg-name` 属性始终写原始名，避免破坏 EPG 节目单匹配。
+        """
         header = "#EXTM3U"
         if epg_url:
             header += f' x-tvg-url="{_esc_attr(epg_url)}"'
@@ -51,6 +80,7 @@ class M3uExporter(ExportStrategy):
                 continue
             ch = r.channel
             name = ch.tvg_name or ch.name
+            display = name_fn(ch) if name_fn else name
             attrs = []
             if ch.tvg_id:
                 attrs.append(f'tvg-id="{_esc_attr(ch.tvg_id)}"')
@@ -61,7 +91,7 @@ class M3uExporter(ExportStrategy):
                 attrs.append(f'tvg-logo="{_esc_attr(ch.logo_url)}"')
             if ch.group:
                 attrs.append(f'group-title="{_esc_attr(ch.group)}"')
-            lines.append(f"#EXTINF:-1 {' '.join(attrs)},{_esc_attr(name)}")
+            lines.append(f"#EXTINF:-1 {' '.join(attrs)},{_esc_attr(display)}")
             lines.append(ch.url)
         return "\n".join(lines) + "\n"
 
@@ -71,6 +101,7 @@ class M3uExporter(ExportStrategy):
             kwargs.get("local_isp", "未知"),
             kwargs.get("epg_url", ""),
             kwargs.get("with_logo", False),
+            kwargs.get("name_fn"),
         )
         with open(path, "w", encoding="utf-8") as f:
             f.write(content)
@@ -87,19 +118,21 @@ class TxtExporter(ExportStrategy):
 
 
 class CsvExporter(ExportStrategy):
-    HEADERS = ["原始序号", "来源文件", "频道名称", "URL", "状态", "延迟(ms)", "速度(KB/s)", "信息"]
+    HEADERS = ["原始序号", "来源文件", "频道名称", "URL", "状态", "延迟(ms)", "速度(KB/s)", "国家/地区", "信息"]
 
     def export(self, results: List[CheckResult], path: str, **kwargs) -> str:
         with open(path, "w", encoding="utf-8-sig", newline="") as f:
             writer = csv.writer(f)
             writer.writerow(self.HEADERS)
             for r in results:
-                writer.writerow(r.to_tree_values())
+                row = list(r.to_tree_values())
+                # to_tree_values 为 8 列，把「国家/地区」插在「信息」之前
+                writer.writerow(row[:7] + [_region_label(r.channel)] + row[7:])
         return path
 
 
 class ExcelExporter(ExportStrategy):
-    HEADERS = ["原始序号", "来源文件", "频道名称", "URL", "状态", "延迟(ms)", "速度(KB/s)", "信息"]
+    HEADERS = ["原始序号", "来源文件", "频道名称", "URL", "状态", "延迟(ms)", "速度(KB/s)", "国家/地区", "信息"]
 
     def export(self, results: List[CheckResult], path: str, **kwargs) -> str:
         try:
@@ -122,7 +155,9 @@ class ExcelExporter(ExportStrategy):
             cell.alignment = Alignment(horizontal="center")
 
         for row_idx, r in enumerate(results, 2):
-            values = r.to_tree_values()
+            values = list(r.to_tree_values())
+            # to_tree_values 为 8 列，把「国家/地区」插在「信息」之前
+            values = values[:7] + [_region_label(r.channel)] + values[7:]
             for col_idx, val in enumerate(values, 1):
                 cell = ws.cell(row_idx, column=col_idx, value=val)
                 if val == "有效":
@@ -222,7 +257,8 @@ class ExportEngine:
 
     def export_batch(self, formats: List[str], results: List[CheckResult],
                      export_dir: str, base_name: str, local_isp: str = "未知",
-                     epg_url: str = "", epg_data=None, with_logo: bool = False) -> List[str]:
+                     epg_url: str = "", epg_data=None, with_logo: bool = False,
+                     name_fn=None) -> List[str]:
         exported = []
         name_map = {
             "m3u": f"{base_name}_有效源.m3u",
@@ -242,6 +278,8 @@ class ExportEngine:
                 # 台标默认不写（远程台标会让 Kodi 开机逐个下载、启动极慢），
                 # 由调用方按需打开 with_logo。
                 kw["with_logo"] = with_logo
+                # 可选：仅改播放器显示名（tvg-name 保持原名，避免破坏 EPG 匹配）
+                kw["name_fn"] = name_fn
             if fmt == "epg":
                 kw["epg_data"] = epg_data
             result = self.export(fmt, results, path, **kw)

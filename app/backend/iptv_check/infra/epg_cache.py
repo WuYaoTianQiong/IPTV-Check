@@ -1,6 +1,5 @@
 import os
 import logging
-import time
 from typing import Optional, Dict, Any
 
 from iptv_check.models.epg_program import EpgChannel
@@ -31,11 +30,7 @@ class EpgCacheManager:
         cache = self._get_cache()
         if not cache:
             return None
-        key = f"epg:{source_id}"
-        entry = cache.get(key)
-        if entry and time.time() - entry.get("timestamp", 0) < EPG_CACHE_TTL:
-            return entry.get("data")
-        return None
+        return cache.get(f"epg:{source_id}")
 
     def set_epg_data(self, source_id: str, data: Dict[str, EpgChannel]) -> None:
         cache = self._get_cache()
@@ -48,7 +43,8 @@ class EpgCacheManager:
                 "display_name": epg_ch.display_name,
                 "programs": [p.to_dict() for p in epg_ch.programs],
             }
-        cache.set(f"epg:{source_id}", {"data": serializable, "timestamp": time.time()})
+        # 利用 diskcache 内建 TTL 过期，替代手写 timestamp 比较
+        cache.set(f"epg:{source_id}", serializable, expire=EPG_CACHE_TTL)
 
     def get_epg_source_urls(self) -> Dict[str, str]:
         cache = self._get_cache()

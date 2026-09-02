@@ -1,22 +1,23 @@
 import asyncio
-import base64
 import logging
 import time
 from collections import defaultdict
 from typing import Optional, Set
-from urllib.parse import unquote
 
 import aiohttp
 from aiohttp import web
 from fastapi.responses import Response as FastAPIResponse, StreamingResponse
+from pybreaker import CircuitBreaker
 
 from iptv_check.infra.hls_rewriter import rewrite_hls_urls
+from iptv_check.infra.proxy_url import decode_proxy_url as _decode_proxy_url
 
 logger = logging.getLogger(__name__)
 
 FORWARD_HEADERS = {
     "referer", "origin", "cookie", "authorization",
     "x-requested-with", "x-token", "x-api-key",
+    "range",
 }
 
 STREAM_CONTENT_TYPES = {
@@ -59,10 +60,11 @@ class StreamProxy:
         self._error_count = 0
         self._last_stats_time = time.time()
         self._proxy_base = "/proxy"
-        # Per-source error tracking for automatic circuit breaking
+        # Per-source error tracking for automatic circuit breaking.
+        # 熔断状态由 pybreaker 的 per-domain CircuitBreaker 维护（替代此前手写
+        # 连续错误计数 + 时间戳判定），此处仅保留累计错误数供 get_stats 展示。
         self._source_errors: dict[str, int] = defaultdict(int)
-        self._source_consecutive_errors: dict[str, int] = defaultdict(int)
-        self._source_circuit_open: dict[str, float] = {}
+        self._circuit_breakers: dict[str, CircuitBreaker] = {}
         self._circuit_threshold = 20
         self._circuit_cooldown_secs = 15
 
@@ -92,20 +94,7 @@ class StreamProxy:
             logger.info("StreamProxy 会话已关闭")
 
     def decode_proxy_url(self, encoded_url: str) -> str:
-        try:
-            decoded = base64.b64decode(encoded_url).decode("utf-8")
-            return unquote(decoded)
-        except UnicodeDecodeError:
-            try:
-                decoded = unquote(encoded_url)
-                decoded = base64.b64decode(decoded).decode("utf-8")
-                return unquote(decoded)
-            except Exception as e2:
-                logger.warning("URL 解码失败 (二次尝试): %s", e2)
-                raise ValueError(f"无效的代理 URL 编码: {str(e2)}")
-        except Exception as e:
-            logger.warning("URL 解码失败: %s", e)
-            raise ValueError(f"无效的代理 URL 编码: {str(e)}")
+        return _decode_proxy_url(encoded_url)
 
     def _infer_referer(self, target_url: str) -> str:
         """根据目标 URL 推断正确的 Referer"""
@@ -126,9 +115,6 @@ class StreamProxy:
             else:
                 headers["referer"] = "https://www.baidu.com"
         return headers
-
-    def _encode_url(self, url: str) -> str:
-        return base64.b64encode(url.encode()).decode()
 
     async def proxy_unified(self, target_url: str, request: web.Request, custom_headers: dict = None):
         self._request_count += 1
@@ -152,12 +138,12 @@ class StreamProxy:
             )
         except aiohttp.ServerTimeoutError as e:
             self._error_count += 1
-            self._record_source_error(source_domain)
+            self._record_source_error(source_domain, e)
             logger.warning("代理请求超时 [%s → %s]: %s", source_domain, target_url[:80], e)
             raise
         except aiohttp.ClientConnectorError as e:
             self._error_count += 1
-            self._record_source_error(source_domain)
+            self._record_source_error(source_domain, e)
             logger.warning("代理连接拒绝 [%s → %s]: %s", source_domain, target_url[:80], e)
             raise
         except aiohttp.ClientSSLError as e:
@@ -166,7 +152,7 @@ class StreamProxy:
             raise
         except aiohttp.ClientError as e:
             self._error_count += 1
-            self._record_source_error(source_domain)
+            self._record_source_error(source_domain, e)
             logger.warning("代理请求失败 [%s → %s]: %s", source_domain, target_url[:80], e)
             raise
 
@@ -194,12 +180,21 @@ class StreamProxy:
                 },
             )
         else:
+            # 透传 Range/206 相关头：支持浏览器对点播文件（如直连 MP4）seek，
+            # 否则 video 元素发 Range 被忽略、只能从头拉全量且无法拖动进度。
+            passthrough = {
+                k: v for k, v in response.headers.items()
+                if k.lower() in ("content-range", "accept-ranges", "content-length",
+                                 "content-disposition", "etag", "last-modified")
+            }
             return StreamingResponse(
                 self._stream_content(response),
+                status_code=response.status,
                 media_type=content_type or "application/octet-stream",
                 headers={
                     "Cache-Control": "no-cache",
                     "Access-Control-Allow-Origin": "*",
+                    **passthrough,
                 },
             )
 
@@ -239,7 +234,7 @@ class StreamProxy:
             )
         except aiohttp.ClientError as e:
             self._error_count += 1
-            self._record_source_error(source_domain)
+            self._record_source_error(source_domain, e)
             logger.warning("代理请求失败 [%s]: %s", target_url, e)
             raise
 
@@ -293,7 +288,7 @@ class StreamProxy:
             )
         except aiohttp.ClientError as e:
             self._error_count += 1
-            self._record_source_error(source_domain)
+            self._record_source_error(source_domain, e)
             logger.warning("HLS 播放列表获取失败 [%s]: %s", target_url, e)
             raise
 
@@ -331,7 +326,7 @@ class StreamProxy:
             self._last_stats_time = now
 
     def get_stats(self) -> dict:
-        circuits_open = list(self._source_circuit_open.keys())
+        circuits_open = [d for d, b in self._circuit_breakers.items() if b.current_state == "open"]
         return {
             "total_requests": self._request_count,
             "total_errors": self._error_count,
@@ -342,36 +337,38 @@ class StreamProxy:
 
     # ──── source health tracking (circuit breaker) ────
 
+    def _get_circuit_breaker(self, source_domain: str) -> CircuitBreaker:
+        breaker = self._circuit_breakers.get(source_domain)
+        if breaker is None:
+            breaker = CircuitBreaker(
+                fail_max=self._circuit_threshold,
+                reset_timeout=self._circuit_cooldown_secs,
+            )
+            self._circuit_breakers[source_domain] = breaker
+        return breaker
+
+    @staticmethod
+    def _raise_call_exc(exc: BaseException):
+        raise exc
+
     def _record_source_ok(self, source_domain: str):
         """Clear error state for a healthy source."""
-        self._source_consecutive_errors.pop(source_domain, None)
-        self._source_circuit_open.pop(source_domain, None)
+        # pybreaker 的 call() 在成功时重置失败计数 / half-open 时关闭熔断
+        self._get_circuit_breaker(source_domain).call(lambda: None)
 
-    def _record_source_error(self, source_domain: str):
-        """Increment error counter and open circuit if threshold exceeded."""
+    def _record_source_error(self, source_domain: str, exception: BaseException):
+        """Increment error counter; pybreaker opens the circuit after fail_max failures."""
         self._source_errors[source_domain] += 1
-        consecutive = self._source_consecutive_errors[source_domain] + 1
-        self._source_consecutive_errors[source_domain] = consecutive
-        if consecutive >= self._circuit_threshold:
-            self._source_circuit_open[source_domain] = time.time()
-            logger.warning(
-                "Source circuit OPEN for %s after %d consecutive errors",
-                source_domain, consecutive,
-            )
+        breaker = self._get_circuit_breaker(source_domain)
+        try:
+            # 通过 call() 走 pybreaker 失败计数（公开 API，状态机内部处理熔断/半开）
+            breaker.call(self._raise_call_exc, exception)
+        except Exception:
+            pass  # 计数/熔断已由 pybreaker 处理，原始异常由调用方负责
 
     def _is_source_circuit_open(self, source_domain: str) -> bool:
         """Check if the circuit for a source is currently open (blocked)."""
-        opened_at = self._source_circuit_open.get(source_domain)
-        if opened_at is None:
-            return False
-        elapsed = time.time() - opened_at
-        if elapsed > self._circuit_cooldown_secs:
-            # Cooldown expired: reset to half-open for next attempt
-            self._source_consecutive_errors[source_domain] = 0
-            del self._source_circuit_open[source_domain]
-            logger.info("Source circuit HALF-OPEN for %s after %.1fs cooldown", source_domain, elapsed)
-            return False
-        return True
+        return self._get_circuit_breaker(source_domain).current_state == "open"
 
     def _extract_domain(self, url: str) -> str:
         """Extract a simplified domain key from a URL for tracking."""

@@ -54,6 +54,10 @@ class Channel:
     quality_rating: str = ""
     clean_name: str = ""
     resolution: str = ""
+    # 先验延迟（ms）：细筛从粗筛会话加载频道时带上，用于对慢源给更短的测速上限
+    prior_latency: Optional[float] = None
+    # 归属地标签（导出标注用，运行时推断，不落库）：国外=国家中文名；国内=省份/央视/卫视/港澳台
+    region: str = ""
 
     def __post_init__(self):
         if not self.resolution and self.name:

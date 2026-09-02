@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from typing import List
 
@@ -11,11 +12,26 @@ router = APIRouter(prefix="/api", tags=["check"])
 class CheckRequest(BaseModel):
     file_paths: List[str] = []
     online_source_ids: List[str] = []
+    custom_source_urls: List[str] = []
     timeout_connect: int = 5
     timeout_read: int = 8
-    max_threads: int = 120
+    max_threads: int = 80
     check_mode: str = "standard"  # quick | standard | deep
     run_speed_test: bool = False
+    use_cache: bool = True
+    max_latency_ms: int = 10000
+    enable_recheck: bool = False
+    # 细筛场景：非空时跳过在线源下载/解析，直接从该历史会话的有效结果构建检测输入
+    source_session_id: str = ""
+
+
+class DetailCheckRequest(BaseModel):
+    """基于历史会话的有效频道发起细筛检测（默认 DEEP 深度，含测速）。"""
+    source_session_id: str
+    check_mode: str = "deep"  # quick | standard | deep
+    timeout_connect: int = 5
+    timeout_read: int = 15
+    max_threads: int = 80
     use_cache: bool = True
     max_latency_ms: int = 10000
     enable_recheck: bool = False
@@ -45,6 +61,47 @@ async def start_check(req: CheckRequest):
     except RuntimeError as e:
         raise HTTPException(400, str(e))
     return {"status": "started", "session_id": service.session_id}
+
+
+@router.post("/check/detail")
+async def start_detail_check(req: DetailCheckRequest):
+    """基于历史会话的有效频道发起细筛检测。
+
+    跳过在线源下载/解析，直接复用该会话物化结果中 is_valid=1 的 URL 集合
+    作为输入，走完整检测引擎（支持 DEEP 测速），生成独立的新历史会话。
+    """
+    state = _get_state()
+    service = _get_check_service()
+    if not service:
+        raise HTTPException(500, "检测服务未初始化")
+    if service.is_running:
+        raise HTTPException(400, "检测正在进行中")
+    if not req.source_session_id:
+        raise HTTPException(400, "缺少来源会话 source_session_id")
+
+    def _has_data():
+        from iptv_check.infra.repository.results_repo import ResultsRepository
+        with state.event_store.get_session() as s:
+            return ResultsRepository(s).has_session_data(req.source_session_id)
+    if not await asyncio.to_thread(_has_data):
+        raise HTTPException(400, "来源会话没有可细筛的数据")
+
+    check_req = CheckRequest(
+        source_session_id=req.source_session_id,
+        check_mode=req.check_mode,
+        timeout_connect=req.timeout_connect,
+        timeout_read=req.timeout_read,
+        max_threads=req.max_threads,
+        use_cache=req.use_cache,
+        max_latency_ms=req.max_latency_ms,
+        enable_recheck=req.enable_recheck,
+        run_speed_test=(req.check_mode == "deep"),
+    )
+    try:
+        await service.start_check(check_req)
+    except RuntimeError as e:
+        raise HTTPException(400, str(e))
+    return {"status": "started", "session_id": service.session_id, "source_session_id": req.source_session_id}
 
 
 @router.post("/check/stop")

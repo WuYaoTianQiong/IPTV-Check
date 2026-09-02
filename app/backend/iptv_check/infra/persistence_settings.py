@@ -27,8 +27,11 @@ class SettingsManager:
 
     def save(self):
         try:
-            with open(self._path, "w", encoding="utf-8") as f:
+            # 原子写：先写临时文件再 os.replace，避免崩溃导致设置文件损坏
+            tmp_path = self._path + ".tmp"
+            with open(tmp_path, "w", encoding="utf-8") as f:
                 json.dump(self._settings, f, ensure_ascii=False, indent=2)
+            os.replace(tmp_path, self._path)
         except Exception as e:
             logger.warning("保存用户设置失败: %s", e)
 

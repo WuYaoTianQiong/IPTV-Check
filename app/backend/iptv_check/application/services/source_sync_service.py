@@ -11,8 +11,9 @@ from typing import Callable, Dict, List, Literal, Optional
 
 import aiohttp
 
-from iptv_check.models.source import OnlineSource
+from iptv_check.models.source import OnlineSource, is_legacy_channel_source
 from iptv_check.infra.cn_time import cn_tz
+from iptv_check.core.isp_detector import ISPDetector
 
 logger = logging.getLogger(__name__)
 
@@ -382,55 +383,48 @@ class SourceSyncService:
 
     @staticmethod
     def _parse_m3u_to_sources(m3u_content: str, source_url: str) -> List[dict]:
+        """将 M3U 播放列表整体作为一个源（而非把每个频道拆成独立源）。
+
+        修复前：2.8 万频道的 M3U 会被拆成 2.8 万个"频道级源"写库，
+        导致来源筛选出现上万个条目、检测时逐个直接加载。
+        修复后：返回单个列表级源，检测时整体下载解析，频道的 sources 统一为该源名。
+        """
+        from collections import Counter
         from iptv_check.core.parser import PlaylistParser
-        
+
         parse_result = PlaylistParser.parse_m3u_content_safe(m3u_content, source_url)
         if not parse_result.channels:
             logger.warning("M3U解析无频道: %s", source_url)
             return []
-        
-        seen_urls = set()
-        sources = []
-        for channel in parse_result.channels:
-            category = _classify_channel(channel.name, channel.group)
-            if category is None:
-                continue
-            
-            if channel.url in seen_urls:
-                continue
-            seen_urls.add(channel.url)
-            
-            isp_list = ["移动", "联通", "电信", "其他"]
-            
-            protocol = "unknown"
-            url_lower = channel.url.lower()
-            if ".m3u8" in url_lower:
-                protocol = "hls"
-            elif ".ts" in url_lower:
-                protocol = "ts"
-            elif "rtmp" in url_lower:
-                protocol = "rtmp"
-            elif "rtsp" in url_lower:
-                protocol = "rtsp"
-            elif "http" in url_lower:
-                protocol = "http"
-            
-            sources.append({
-                "id": f"m3u_{hashlib.md5(channel.url.encode()).hexdigest()[:8]}",
-                "name": channel.name,
-                "url": channel.url,
-                "category": category,
-                "isp": isp_list,
-                "protocol": protocol,
-                "description": f"从M3U源解析: {channel.name}",
-                "epg_url": _IPTV_ORG_EPG_URL if channel.tvg_id or channel.tvg_name else None,
-                "tvg_id": channel.tvg_id or None,
-                "tvg_name": channel.tvg_name or None,
-                "channel_count": 1,
-            })
-        
-        logger.info("从M3U解析到 %d 个频道 (去重后): %s", len(sources), source_url)
-        return sources
+
+        # 按频道分类统计，取频道数最多的分类作为源的分类（仅用于展示与排序）
+        cat_counter = Counter()
+        for ch in parse_result.channels:
+            cat = _classify_channel(ch.name, ch.group)
+            if cat:
+                cat_counter[cat] += 1
+        main_cat = cat_counter.most_common(1)[0][0] if cat_counter else "综合"
+
+        # 从 URL 推导源名称（优先取文件名，如 all_stations.m3u -> all_stations）
+        try:
+            parsed = urllib.parse.urlparse(source_url)
+            base = os.path.basename(parsed.path.rstrip("/"))
+            src_name = os.path.splitext(base)[0] if base else (parsed.netloc or source_url)
+        except Exception:
+            src_name = source_url
+
+        protocol = "hls" if ".m3u8" in source_url.lower() else "unknown"
+
+        return [{
+            "id": f"m3u_{hashlib.md5(source_url.encode()).hexdigest()[:8]}",
+            "name": src_name,
+            "url": source_url,
+            "category": main_cat,
+            "isp": [],
+            "protocol": protocol,
+            "description": f"从M3U播放列表解析: {source_url}",
+            "channel_count": len(parse_result.channels),
+        }]
 
     def _merge_sources(
         self,
@@ -505,7 +499,7 @@ class SourceSyncService:
             self._last_resolved_urls = resolved
             urls_to_try = resolved.urls
 
-            upstream_dicts = self._get_builtin_upstream()
+            upstream_dicts = [u for u in self._get_builtin_upstream() if not is_legacy_channel_source(u)]
             upstream_ids = {u.get("id") for u in upstream_dicts}
 
             self._progress.total_urls = len(urls_to_try)
@@ -543,6 +537,8 @@ class SourceSyncService:
                                 deduped.append(rs)
 
                         for rs in deduped:
+                            if is_legacy_channel_source(rs):
+                                continue
                             rid = rs.get("id", "")
                             if rid and rid not in upstream_ids:
                                 upstream_dicts.append(rs)
@@ -580,6 +576,10 @@ class SourceSyncService:
             self._progress.elapsed_seconds = time.time() - self._progress.started_at
             await self._broadcast_progress()
 
+            # 2026-09-01: 合并保留本地已有源。此前 sync() 会在合并前过滤掉
+            # "从M3U源解析"的频道级源，再通过 save_all（DELETE+INSERT）写回，
+            # 导致用户源库被覆盖清空成仅剩几个列表级源。现在改为保留全部本地源，
+            # 只做"上游更新已有源 + 新增上游源 + 保留本地其余源"的合并。
             local_sources = self._load_local_sources()
             result.upstream_count = len(upstream_dicts)
             result.local_count = len(local_sources)
