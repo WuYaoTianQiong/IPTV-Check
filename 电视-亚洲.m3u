@@ -9,8 +9,6 @@ http://tv1.intv.mk:1935/live/intv/index.m3u8
 https://tv-trtworld.medya.trt.com.tr/master.m3u8
 #EXTINF:-1 tvg-name="🇹🇷 土耳其 TRT EBA Ortaokul" group-title="土耳其",🇹🇷 土耳其 TRT EBA Ortaokul
 https://tv-e-okul01.medya.trt.com.tr/master.m3u8
-#EXTINF:-1 tvg-name="🇸🇬 新加坡 CNA" group-title="新加坡",🇸🇬 新加坡 CNA
-https://live1.mediadesk.al/cnatvlive.m3u8
 #EXTINF:-1 tvg-name="🇰🇷 韩国 Arirang" group-title="韩国",🇰🇷 韩国 Arirang
 http://amdlive.ctnd.com.edgesuite.net/arirang_1ch/smil:arirang_1ch.smil/playlist.m3u8
 #EXTINF:-1 tvg-name="🇰🇷 韩国 Arirang World" group-title="韩国",🇰🇷 韩国 Arirang World

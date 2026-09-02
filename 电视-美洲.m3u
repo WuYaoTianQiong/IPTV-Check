@@ -5,8 +5,6 @@ https://amdici.akamaized.net/hls/live/873426/ICI-Live-Stream/master.m3u8
 http://cdn3.toronto360.tv:8081/toronto360/hd/playlist.m3u8
 #EXTINF:-1 tvg-name="🇧🇷 巴西 COM Brasil" group-title="巴西",🇧🇷 巴西 COM Brasil
 https://br5093.streamingdevideo.com.br/abc/abc/playlist.m3u8
-#EXTINF:-1 tvg-name="🇺🇸 美国 CNN International" group-title="美国",🇺🇸 美国 CNN International
-https://turnerlive.warnermediacdn.com/hls/live/586495/cnngo/cnn_slate/VIDEO_0_3564000.m3u8
 #EXTINF:-1 tvg-name="🇺🇸 美国 SABC News" group-title="美国",🇺🇸 美国 SABC News
 https://sabconetanw.cdn.mangomolo.com/news/smil:news.stream.smil/chunklist_b250000_t64MjQwcA==.m3u8
 #EXTINF:-1 tvg-name="🇧🇷 巴西 TV Cultura" group-title="巴西",🇧🇷 巴西 TV Cultura
