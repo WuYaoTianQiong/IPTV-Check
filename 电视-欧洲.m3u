@@ -1,32 +1,18 @@
 #EXTM3U x-tvg-url="检测结果_节目单.epg.xml"
 #EXTINF:-1 tvg-name="🇺🇦 乌克兰 Pervyy gorodskoy Odessa" group-title="乌克兰",🇺🇦 乌克兰 Pervyy gorodskoy Odessa
 https://live.1tv.od.ua/stream1/channel1/playlist.m3u8
-#EXTINF:-1 tvg-name="🇷🇺 俄罗斯 RT العربية" group-title="俄罗斯",🇷🇺 俄罗斯 RT العربية
-https://rt-arb.rttv.com/dvr/rtarab/playlist.m3u8
-#EXTINF:-1 tvg-name="🇷🇺 俄罗斯 Russia Today Ⓖ" group-title="俄罗斯",🇷🇺 俄罗斯 Russia Today Ⓖ
-https://rt-glb.rttv.com/live/rtnews/playlist.m3u8
 #EXTINF:-1 tvg-name="🇷🇺 俄罗斯 Здравкин" group-title="俄罗斯等(西里尔)",🇷🇺 俄罗斯 Здравкин
 http://zdravkin.hugo.mk:1935/live/zdravkin/playlist.m3u8
 #EXTINF:-1 tvg-name="🇷🇺 俄罗斯 НОВА 12" group-title="俄罗斯等(西里尔)",🇷🇺 俄罗斯 НОВА 12
 http://151.236.247.171:8080/nova/index.m3u8
 #EXTINF:-1 tvg-name="🇷🇺 俄罗斯 ТВ" group-title="俄罗斯等(西里尔)",🇷🇺 俄罗斯 ТВ
 https://stream.nasatv.com.mk/hls/nasatv_live.m3u8
-#EXTINF:-1 tvg-name="🇷🇺 俄罗斯 2" group-title="俄罗斯等(西里尔)",🇷🇺 俄罗斯 2
-http://fta.hugo.mk:1935/live/tvhugo/stream/2.m3u8
 #EXTINF:-1 tvg-name="🇲🇰 北马其顿 VTV 电视台" group-title="北马其顿",🇲🇰 北马其顿 VTV 电视台
 https://live.vtv.mk/live/vtv/chunks.m3u8
-#EXTINF:-1 tvg-name="🇷🇺 俄罗斯 Ⓢ" group-title="俄罗斯等(西里尔)",🇷🇺 俄罗斯 Ⓢ
-https://streaming102.interskytech.com/live/232.m3u8
-#EXTINF:-1 tvg-name="🇷🇺 俄罗斯 Звезда 红星电视台" group-title="俄罗斯",🇷🇺 俄罗斯 Звезда 红星电视台
-https://tvchannelstream1.tvzvezda.ru/cdn/tvzvezda/playlist.m3u8
 #EXTINF:-1 tvg-name="🇷🇺 俄罗斯 MIR 国际电视" group-title="俄罗斯",🇷🇺 俄罗斯 MIR 国际电视
 http://hls.mirtv.cdnvideo.ru/mirtv-parampublish/mirtv_2500/playlist.m3u8
-#EXTINF:-1 tvg-name="🇷🇺 俄罗斯 Белогорья" group-title="俄罗斯等(西里尔)",🇷🇺 俄罗斯 Белогорья
-http://mirbelogorya.ru:8080/mirbelogorya/index.m3u8
 #EXTINF:-1 tvg-name="🇷🇺 俄罗斯 Новгород 24" group-title="俄罗斯等(西里尔)",🇷🇺 俄罗斯 Новгород 24
 https://live-vestinn.cdnvideo.ru/vestinn/nn24-khl/playlist.m3u8
-#EXTINF:-1 tvg-name="🇷🇺 俄罗斯 : Честный Детектив" group-title="俄罗斯等(西里尔)",🇷🇺 俄罗斯 : Честный Детектив
-https://live-vgtrksmotrim.cdnvideo.ru/vgtrksmotrim/smotrim-live-01.smil/playlist.m3u8
 #EXTINF:-1 tvg-name="🇷🇺 俄罗斯 Одеса Ⓢ" group-title="俄罗斯等(西里尔)",🇷🇺 俄罗斯 Одеса Ⓢ
 http://cdnua05.hls.tv/653/hls/f62d71219200da4130d13b21d23fb23c/4833/stream.m3u8
 #EXTINF:-1 tvg-name="🇷🇺 俄罗斯 Хмельницький Ⓢ" group-title="俄罗斯等(西里尔)",🇷🇺 俄罗斯 Хмельницький Ⓢ
@@ -37,36 +23,22 @@ http://cdnua05.hls.tv/647/hls/f62d71219200da4130d13b21d23fb23c/4789/stream.m3u8
 http://cdnua05.hls.tv/645/hls/f62d71219200da4130d13b21d23fb23c/4791/stream.m3u8
 #EXTINF:-1 tvg-name="🇷🇺 俄罗斯 TV" group-title="俄罗斯等(西里尔)",🇷🇺 俄罗斯 TV
 http://vcdn1.produck.company:1935/out/dtv/playlist.m3u8
-#EXTINF:-1 tvg-name="🇷🇺 俄罗斯 24" group-title="俄罗斯等(西里尔)",🇷🇺 俄罗斯 24
-https://ngtrk.dc.beltelecom.by/ngtrk/smil:belarus24.smil/playlist.m3u8
 #EXTINF:-1 tvg-name="🇧🇾 白俄罗斯 CTV 电视台" group-title="白俄罗斯",🇧🇾 白俄罗斯 CTV 电视台
 https://ctv.dc.beltelecom.by/ctv/ctv.stream/playlist.m3u8
 #EXTINF:-1 tvg-name="🇭🇺 匈牙利 MTV Sub" group-title="匈牙利",🇭🇺 匈牙利 MTV Sub
 https://live-fi.tvkaista.net/sub/live.m3u8?src=freetv
 #EXTINF:-1 tvg-name="🇭🇺 匈牙利 Budapest Európa TV" group-title="匈牙利",🇭🇺 匈牙利 Budapest Európa TV
 https://cloudfront44.lexanetwork.com:1344/freerelay/bpetv.sdp/playlist.m3u8
-#EXTINF:-1 tvg-name="🇷🇸 塞尔维亚 RTV HB Ⓢ" group-title="塞尔维亚",🇷🇸 塞尔维亚 RTV HB Ⓢ
-https://prd-hometv-live-open.spectar.tv/ERO_1_083/playlist.m3u8
 #EXTINF:-1 tvg-name="🇷🇸 塞尔维亚 RTV ZE Ⓢ" group-title="塞尔维亚",🇷🇸 塞尔维亚 RTV ZE Ⓢ
 https://stream.rtvze.ba/live/123/123.m3u8
-#EXTINF:-1 tvg-name="🇷🇸 塞尔维亚 Aristanis SuperTv" group-title="塞尔维亚",🇷🇸 塞尔维亚 Aristanis SuperTv
-https://video2.azotosolutions.com:1936/supertvoristano/supertvoristano/playlist.m3u8
 #EXTINF:-1 tvg-name="🇷🇸 塞尔维亚 Supertv" group-title="塞尔维亚",🇷🇸 塞尔维亚 Supertv
 http://wms.shared.streamshow.it:1935/supertv/supertv/live.m3u8
-#EXTINF:-1 tvg-name="🇷🇸 塞尔维亚 RTV Noord" group-title="塞尔维亚",🇷🇸 塞尔维亚 RTV Noord
-https://media.rtvnoord.nl/live/rtvnoord/tv/playlist.m3u8
-#EXTINF:-1 tvg-name="🇷🇸 塞尔维亚 RTV" group-title="塞尔维亚",🇷🇸 塞尔维亚 RTV
-http://iptv.rtv-ooe.at/stream.m3u8
-#EXTINF:-1 tvg-name="🇷🇸 塞尔维亚 AzStarTV" group-title="塞尔维亚",🇷🇸 塞尔维亚 AzStarTV
-http://live.azstartv.com/azstar/smil:azstar.smil/playlist.m3u8
 #EXTINF:-1 tvg-name="🇬🇷 希腊 Skai TV" group-title="希腊",🇬🇷 希腊 Skai TV
 http://skai-live.siliconweb.com/media/cambria4/index.m3u8
 #EXTINF:-1 tvg-name="🇬🇷 希腊 Star Central Greece" group-title="希腊",🇬🇷 希腊 Star Central Greece
 https://telmaco-cdn.akamaized.net/starcgr/default/dash/LAMIAStar-video=3000000.dash
 #EXTINF:-1 tvg-name="🇬🇷 希腊 Antenna 3 Veneto Nord Est" group-title="希腊",🇬🇷 希腊 Antenna 3 Veneto Nord Est
 https://59d7d6f47d7fc.streamlock.net/antennatreveneto/antennatreveneto.stream/playlist.m3u8
-#EXTINF:-1 tvg-name="🇮🇹 意大利 R101 TV Ⓖ" group-title="意大利",🇮🇹 意大利 R101 TV Ⓖ
-https://live02-seg.msr.cdn.mediaset.net/live/ch-er/er-clr.isml/index.m3u8
 #EXTINF:-1 tvg-name="🇮🇹 意大利 Italia 2 Tv" group-title="意大利",🇮🇹 意大利 Italia 2 Tv
 https://59d7d6f47d7fc.streamlock.net/italia2/italia2/playlist.m3u8
 #EXTINF:-1 tvg-name="🇮🇹 意大利 Medjugorje Italia Tv" group-title="意大利",🇮🇹 意大利 Medjugorje Italia Tv
@@ -75,10 +47,6 @@ https://5f22d76e220e1.streamlock.net/medjugorjeitaliatv/medjugorjeitaliatv/playl
 https://57068da1deb21.streamlock.net/primatvnapoli/primatvnapoli/playlist.m3u8
 #EXTINF:-1 tvg-name="🇮🇹 意大利 Rete Tv Italia" group-title="意大利",🇮🇹 意大利 Rete Tv Italia
 https://57068da1deb21.streamlock.net/retetvitalia/retetvitalia/playlist.m3u8
-#EXTINF:-1 tvg-name="🇮🇹 意大利 Teleromagna" group-title="意大利",🇮🇹 意大利 Teleromagna
-https://livetr.teleromagna.it/teleromagna/live/playlist.m3u8
-#EXTINF:-1 tvg-name="🇮🇹 意大利 Teleromagna 24" group-title="意大利",🇮🇹 意大利 Teleromagna 24
-https://livetr.teleromagna.it/mia/live/playlist.m3u8
 #EXTINF:-1 tvg-name="🇮🇹 意大利 TeleRomaDue" group-title="意大利",🇮🇹 意大利 TeleRomaDue
 https://57068da1deb21.streamlock.net/teletibur/teletibur/playlist.m3u8
 #EXTINF:-1 tvg-name="🇮🇹 意大利 Tv Luna Napoli" group-title="意大利",🇮🇹 意大利 Tv Luna Napoli
@@ -93,8 +61,6 @@ https://streamcdng14-dd782ed59e2a4e86aabf6fc508674b59.msvdn.net/live/S82929343/c
 https://tsw.streamingwebtv24.it:1936/artenetwork/artenetwork/playlist.m3u8
 #EXTINF:-1 tvg-name="🇮🇪 爱尔兰 Aurora Arte" group-title="爱尔兰",🇮🇪 爱尔兰 Aurora Arte
 https://59d7d6f47d7fc.streamlock.net/auroraarte/auroraarte/playlist.m3u8
-#EXTINF:-1 tvg-name="🇪🇪 爱沙尼亚 Life TV Estonia" group-title="爱沙尼亚",🇪🇪 爱沙尼亚 Life TV Estonia
-https://lifetv.bitflip.ee/live/stream2.m3u8
 #EXTINF:-1 tvg-name="🇸🇪 瑞典 Kanal 10 Sverige" group-title="瑞典",🇸🇪 瑞典 Kanal 10 Sverige
 https://rrr.sz.xlcdn.com/?account=cn_kanal10media&file=live_transcoded&type=live&service=wowza&protocol=https&output=playlist.m3u8
 #EXTINF:-1 tvg-name="🇨🇭 瑞士 Trace Sports" group-title="瑞士",🇨🇭 瑞士 Trace Sports
@@ -107,30 +73,10 @@ https://live-fi.tvkaista.net/star-channel/live.m3u8?src=freetv
 https://qvcuk-live.akamaized.net/hls/live/2097112/qst/3/3.m3u8
 #EXTINF:-1 tvg-name="🇬🇧 英国 ITV" group-title="英国",🇬🇧 英国 ITV
 http://cdn10.live-tv.od.ua:8081/itvrv/abr/playlist.m3u8
-#EXTINF:-1 tvg-name="🇬🇧 英国 Sky News Weather Ⓖ" group-title="英国",🇬🇧 英国 Sky News Weather Ⓖ
-https://distro001-gb-hls1-prd.delivery.skycdp.com/easel_cdn/ngrp:weather_loop.stream_all/playlist.m3u8
 #EXTINF:-1 tvg-name="🇳🇱 荷兰 RTV Utrecht" group-title="荷兰",🇳🇱 荷兰 RTV Utrecht
 http://media.rtvutrecht.nl/live/rtvutrecht/rtvutrecht/index.m3u8
-#EXTINF:-1 tvg-name="🇵🇹 葡萄牙 DELUXE MUSIC" group-title="葡萄牙",🇵🇹 葡萄牙 DELUXE MUSIC
-https://sdn-global-live-streaming-packager-cache.3qsdn.com/13456/13456_264_live.m3u8
-#EXTINF:-1 tvg-name="🇵🇹 葡萄牙 DELUXE MUSIC DANCE BY KONTOR" group-title="葡萄牙",🇵🇹 葡萄牙 DELUXE MUSIC DANCE BY KONTOR
-https://sdn-global-live-streaming-packager-cache.3qsdn.com/64733/64733_264_live.m3u8
-#EXTINF:-1 tvg-name="🇵🇹 葡萄牙 Music Channel" group-title="葡萄牙",🇵🇹 葡萄牙 Music Channel
-http://media.boni-records.com/index.m3u8
 #EXTINF:-1 tvg-name="🇵🇹 葡萄牙 Taierzhuang Ancient City Music Broadcasting" group-title="葡萄牙",🇵🇹 葡萄牙 Taierzhuang Ancient City Music Broadcasting
 https://jsyaudiolive302.iqilu.com/live/taierzhuang_audio/index.m3u8
-#EXTINF:-1 tvg-name="🇷🇺 俄罗斯 5 Интернет" group-title="俄罗斯等(西里尔)",🇷🇺 俄罗斯 5 Интернет
-https://ngtrk.dc.beltelecom.by/ngtrk/smil:belarus5int.smil/playlist.m3u8
-#EXTINF:-1 tvg-name="🇷🇸 塞尔维亚 Rtv 38 Toscana" group-title="塞尔维亚",🇷🇸 塞尔维亚 Rtv 38 Toscana
-https://845d8509d2cb4f249dd0b2ae5755b6c2.msvdn.net/rtv38/rtv38_live_main/mainabr/playlist_dvr.m3u8
-#EXTINF:-1 tvg-name="🇩🇪 德国 ARD Alpha Ⓖ" group-title="德国",🇩🇪 德国 ARD Alpha Ⓖ
-https://mcdn.br.de/br/fs/ard_alpha/hls/de/master.m3u8
-#EXTINF:-1 tvg-name="🇩🇪 德国 WDR Ⓖ" group-title="德国",🇩🇪 德国 WDR Ⓖ
-https://wdrfs247.akamaized.net/hls/live/681509/wdr_msl4_fs247/index.m3u8
-#EXTINF:-1 tvg-name="🇮🇹 意大利 Canale Italia" group-title="意大利",🇮🇹 意大利 Canale Italia
-https://ovp-live.akamaized.net/ac115_live/canale1.smil/playlist.m3u8
-#EXTINF:-1 tvg-name="🇮🇹 意大利 Casa Italia 53" group-title="意大利",🇮🇹 意大利 Casa Italia 53
-https://ovp-live.akamaized.net/ac115_live/canale3.smil/playlist.m3u8
 #EXTINF:-1 tvg-name="🇮🇹 意大利 Rai 1 Ⓖ" group-title="意大利",🇮🇹 意大利 Rai 1 Ⓖ
 https://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=2606803&output=7&forceUserAgent=rainet/4.0.5
 #EXTINF:-1 tvg-name="🇮🇹 意大利 Rai 2 Ⓖ" group-title="意大利",🇮🇹 意大利 Rai 2 Ⓖ
@@ -155,66 +101,26 @@ https://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=358025&output=7&forc
 https://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=746990&output=7&forceUserAgent=rainet/4.0.5
 #EXTINF:-1 tvg-name="🇮🇹 意大利 Rai YoYo Ⓖ" group-title="意大利",🇮🇹 意大利 Rai YoYo Ⓖ
 https://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=746899&output=7&forceUserAgent=rainet/4.0.5
-#EXTINF:-1 tvg-name="🇫🇷 法国 RTL 102.5" group-title="法国",🇫🇷 法国 RTL 102.5
-https://dd782ed59e2a4e86aabf6fc508674b59.msvdn.net/live/S97044836/tbbP8T1ZRPBL/playlist.m3u8
-#EXTINF:-1 tvg-name="🇫🇷 法国 RTL 102.5 Traffic" group-title="法国",🇫🇷 法国 RTL 102.5 Traffic
-https://dd782ed59e2a4e86aabf6fc508674b59.msvdn.net/live/S38122967/2lyQRIAAGgRR/playlist.m3u8
-#EXTINF:-1 tvg-name="🇫🇷 法国 RTL Télé Lëtzebuerg" group-title="法国",🇫🇷 法国 RTL Télé Lëtzebuerg
-https://live-edge.rtl.lu/channel1/smil:channel1/playlist.m3u8
-#EXTINF:-1 tvg-name="🇫🇷 法国 RTL Zwee" group-title="法国",🇫🇷 法国 RTL Zwee
-https://live-edge.rtl.lu/channel2/smil:channel2/playlist.m3u8
-#EXTINF:-1 tvg-name="🇷🇴 罗马尼亚 Pro TV" group-title="罗马尼亚",🇷🇴 罗马尼亚 Pro TV
-https://cmero-ott-live.ssl.cdn.cra.cz/channels/cme-ro-voyo-news/playlist.m3u8?offsetSeconds=0&url=0
 #EXTINF:-1 tvg-name="🇬🇧 英国 OnniTV" group-title="英国",🇬🇧 英国 OnniTV
 https://onnitv.digitacdn.net/live/ott/onnitv/playlist.m3u8?organizationId=83459409&suiteItemId=83459780
-#EXTINF:-1 tvg-name="🇵🇹 葡萄牙 Retro Music Television Ⓢ" group-title="葡萄牙",🇵🇹 葡萄牙 Retro Music Television Ⓢ
-https://stream.mediawork.cz/retrotv/smil:retrotv2.smil/playlist.m3u8
-#EXTINF:-1 tvg-name="🇧🇬 保加利亚 TV1" group-title="保加利亚",🇧🇬 保加利亚 TV1
-https://tv1.cloudcdn.bg/temp/livestream.m3u8
-#EXTINF:-1 tvg-name="🇧🇬 保加利亚 City TV Ⓢ" group-title="保加利亚",🇧🇬 保加利亚 City TV Ⓢ
-https://tv.city.bg/play/tshls/citytv/index.m3u8
 #EXTINF:-1 tvg-name="🇷🇺 俄罗斯 RT Español（西语）" group-title="俄罗斯",🇷🇺 俄罗斯 RT Español（西语）
 https://rt-esp.rttv.com/dvr/rtesp/playlist_4500Kb.m3u8
 #EXTINF:-1 tvg-name="🇷🇺 俄罗斯 RT Arabic（阿语）" group-title="俄罗斯",🇷🇺 俄罗斯 RT Arabic（阿语）
 https://rt-arb.rttv.com/dvr/rtarab/playlist_4500Kb.m3u8
-#EXTINF:-1 tvg-name="🇨🇿 捷克 ko Ⓢ" group-title="捷克",🇨🇿 捷克 ko Ⓢ
-https://ocko-live.ssl.cdn.cra.cz/channels/ocko/playlist.m3u8
-#EXTINF:-1 tvg-name="🇨🇿 捷克 ko Expres Ⓢ" group-title="捷克",🇨🇿 捷克 ko Expres Ⓢ
-https://ocko-live.ssl.cdn.cra.cz/channels/ocko_expres/playlist.m3u8
-#EXTINF:-1 tvg-name="🇨🇿 捷克 ko Star Ⓢ" group-title="捷克",🇨🇿 捷克 ko Star Ⓢ
-https://ocko-live.ssl.cdn.cra.cz/channels/ocko_gold/playlist.m3u8
 #EXTINF:-1 tvg-name="🇩🇰 丹麦 Kanal Hovedstaden" group-title="丹麦",🇩🇰 丹麦 Kanal Hovedstaden
 http://khkbh.dk:8080/hls/livestream/index.m3u8
 #EXTINF:-1 tvg-name="🇨🇿 捷克 Východoceská TV" group-title="捷克",🇨🇿 捷克 Východoceská TV
 https://stream.polar.cz/vctv/vctvlive-1/playlist.m3u8
-#EXTINF:-1 tvg-name="🇭🇷 克罗地亚 TV Nova" group-title="克罗地亚",🇭🇷 克罗地亚 TV Nova
-https://stream.agatin.hr:3727/live/tvnovalive.m3u8
 #EXTINF:-1 tvg-name="🇭🇷 克罗地亚 CMC TV" group-title="克罗地亚",🇭🇷 克罗地亚 CMC TV
 https://stream.cmctv.hr:49998/cmc/live.m3u8
-#EXTINF:-1 tvg-name="🇪🇪 爱沙尼亚 Life TV Europe" group-title="爱沙尼亚",🇪🇪 爱沙尼亚 Life TV Europe
-https://lifetv.bitflip.ee/live/stream1.m3u8
-#EXTINF:-1 tvg-name="🇫🇮 芬兰 Taevas TV7" group-title="芬兰",🇫🇮 芬兰 Taevas TV7
-https://vod.tv7.fi/tv7-ee/_definst_/smil:tv7-ee.smil/playlist.m3u8
 #EXTINF:-1 tvg-name="🇪🇪 爱沙尼亚 ETV+ Ⓖ" group-title="爱沙尼亚",🇪🇪 爱沙尼亚 ETV+ Ⓖ
 http://sb.err.ee/live/etvpluss.m3u8
 #EXTINF:-1 tvg-name="🇪🇪 爱沙尼亚 ETV2 Ⓖ" group-title="爱沙尼亚",🇪🇪 爱沙尼亚 ETV2 Ⓖ
 http://sb.err.ee/live/etv2.m3u8
-#EXTINF:-1 tvg-name="🇫🇮 芬兰 Taivas TV7" group-title="芬兰",🇫🇮 芬兰 Taivas TV7
-https://vod.tv7.fi/tv7-fi/_definst_/smil:tv7-fi.smil/playlist.m3u8
-#EXTINF:-1 tvg-name="🇫🇮 芬兰 När-TV Ⓢ" group-title="芬兰",🇫🇮 芬兰 När-TV Ⓢ
-https://streaming.nartv.fi/live/ngrp:NAR_TV.stream_all/playlist.m3u8
-#EXTINF:-1 tvg-name="🇪🇪 爱沙尼亚 ETV Ⓖ" group-title="爱沙尼亚",🇪🇪 爱沙尼亚 ETV Ⓖ
-http://sb.err.ee/live/etv.m3u8
-#EXTINF:-1 tvg-name="🇩🇪 德国 Das Erste Ⓖ" group-title="德国",🇩🇪 德国 Das Erste Ⓖ
-https://daserste-live.ard-mcdn.de/daserste/live/hls/de/master.m3u8
-#EXTINF:-1 tvg-name="🇩🇪 德国 BR Nord Ⓖ" group-title="德国",🇩🇪 德国 BR Nord Ⓖ
-https://mcdn.br.de/br/fs/bfs_nord/hls/de/master.m3u8
 #EXTINF:-1 tvg-name="🇬🇷 希腊 91NRG" group-title="希腊",🇬🇷 希腊 91NRG
 http://tv.nrg91.gr:1935/onweb/live/master.m3u8
 #EXTINF:-1 tvg-name="🇬🇷 希腊 Center TV" group-title="希腊",🇬🇷 希腊 Center TV
 https://eu1.streams.gr:8081/centertv/index.m3u8
-#EXTINF:-1 tvg-name="🇭🇺 匈牙利 Apostol TV" group-title="匈牙利",🇭🇺 匈牙利 Apostol TV
-https://live.apostoltv.hu/live/playlist.m3u8
 #EXTINF:-1 tvg-name="🇬🇷 希腊 Acheloos" group-title="希腊",🇬🇷 希腊 Acheloos
 https://acheloostv.streamings.gr/live/stream/index.m3u8
 #EXTINF:-1 tvg-name="🇭🇺 匈牙利 CityTV (Belváros Lipótváros)" group-title="匈牙利",🇭🇺 匈牙利 CityTV (Belváros Lipótváros)
@@ -247,8 +153,6 @@ https://diretta.arcapuglia.it:8080/live/partenope/index.m3u8
 https://cdn10.streamshow.it/cloud-reggiotv/reggiotv/playlist.m3u8
 #EXTINF:-1 tvg-name="🇮🇹 意大利 Rete Veneta" group-title="意大利",🇮🇹 意大利 Rete Veneta
 http://wms.shared.streamshow.it/reteveneta/reteveneta/playlist.m3u8
-#EXTINF:-1 tvg-name="🇮🇹 意大利 Rossini Tv" group-title="意大利",🇮🇹 意大利 Rossini Tv
-https://stream.rossinitv.it/memfs/3bca4ad7-adfc-4610-ac0e-e826743ddc57.m3u8
 #EXTINF:-1 tvg-name="🇮🇹 意大利 RTC Quarta Rete" group-title="意大利",🇮🇹 意大利 RTC Quarta Rete
 https://msh0232.stream.seeweb.it/live/stream00.sdp/playlist.m3u8
 #EXTINF:-1 tvg-name="🇮🇹 意大利 Tele Chiara" group-title="意大利",🇮🇹 意大利 Tele Chiara
@@ -267,8 +171,6 @@ http://wms.shared.streamshow.it:1935/teleleonessa/teleleonessa/live.m3u8
 http://fms.tvavicenza.it:1935/live/diretta_1/playlist.m3u8
 #EXTINF:-1 tvg-name="🇮🇹 意大利 Tvrs Tv" group-title="意大利",🇮🇹 意大利 Tvrs Tv
 https://cdn8.streamshow.it/cloud-tvrs/tvrs/playlist.m3u8
-#EXTINF:-1 tvg-name="🇮🇹 意大利 Umbria Tv" group-title="意大利",🇮🇹 意大利 Umbria Tv
-https://umbriatv.stream.rubidia.it:8083/live/umbriatv/playlist.m3u8
 #EXTINF:-1 tvg-name="🇮🇹 意大利 Videotelecarnia" group-title="意大利",🇮🇹 意大利 Videotelecarnia
 https://rst2.saiuzwebnetwork.it:8081/vtccarnia/index.m3u8
 #EXTINF:-1 tvg-name="🇱🇻 拉脱维亚 Vidusdaugavas Televīzija" group-title="拉脱维亚",🇱🇻 拉脱维亚 Vidusdaugavas Televīzija
@@ -279,18 +181,12 @@ https://cdn.uno4.it/index.m3u8
 https://stream.ets-sistemi.it:19360/teleuniverso/teleuniverso.m3u8
 #EXTINF:-1 tvg-name="🇮🇹 意大利 Tuscia Sabina 2000Tv" group-title="意大利",🇮🇹 意大利 Tuscia Sabina 2000Tv
 http://ts2000tv.streaming.nextware.it:8081/ts2000tv/ts2000tv/chunks.m3u8
-#EXTINF:-1 tvg-name="🇳🇴 挪威 Frikanalen" group-title="挪威",🇳🇴 挪威 Frikanalen
-https://frikanalen.no/stream/index.m3u8
 #EXTINF:-1 tvg-name="🇸🇰 斯洛伐克 Senzi" group-title="斯洛伐克",🇸🇰 斯洛伐克 Senzi
 http://lb.streaming.sk/senzi/stream/playlist.m3u8
-#EXTINF:-1 tvg-name="🇺🇦 乌克兰 CK 1" group-title="乌克兰",🇺🇦 乌克兰 CK 1
-http://cdn10.live-tv.od.ua:8081/sk1zt/sk1zt-abr/playlist.m3u8
 #EXTINF:-1 tvg-name="🇺🇦 乌克兰 24 Kanal" group-title="乌克兰",🇺🇦 乌克兰 24 Kanal
 http://streamvideol1.luxnet.ua/news24/smil:news24.stream.smil/playlist.m3u8
 #EXTINF:-1 tvg-name="🇺🇦 乌克兰 TVA" group-title="乌克兰",🇺🇦 乌克兰 TVA
 https://hls.cdn.ua/tva.ua_live/livestream/chunklist_.m3u8
-#EXTINF:-1 tvg-name="🇷🇺 俄罗斯 RT Español Ⓖ" group-title="俄罗斯",🇷🇺 俄罗斯 RT Español Ⓖ
-https://rt-esp.rttv.com/dvr/rtesp/playlist.m3u8
 #EXTINF:-1 tvg-name="🇬🇧 英国 Sky Folk" group-title="英国",🇬🇧 英国 Sky Folk
 https://skyfolk.mk/live.m3u8
 #EXTINF:-1 tvg-name="🇨🇭 瑞士 Teleticino" group-title="瑞士",🇨🇭 瑞士 Teleticino
@@ -299,22 +195,14 @@ https://vstream-cdn.ch/hls/teleticino_720p/index.m3u8
 https://dwamdstream104.akamaized.net/hls/live/2015530/dwstream104/stream04/streamPlaylist.m3u8
 #EXTINF:-1 tvg-name="🇷🇺 俄罗斯 MoyChay" group-title="俄罗斯",🇷🇺 俄罗斯 MoyChay
 https://r.moychay.ru/radio.m3u8
-#EXTINF:-1 tvg-name="🇦🇹 奥地利 R9" group-title="奥地利",🇦🇹 奥地利 R9
-https://ms01.w24.at/R9/smil:liveeventR9.smil/playlist.m3u8
-#EXTINF:-1 tvg-name="🇦🇹 奥地利 W24" group-title="奥地利",🇦🇹 奥地利 W24
-https://ms01.w24.at/W24/smil:liveevent.smil/playlist.m3u8
 #EXTINF:-1 tvg-name="🇮🇹 意大利 Radio Radiosa Tv" group-title="意大利",🇮🇹 意大利 Radio Radiosa Tv
 https://stream7.zivoli.it/radiosatv/radiosatv/playlist.m3u8
 #EXTINF:-1 tvg-name="🇮🇹 意大利 Camera dei Deputati Ⓢ" group-title="意大利",🇮🇹 意大利 Camera dei Deputati Ⓢ
 https://video-ar.radioradicale.it/diretta/camera2/playlist.m3u8
 #EXTINF:-1 tvg-name="🇧🇾 白俄罗斯 🇧🇾 BY Pervyy Muzykal'nyy BY Ⓢ" group-title="白俄罗斯",🇧🇾 白俄罗斯 🇧🇾 BY Pervyy Muzykal'nyy BY Ⓢ
 http://rtmp.one.by:1200
-#EXTINF:-1 tvg-name="🇭🇷 克罗地亚 HR Ⓖ" group-title="克罗地亚",🇭🇷 克罗地亚 HR Ⓖ
-https://hrhls.akamaized.net/hls/live/2024525/hrhls/master.m3u8
 #EXTINF:-1 tvg-name="🇧🇪 比利时 BX1" group-title="比利时",🇧🇪 比利时 BX1
 https://59959724487e3.streamlock.net/stream/live/playlist.m3u8
-#EXTINF:-1 tvg-name="🇧🇦 波黑 RTRS PLUS Ⓢ" group-title="波黑",🇧🇦 波黑 RTRS PLUS Ⓢ
-https://pluslive.rtrs.tv/plus/plus/playlist.m3u8
 #EXTINF:-1 tvg-name="🇧🇦 波黑 Televizija Republike Srpske (RTRS)" group-title="波黑",🇧🇦 波黑 Televizija Republike Srpske (RTRS)
 https://parh.rtrs.tv/tv/live/playlist.m3u8
 #EXTINF:-1 tvg-name="🇧🇦 波黑 N1 Bosna i Hercegovina" group-title="波黑",🇧🇦 波黑 N1 Bosna i Hercegovina
@@ -323,34 +211,16 @@ https://best-str.umn.cdn.united.cloud/stream?channel=n1bos&p=n1Sh4redSecre7iNf0&
 http://89.201.163.244:8080/hls/hdmi.m3u8
 #EXTINF:-1 tvg-name="🇭🇷 克罗地亚 Libertas TV" group-title="克罗地亚",🇭🇷 克罗地亚 Libertas TV
 https://stream.luci.xyz/hls/LTV.m3u8
-#EXTINF:-1 tvg-name="🇨🇾 塞浦路斯 RIK Sat" group-title="塞浦路斯",🇨🇾 塞浦路斯 RIK Sat
-https://l3.cloudskep.com/cybcsat/abr/playlist.m3u8
 #EXTINF:-1 tvg-name="🇩🇰 丹麦 Folketinget TV" group-title="丹麦",🇩🇰 丹麦 Folketinget TV
 https://cdnapi.kaltura.com/p/2158211/sp/327418300/playManifest/entryId/1_24gfa7qq/protocol/https/format/applehttp/a.m3u8
-#EXTINF:-1 tvg-name="🇫🇮 芬兰 MTV3" group-title="芬兰",🇫🇮 芬兰 MTV3
-https://live-fi.tvkaista.net/mtv3/live.m3u8?src=freetv
-#EXTINF:-1 tvg-name="🇫🇮 芬兰 Frii" group-title="芬兰",🇫🇮 芬兰 Frii
-https://live-fi.tvkaista.net/frii/live.m3u8?src=freetv
 #EXTINF:-1 tvg-name="🇬🇪 格鲁吉亚 First Channel /Education/ (2TV)" group-title="格鲁吉亚",🇬🇪 格鲁吉亚 First Channel /Education/ (2TV)
 https://tv.cdn.xsg.ge/gpb-2tv/index.m3u8
-#EXTINF:-1 tvg-name="🇩🇪 德国 KiKa Ⓖ" group-title="德国",🇩🇪 德国 KiKa Ⓖ
-https://kikageohls.akamaized.net/hls/live/2022693/livetvkika_de/master.m3u8
-#EXTINF:-1 tvg-name="🇩🇪 德国 Tagesschau24" group-title="德国",🇩🇪 德国 Tagesschau24
-https://tagesschau.akamaized.net/hls/live/2020115/tagesschau/tagesschau_1/master.m3u8
-#EXTINF:-1 tvg-name="🇬🇷 希腊 Mega News" group-title="希腊",🇬🇷 希腊 Mega News
-https://c98db5952cb54b358365984178fb898a.msvdn.net/live/S99841657/NU0xOarAMJ5X/playlist.m3u8
-#EXTINF:-1 tvg-name="🇬🇷 希腊 Star" group-title="希腊",🇬🇷 希腊 Star
-https://livestar.siliconweb.com/starvod/star4/star4.m3u8
 #EXTINF:-1 tvg-name="🇬🇷 希腊 Star International" group-title="希腊",🇬🇷 希腊 Star International
 https://livestar.siliconweb.com/starvod/star_int/star_int.m3u8
 #EXTINF:-1 tvg-name="🇬🇷 希腊 Open TV Ⓖ" group-title="希腊",🇬🇷 希腊 Open TV Ⓖ
 https://liveopen.siliconweb.com/openTvLive/liveopen/playlist.m3u8
-#EXTINF:-1 tvg-name="🇬🇷 希腊 Action24" group-title="希腊",🇬🇷 希腊 Action24
-https://actionlive.siliconweb.com/actionabr/actiontv/playlist.m3u8
 #EXTINF:-1 tvg-name="🇬🇷 希腊 Kontra" group-title="希腊",🇬🇷 希腊 Kontra
 https://kontralive.siliconweb.com/live/kontratv/playlist.m3u8
-#EXTINF:-1 tvg-name="🇬🇷 希腊 Best TV" group-title="希腊",🇬🇷 希腊 Best TV
-https://besttv.siliconweb.com/bestTV/live_abr/playlist.m3u8
 #EXTINF:-1 tvg-name="🇭🇺 匈牙利 16TV" group-title="匈牙利",🇭🇺 匈牙利 16TV
 https://cloudfront44.lexanetwork.com:1344/freerelay/16tv.sdp/playlist.m3u8
 #EXTINF:-1 tvg-name="🇭🇺 匈牙利 DTV" group-title="匈牙利",🇭🇺 匈牙利 DTV
@@ -365,14 +235,6 @@ https://cloudfront44.lexanetwork.com:1344/relay03/livestream003.sdp/playlist.m3u
 https://cloudfront44.lexanetwork.com:1344/freerelay/kanizsavtv.sdp/playlist.m3u8
 #EXTINF:-1 tvg-name="🇮🇸 冰岛 RÚV" group-title="冰岛",🇮🇸 冰岛 RÚV
 https://ruv-web-live.akamaized.net/streymi/ruverl/ruverl.m3u8
-#EXTINF:-1 tvg-name="🇮🇸 冰岛 RÚV 2" group-title="冰岛",🇮🇸 冰岛 RÚV 2
-https://ruvlive.akamaized.net/out/v1/2ff7673de40f419fa5164498fae89089/index.m3u8
-#EXTINF:-1 tvg-name="🇮🇹 意大利 SuperTennis" group-title="意大利",🇮🇹 意大利 SuperTennis
-https://live-embed.supertennix.hiway.media/restreamer/supertennix_client/gpu-a-c0-16/restreamer/outgest/aa3673f1-e178-44a9-a947-ef41db73211a/manifest.m3u8
-#EXTINF:-1 tvg-name="🇮🇹 意大利 Deejay TV" group-title="意大利",🇮🇹 意大利 Deejay TV
-https://4c4b867c89244861ac216426883d1ad0.msvdn.net/live/S85984808/sMO0tz9Sr2Rk/playlist.m3u8
-#EXTINF:-1 tvg-name="🇮🇹 意大利 RDS Social TV" group-title="意大利",🇮🇹 意大利 RDS Social TV
-https://stream.rdstv.radio/index.m3u8
 #EXTINF:-1 tvg-name="🇮🇹 意大利 12 Tv Parma" group-title="意大利",🇮🇹 意大利 12 Tv Parma
 https://5929b138b139d.streamlock.net/12TVParma/livestream/playlist.m3u8
 #EXTINF:-1 tvg-name="🇮🇹 意大利 UniNettuno University TV Ⓖ" group-title="意大利",🇮🇹 意大利 UniNettuno University TV Ⓖ
@@ -383,8 +245,6 @@ https://5f204aff97bee.streamlock.net/AltoAdigeTV/livestream/playlist.m3u8
 https://srvx1.selftv.video/cafe/live/playlist.m3u8
 #EXTINF:-1 tvg-name="🇮🇹 意大利 Canale 2" group-title="意大利",🇮🇹 意大利 Canale 2
 https://59d7d6f47d7fc.streamlock.net/canale2/canale2/playlist.m3u8
-#EXTINF:-1 tvg-name="🇮🇹 意大利 Cittaceleste Tv" group-title="意大利",🇮🇹 意大利 Cittaceleste Tv
-https://sportitaliaamd.akamaized.net/live/Cittaceleste/hls/A990687F506536598442FC5CD12C97CB78873FBA/index.m3u8
 #EXTINF:-1 tvg-name="🇮🇹 意大利 Entella Tv" group-title="意大利",🇮🇹 意大利 Entella Tv
 https://5f22d76e220e1.streamlock.net:443/EntellaTV/EntellaTV/playlist.m3u8
 #EXTINF:-1 tvg-name="🇮🇹 意大利 E'live Brescia Tv" group-title="意大利",🇮🇹 意大利 E'live Brescia Tv
@@ -395,8 +255,6 @@ https://srvx1.selftv.video/espansione/smil:live.smil/playlist.m3u8
 https://59d7d6f47d7fc.streamlock.net/esperiatv/esperiatv/playlist.m3u8
 #EXTINF:-1 tvg-name="🇮🇹 意大利 Etna Espresso Channel" group-title="意大利",🇮🇹 意大利 Etna Espresso Channel
 https://5db313b643fd8.streamlock.net/Etnachannelponte/Etnachannelponte/playlist.m3u8
-#EXTINF:-1 tvg-name="🇮🇹 意大利 Euro Tv" group-title="意大利",🇮🇹 意大利 Euro Tv
-https://5f22d76e220e1.streamlock.net/eurotv/eurotv/playlist.m3u8
 #EXTINF:-1 tvg-name="🇮🇹 意大利 Giovanni Paolo Tv" group-title="意大利",🇮🇹 意大利 Giovanni Paolo Tv
 https://media2021.rtvweb.com/giovannipaolotv/web/chunklist_w663456797.m3u8
 #EXTINF:-1 tvg-name="🇮🇹 意大利 GO-TV Channel" group-title="意大利",🇮🇹 意大利 GO-TV Channel
@@ -405,46 +263,22 @@ https://6zklxkbbdw9b-hls-live.mariatvcdn.it/msmotor/2f759512164fc6fe4acbed6a5648
 https://59d7d6f47d7fc.streamlock.net/icarotv/icarotv/playlist.m3u8
 #EXTINF:-1 tvg-name="🇮🇹 意大利 il61" group-title="意大利",🇮🇹 意大利 il61
 https://5a1178b42cc03.streamlock.net/travel/travel/playlist.m3u8
-#EXTINF:-1 tvg-name="🇮🇹 意大利 Iunior Tv" group-title="意大利",🇮🇹 意大利 Iunior Tv
-https://5f22d76e220e1.streamlock.net/iuniortv/iuniortv/playlist.m3u8
-#EXTINF:-1 tvg-name="🇮🇹 意大利 La Nuova Tv" group-title="意大利",🇮🇹 意大利 La Nuova Tv
-https://5dcabf026b188.streamlock.net/lanuovatvbas/livestream/playlist.m3u8
-#EXTINF:-1 tvg-name="🇮🇹 意大利 LaC News 24" group-title="意大利",🇮🇹 意大利 LaC News 24
-https://f5842579ff984c1c98d63b8d789673eb.msvdn.net/live/S27391994/HVvPMzy/playlist.m3u8
-#EXTINF:-1 tvg-name="🇮🇹 意大利 LaC Tv Calabria" group-title="意大利",🇮🇹 意大利 LaC Tv Calabria
-https://f5842579ff984c1c98d63b8d789673eb.msvdn.net/live/S47282891/JWjL3xqPf4bX/playlist.m3u8
-#EXTINF:-1 tvg-name="🇮🇹 意大利 Lab Tv" group-title="意大利",🇮🇹 意大利 Lab Tv
-https://customer-yzibk50951uq418a.cloudflarestream.com/a58893dee4b9922a75e41b4ec4243f84/manifest/video.m3u8
 #EXTINF:-1 tvg-name="🇮🇹 意大利 Made in BO" group-title="意大利",🇮🇹 意大利 Made in BO
 https://srvx1.selftv.video/dmchannel/live/playlist.m3u8
-#EXTINF:-1 tvg-name="🇮🇹 意大利 Lombardia Tv" group-title="意大利",🇮🇹 意大利 Lombardia Tv
-https://5db313b643fd8.streamlock.net/lmbiatv/lmbiatv/playlist.m3u8
-#EXTINF:-1 tvg-name="🇮🇹 意大利 Lira Tv" group-title="意大利",🇮🇹 意大利 Lira Tv
-https://a928c0678d284da5b383f29ecc5dfeec.msvdn.net/live/S57315730/8kTBWibNteJA/playlist.m3u8
 #EXTINF:-1 tvg-name="🇮🇹 意大利 Maria Vision" group-title="意大利",🇮🇹 意大利 Maria Vision
 https://1601580044.rsc.cdn77.org/live/_jcn_/amls:CHANNEL_2/playlist.m3u8
-#EXTINF:-1 tvg-name="🇮🇹 意大利 Minformo Tv" group-title="意大利",🇮🇹 意大利 Minformo Tv
-https://5db313b643fd8.streamlock.net:443/MinformoTV/MinformoTV/playlist.m3u8
 #EXTINF:-1 tvg-name="🇮🇹 意大利 Nuova Tv 1" group-title="意大利",🇮🇹 意大利 Nuova Tv 1
 https://nuovatv.net:8443/tv/stream.m3u8
-#EXTINF:-1 tvg-name="🇮🇹 意大利 Nuvola Tv" group-title="意大利",🇮🇹 意大利 Nuvola Tv
-https://stream.nuvola.tv:8181/memfs/4aaa6328-1879-4ebf-b18a-498146d0c61c.m3u8
 #EXTINF:-1 tvg-name="🇮🇹 意大利 Onda Novara Tv" group-title="意大利",🇮🇹 意大利 Onda Novara Tv
 https://585b674743bbb.streamlock.net/9006/9006/playlist.m3u8
 #EXTINF:-1 tvg-name="🇮🇹 意大利 Onda Tv Sicilia" group-title="意大利",🇮🇹 意大利 Onda Tv Sicilia
 https://5926fc9c7c5b2.streamlock.net/9040/9040/playlist.m3u8
-#EXTINF:-1 tvg-name="🇮🇹 意大利 Otto Channel" group-title="意大利",🇮🇹 意大利 Otto Channel
-https://ottop-live-meride.akamaized.net/hls/live/2039996/ch1/playlist.m3u8
 #EXTINF:-1 tvg-name="🇮🇹 意大利 Padre Pio Tv" group-title="意大利",🇮🇹 意大利 Padre Pio Tv
 https://600f07e114306.streamlock.net/PadrePioTV/livestream/playlist.m3u8
 #EXTINF:-1 tvg-name="🇮🇹 意大利 Peer Tv Alto Adige" group-title="意大利",🇮🇹 意大利 Peer Tv Alto Adige
 https://iptv.peer.biz/live/peertv-it.m3u8
 #EXTINF:-1 tvg-name="🇮🇹 意大利 Peer TV Südtirol" group-title="意大利",🇮🇹 意大利 Peer TV Südtirol
 https://iptv.peer.biz/live/peertv.m3u8
-#EXTINF:-1 tvg-name="🇮🇹 意大利 Prima Tv Sicilia" group-title="意大利",🇮🇹 意大利 Prima Tv Sicilia
-https://5db313b643fd8.streamlock.net/PrimaTV/PrimaTV/playlist.m3u8
-#EXTINF:-1 tvg-name="🇮🇹 意大利 PrimaFREE" group-title="意大利",🇮🇹 意大利 PrimaFREE
-https://5f22d76e220e1.streamlock.net/primafree/primafree/playlist.m3u8
 #EXTINF:-1 tvg-name="🇮🇹 意大利 Promovideo Tv" group-title="意大利",🇮🇹 意大利 Promovideo Tv
 https://media2021.rtvweb.com/promovideo_web/promovideo/playlist.m3u8
 #EXTINF:-1 tvg-name="🇮🇹 意大利 Rete 8" group-title="意大利",🇮🇹 意大利 Rete 8
@@ -453,8 +287,6 @@ https://64b16f23efbee.streamlock.net/rete8/rete8/playlist.m3u8
 https://live1.giocabet.tv/stream/6/index.m3u8
 #EXTINF:-1 tvg-name="🇮🇹 意大利 Rete 8 Sport" group-title="意大利",🇮🇹 意大利 Rete 8 Sport
 https://64b16f23efbee.streamlock.net/rete8sport/rete8sport/playlist.m3u8
-#EXTINF:-1 tvg-name="🇮🇹 意大利 Rete Mia" group-title="意大利",🇮🇹 意大利 Rete Mia
-https://5db313b643fd8.streamlock.net/rete/rete/playlist.m3u8
 #EXTINF:-1 tvg-name="🇮🇹 意大利 Rete Biella Tv" group-title="意大利",🇮🇹 意大利 Rete Biella Tv
 https://sb.top-ix.org/retebiella/streaming/playlist.m3u8
 #EXTINF:-1 tvg-name="🇮🇹 意大利 Rete Oro Tv" group-title="意大利",🇮🇹 意大利 Rete Oro Tv
@@ -463,12 +295,8 @@ https://5926fc9c7c5b2.streamlock.net/9094/9094/playlist.m3u8
 https://5926fc9c7c5b2.streamlock.net/9332/9332/playlist.m3u8
 #EXTINF:-1 tvg-name="🇮🇹 意大利 Rttr" group-title="意大利",🇮🇹 意大利 Rttr
 https://5f204aff97bee.streamlock.net/RTTRlive/livestream/playlist.m3u8
-#EXTINF:-1 tvg-name="🇮🇹 意大利 Sicilia 24 Tv" group-title="意大利",🇮🇹 意大利 Sicilia 24 Tv
-https://5f22d76e220e1.streamlock.net/sicilia24/sicilia24/playlist.m3u8
 #EXTINF:-1 tvg-name="🇮🇹 意大利 Super J Tv" group-title="意大利",🇮🇹 意大利 Super J Tv
 https://59d39900ebfb8.streamlock.net/SuperJtv/SuperJtv/playlist.m3u8
-#EXTINF:-1 tvg-name="🇮🇹 意大利 Sophia Tv" group-title="意大利",🇮🇹 意大利 Sophia Tv
-https://bild-und-ton.stream/sophiatv-it/smil:sophia-tv-it.smil/playlist.m3u8
 #EXTINF:-1 tvg-name="🇮🇹 意大利 TSD Tv Arezzo(Tele San Domenico)" group-title="意大利",🇮🇹 意大利 TSD Tv Arezzo(Tele San Domenico)
 https://stream.mariatvcdn.com/tsd/7c59373bfdb38201b9215ff86f0ce6af.sdp/playlist.m3u8
 #EXTINF:-1 tvg-name="🇮🇹 意大利 Tele Bruzzano" group-title="意大利",🇮🇹 意大利 Tele Bruzzano
@@ -483,14 +311,8 @@ http://59d7d6f47d7fc.streamlock.net/telejonio/telejonio/playlist.m3u8
 https://5ce9406b73c33.streamlock.net/TeleMantova/livestream/playlist.m3u8
 #EXTINF:-1 tvg-name="🇮🇹 意大利 Tele Mia" group-title="意大利",🇮🇹 意大利 Tele Mia
 https://playerssl.telemia.tv/fileadmin/hls/TelemiaHD/telemia85_mediachunks.m3u8
-#EXTINF:-1 tvg-name="🇮🇹 意大利 Tele Liguria Sud" group-title="意大利",🇮🇹 意大利 Tele Liguria Sud
-https://64b16f23efbee.streamlock.net/teleliguriasud/teleliguriasud/playlist.m3u8
-#EXTINF:-1 tvg-name="🇮🇹 意大利 Tele Nord Genova" group-title="意大利",🇮🇹 意大利 Tele Nord Genova
-https://64b16f23efbee.streamlock.net/telenord/telenord/playlist.m3u8
 #EXTINF:-1 tvg-name="🇮🇹 意大利 Tele Mistretta" group-title="意大利",🇮🇹 意大利 Tele Mistretta
 https://live.mariatvcdn.com/telemistretta/8fbcd205ada81b295ee6c211c3a80dde.sdp/playlist.m3u8
-#EXTINF:-1 tvg-name="🇮🇹 意大利 Tele Molise" group-title="意大利",🇮🇹 意大利 Tele Molise
-http://185.202.128.1:1935/Telemolise4K/Telemolise4K/playlist.m3u8
 #EXTINF:-1 tvg-name="🇮🇹 意大利 Tele Mia Extra" group-title="意大利",🇮🇹 意大利 Tele Mia Extra
 https://playerssl.telemia.tv/fileadmin/hls/TelemiaExtra/telemiaextra_mediachunks.m3u8
 #EXTINF:-1 tvg-name="🇮🇹 意大利 Tele One" group-title="意大利",🇮🇹 意大利 Tele One
@@ -499,20 +321,6 @@ https://648026e87a75e.streamlock.net/teleone/teleone/playlist.m3u8
 https://59d7d6f47d7fc.streamlock.net/rs2/rs2/playlist.m3u8
 #EXTINF:-1 tvg-name="🇮🇹 意大利 Tele8 Tv" group-title="意大利",🇮🇹 意大利 Tele8 Tv
 https://57068da1deb21.streamlock.net/teletv8/teletv8/playlist.m3u8
-#EXTINF:-1 tvg-name="🇮🇹 意大利 Telecity Piemonte" group-title="意大利",🇮🇹 意大利 Telecity Piemonte
-https://64b16f23efbee.streamlock.net/telecitypiemonte/telecitypiemonte/playlist.m3u8
-#EXTINF:-1 tvg-name="🇮🇹 意大利 Telecity Valle D'Aosta" group-title="意大利",🇮🇹 意大利 Telecity Valle D'Aosta
-https://64b16f23efbee.streamlock.net/telecityvda/telecityvda/playlist.m3u8
-#EXTINF:-1 tvg-name="🇮🇹 意大利 Telecity Lombardia" group-title="意大利",🇮🇹 意大利 Telecity Lombardia
-https://64b16f23efbee.streamlock.net/telecitylombardia/telecitylombardia/playlist.m3u8
-#EXTINF:-1 tvg-name="🇮🇹 意大利 Telegenova" group-title="意大利",🇮🇹 意大利 Telegenova
-https://64b16f23efbee.streamlock.net/telegenova/telegenova/playlist.m3u8
-#EXTINF:-1 tvg-name="🇮🇹 意大利 Telenova" group-title="意大利",🇮🇹 意大利 Telenova
-https://64b16f23efbee.streamlock.net/telenova/telenova/playlist.m3u8
-#EXTINF:-1 tvg-name="🇮🇹 意大利 TLT Molise" group-title="意大利",🇮🇹 意大利 TLT Molise
-https://5f22d76e220e1.streamlock.net/tltmolise/tltmolise/playlist.m3u8
-#EXTINF:-1 tvg-name="🇮🇹 意大利 Televallo Trapani" group-title="意大利",🇮🇹 意大利 Televallo Trapani
-https://64b16f23efbee.streamlock.net/televallo/televallo/playlist.m3u8
 #EXTINF:-1 tvg-name="🇮🇹 意大利 Tv 12" group-title="意大利",🇮🇹 意大利 Tv 12
 https://59d7d6f47d7fc.streamlock.net/tv12/tv12/playlist.m3u8
 #EXTINF:-1 tvg-name="🇮🇹 意大利 Tv Prato" group-title="意大利",🇮🇹 意大利 Tv Prato
@@ -521,22 +329,12 @@ https://live.mariatvcdn.com/tvprato/2db0dd5674586686a867ec52c3aa8e06.sdp/mono.m3
 https://59d7d6f47d7fc.streamlock.net/tvqui/tvqui/playlist.m3u8
 #EXTINF:-1 tvg-name="🇮🇹 意大利 Video Calabria" group-title="意大利",🇮🇹 意大利 Video Calabria
 https://a8a02dd9a49a4fc9810743615c65ab73.msvdn.net/live/S76734991/i6NeNqLYaspb/playlist.m3u8
-#EXTINF:-1 tvg-name="🇮🇹 意大利 Video Regione Sicilia" group-title="意大利",🇮🇹 意大利 Video Regione Sicilia
-https://57214cb172d84f8cb311b91513952b03.msvdn.net/live/S40896499/ZuaLjACsWIL4/playlist.m3u8
 #EXTINF:-1 tvg-name="🇮🇹 意大利 Video Mediterraneo" group-title="意大利",🇮🇹 意大利 Video Mediterraneo
 https://bfbe5f347ac4424faf719dda285bc39e.msvdn.net/live/S54897858/4gWO7tTzpK3N/playlist.m3u8
 #EXTINF:-1 tvg-name="🇮🇹 意大利 Videonovara" group-title="意大利",🇮🇹 意大利 Videonovara
 https://ed04.top-ix.org/avtvlive/videonovara/streaming/playlist.m3u8
-#EXTINF:-1 tvg-name="🇮🇹 意大利 Zerouno Tv News" group-title="意大利",🇮🇹 意大利 Zerouno Tv News
-https://5f22d76e220e1.streamlock.net/01news/01news/playlist.m3u8
-#EXTINF:-1 tvg-name="🇱🇻 拉脱维亚 ReTV" group-title="拉脱维亚",🇱🇻 拉脱维亚 ReTV
-https://retv2132.bstrm.net/slive/_definst_/retv_retv_channel_5k7_42787_default_891_hls.smil/playlist.m3u8
-#EXTINF:-1 tvg-name="🇱🇹 立陶宛 Lietuvos Rytas TV" group-title="立陶宛",🇱🇹 立陶宛 Lietuvos Rytas TV
-https://live.lietuvosryto.tv/live/hls/eteris.m3u8
 #EXTINF:-1 tvg-name="🇪🇸 西班牙 Alcarria TV" group-title="西班牙",🇪🇸 西班牙 Alcarria TV
 http://cls.alcarria.tv/live/alcarriatv-livestream.m3u8
-#EXTINF:-1 tvg-name="🇲🇪 黑山 TVCG MNE" group-title="黑山",🇲🇪 黑山 TVCG MNE
-https://rtcg-live-open.morescreens.com/RTCG_1_004/playlist.m3u8
 #EXTINF:-1 tvg-name="🇳🇱 荷兰 NH Nieuws" group-title="荷兰",🇳🇱 荷兰 NH Nieuws
 https://rrr.sz.xlcdn.com/?account=nhnieuws&file=live&type=live&service=wowza&protocol=https&output=playlist.m3u8
 #EXTINF:-1 tvg-name="🇲🇰 北马其顿 Folk TV" group-title="北马其顿",🇲🇰 北马其顿 Folk TV
@@ -549,16 +347,8 @@ https://stream.nasatv.com.mk/jazztv/hls/jazztv_live.m3u8
 http://tv1.intv.mk:1935/live2/folkklub/index.m3u8
 #EXTINF:-1 tvg-name="🇷🇸 塞尔维亚 Kurir TV" group-title="塞尔维亚",🇷🇸 塞尔维亚 Kurir TV
 https://static.am.mediaoutcast.com/storage/nQJnjJkO/nQJnjJkO/stream/O68x4o8g/720p/720p.m3u8
-#EXTINF:-1 tvg-name="🇫🇷 法国 euronews" group-title="法国",🇫🇷 法国 euronews
-https://euronews-live-spa-es.fast.rakuten.tv/v1/master/0547f18649bd788bec7b67b746e47670f558b6b2/production-LiveChannel-6571/bitok/eyJzdGlkIjoiMDA0YjY0NTMtYjY2MC00ZTZkLTlkNzEtMTk3YTM3ZDZhZWIxIiwibWt0IjoiZXMiLCJjaCI6NjU3MSwicHRmIjoxfQ==/26034/euronews-es.m3u8
 #EXTINF:-1 tvg-name="🇪🇸 西班牙 ETB1" group-title="西班牙",🇪🇸 西班牙 ETB1
 https://multimedia.eitb.eus/live-content/etb1hd-hls/master.m3u8
-#EXTINF:-1 tvg-name="🇸🇪 瑞典 Expressen TV" group-title="瑞典",🇸🇪 瑞典 Expressen TV
-https://cdn0-03837-liveedge0.dna.ip-only.net/03837-liveedge0/smil:03837-tx2/playlist.m3u8
-#EXTINF:-1 tvg-name="🇸🇪 瑞典 Di TV" group-title="瑞典",🇸🇪 瑞典 Di TV
-https://cdn0-03837-liveedge0.dna.ip-only.net/03837-liveedge0/smil:03837-tx4/playlist.m3u8
-#EXTINF:-1 tvg-name="🇨🇭 瑞士 TVM 3" group-title="瑞士",🇨🇭 瑞士 TVM 3
-http://livevideo.infomaniak.com/streaming/livecast/tvm3/playlist.m3u8
 #EXTINF:-1 tvg-name="🇬🇧 英国 QVC Extra Ⓢ" group-title="英国",🇬🇧 英国 QVC Extra Ⓢ
 https://qvcuk-live.akamaized.net/hls/live/2097112/qex/3/3.m3u8
 #EXTINF:-1 tvg-name="🇮🇹 意大利 Peer TV South Tyrol" group-title="意大利",🇮🇹 意大利 Peer TV South Tyrol
@@ -567,16 +357,10 @@ https://iptv.peer.biz/live/peertv-en.m3u8
 https://tv.balkanweb.com/news24/livestream/playlist.m3u8
 #EXTINF:-1 tvg-name="🇦🇱 阿尔巴尼亚 Ora News" group-title="阿尔巴尼亚",🇦🇱 阿尔巴尼亚 Ora News
 https://live1.mediadesk.al/oranews.m3u8
-#EXTINF:-1 tvg-name="🇦🇱 阿尔巴尼亚 Tropoja" group-title="阿尔巴尼亚",🇦🇱 阿尔巴尼亚 Tropoja
-https://live.prostream.al/al/smil:tropojatv.smil/playlist.m3u8
-#EXTINF:-1 tvg-name="🇦🇹 奥地利 Servus TV Ⓖ" group-title="奥地利",🇦🇹 奥地利 Servus TV Ⓖ
-https://rbmn-live.akamaized.net/hls/live/2002825/geoSTVATweb/master.m3u8
 #EXTINF:-1 tvg-name="🇩🇰 丹麦 Radio24-IlSole24OreTV" group-title="丹麦",🇩🇰 丹麦 Radio24-IlSole24OreTV
 https://ilsole24ore-radiovisual.akamaized.net/hls/live/2035302/persidera/master.m3u8
 #EXTINF:-1 tvg-name="🇮🇹 意大利 Antenna 2 Bergamo" group-title="意大利",🇮🇹 意大利 Antenna 2 Bergamo
 https://58f12ffd2447a.streamlock.net/Antenna2/livestream/playlist.m3u8
-#EXTINF:-1 tvg-name="🇮🇹 意大利 Radio Montecarlo TV Ⓖ" group-title="意大利",🇮🇹 意大利 Radio Montecarlo TV Ⓖ
-https://live02-seg.msr.cdn.mediaset.net/live/ch-bb/bb-clr.isml/index.m3u8
 #EXTINF:-1 tvg-name="🇮🇹 意大利 Canale 8 Campania" group-title="意大利",🇮🇹 意大利 Canale 8 Campania
 https://59d7d6f47d7fc.streamlock.net/canale8/canale8/playlist.m3u8
 #EXTINF:-1 tvg-name="🇮🇹 意大利 Radio Italia Cina Tv" group-title="意大利",🇮🇹 意大利 Radio Italia Cina Tv
@@ -589,10 +373,6 @@ https://stream7.livinlive.it/trc/trc/playlist.m3u8
 https://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=5674080&output=7&forceUserAgent=rainet/4.0.5
 #EXTINF:-1 tvg-name="🇲🇩 摩尔多瓦 Radio Chisinau" group-title="摩尔多瓦",🇲🇩 摩尔多瓦 Radio Chisinau
 https://radiochisinau.md/hls/RChisinau.m3u8
-#EXTINF:-1 tvg-name="🇫🇷 法国 RTL Radio Letzebuerg" group-title="法国",🇫🇷 法国 RTL Radio Letzebuerg
-https://rtlradio-streaming.rtl.lu/rtlradiowebtv/smil:rtlradiowebtv/playlist.m3u8
-#EXTINF:-1 tvg-name="🇮🇪 爱尔兰 Virgin Radio TV Ⓖ" group-title="爱尔兰",🇮🇪 爱尔兰 Virgin Radio TV Ⓖ
-https://live02-seg.msr.cdn.mediaset.net/live/ch-ew/ew-clr.isml/index.m3u8
 #EXTINF:-1 tvg-name="🇫🇮 芬兰 Järviradio TV" group-title="芬兰",🇫🇮 芬兰 Järviradio TV
 https://streamer.radiotaajuus.fi/memfs/47f113bf-04ea-493b-a9d4-52945fd9db31.m3u8
 #EXTINF:-1 tvg-name="🇪🇸 西班牙 Onda Web Radio" group-title="西班牙",🇪🇸 西班牙 Onda Web Radio

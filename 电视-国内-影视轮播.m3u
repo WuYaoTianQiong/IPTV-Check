@@ -1,12 +1,8 @@
 #EXTM3U x-tvg-url="检测结果_节目单.epg.xml"
 #EXTINF:-1 tvg-name="灌篮高手" group-title="影视轮播",灌篮高手
 https://live.ottiptv.cc/yy/1382735626
-#EXTINF:-1 tvg-name="七龙珠" group-title="影视轮播",七龙珠
-https://live.ottiptv.cc/huya/11601966
 #EXTINF:-1 tvg-name="哆啦A梦" group-title="影视轮播",哆啦A梦
 https://live.ottiptv.cc/huya/11601963
-#EXTINF:-1 tvg-name="猫和老鼠" group-title="影视轮播",猫和老鼠
-https://live.ottiptv.cc/huya/11352879
 #EXTINF:-1 tvg-name="喜羊羊与灰太狼" group-title="影视轮播",喜羊羊与灰太狼
 https://live.ottiptv.cc/huya/23865080
 #EXTINF:-1 tvg-name="精灵宝可梦" group-title="影视轮播",精灵宝可梦
@@ -55,8 +51,6 @@ https://live.ottiptv.cc/huya/11342396
 https://live.ottiptv.cc/huya/11352960
 #EXTINF:-1 tvg-name="康熙王朝" group-title="影视轮播",康熙王朝
 https://live.ottiptv.cc/huya/11352940
-#EXTINF:-1 tvg-name="鬼吹灯之精绝古城" group-title="影视轮播",鬼吹灯之精绝古城
-https://live.ottiptv.cc/huya/11352871
 #EXTINF:-1 tvg-name="陈情令" group-title="影视轮播",陈情令
 https://live.ottiptv.cc/huya/29465862
 #EXTINF:-1 tvg-name="鬼吹灯之龙岭迷窟" group-title="影视轮播",鬼吹灯之龙岭迷窟
@@ -111,16 +105,12 @@ http://jsmov2.a.yximgs.com/bs3/video-hls/5203346449046555193_hlsb.m3u8
 https://vip.ffzy-play7.com/20230116/11563_b9f44814/index.m3u8
 #EXTINF:-1 tvg-name="数码时代" group-title="影视轮播",数码时代
 http://ali-m-l.cztv.com/channels/lantian/channel12/720p.m3u8?zzhed
-#EXTINF:-1 tvg-name="海绵宝宝" group-title="影视轮播",海绵宝宝
-https://live.metshop.top/douyu/3949681
 #EXTINF:-1 tvg-name="漫画解说" group-title="影视轮播",漫画解说
 https://www.goodiptv.club/douyu/5907076
 #EXTINF:-1 tvg-name="三国演义" group-title="影视轮播",三国演义
 https://live.metshop.top/huya/11602081
 #EXTINF:-1 tvg-name="封神榜" group-title="影视轮播",封神榜
 https://live.ottiptv.cc/huya/29465849
-#EXTINF:-1 tvg-name="射雕英雄传" group-title="影视轮播",射雕英雄传
-https://live.ottiptv.cc/huya/23824164
 #EXTINF:-1 tvg-name="飞碟之谜02" group-title="景区慢直播",飞碟之谜02
 https://newcntv.qcloudcdn.com/asp/hls/2000/0303000a/3/default/d2454bbb542d4613a9db478dab2addfd/2000.m3u8
 #EXTINF:-1 tvg-name="乌镇蓝印花布" group-title="景区慢直播",乌镇蓝印花布

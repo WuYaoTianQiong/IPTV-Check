@@ -83,8 +83,6 @@ http://nashe1.hostingradio.ru/nashesongs.mp3
 https://nashe1.hostingradio.ru:80/nashespb128.mp3
 #EXTINF:-1 tvg-name="🇷🇺 俄罗斯 Radio Komsomolskaya Pravda" group-title="俄罗斯",🇷🇺 俄罗斯 Radio Komsomolskaya Pravda
 http://kpradio.hostingradio.ru:8000/russia.radiokp128.mp3
-#EXTINF:-1 tvg-name="🇷🇺 俄罗斯 Radio Rekord Russian Gold" group-title="俄罗斯",🇷🇺 俄罗斯 Radio Rekord Russian Gold
-https://hls-01-radiorecord.hostingradio.ru/record-russiangold/playlist.m3u8
 #EXTINF:-1 tvg-name="🇷🇺 俄罗斯 Radio Rekord" group-title="俄罗斯",🇷🇺 俄罗斯 Radio Rekord
 http://radiorecord.hostingradio.ru/rr_main96.aacp
 #EXTINF:-1 tvg-name="🇷🇺 俄罗斯 Radio Rekord Neurofunk" group-title="俄罗斯",🇷🇺 俄罗斯 Radio Rekord Neurofunk
@@ -103,8 +101,6 @@ http://play.global.audio/avtoradio.opus
 https://dfm-disc90.hostingradio.ru/disc9096.aacp
 #EXTINF:-1 tvg-name="🇷🇺 俄罗斯 lanya FM" group-title="俄罗斯等(西里尔)",🇷🇺 俄罗斯 lanya FM
 http://vgtrk15.hostingradio.ru:8011/vgtrk15128.mp3
-#EXTINF:-1 tvg-name="🇷🇺 俄罗斯 Radio Rekord Superdiskoteka 90-х" group-title="俄罗斯等(西里尔)",🇷🇺 俄罗斯 Radio Rekord Superdiskoteka 90-х
-https://hls-01-radiorecord.hostingradio.ru/record-sd90/playlist.m3u8
 #EXTINF:-1 tvg-name="🇷🇺 俄罗斯 Radio Rekord 80-х" group-title="俄罗斯等(西里尔)",🇷🇺 俄罗斯 Radio Rekord 80-х
 http://radiorecord.hostingradio.ru/198096.aacp
 #EXTINF:-1 tvg-name="🇧🇬 保加利亚 Radio Focus Sofia 103.6" group-title="保加利亚",🇧🇬 保加利亚 Radio Focus Sofia 103.6
@@ -449,8 +445,6 @@ https://streaming.radiostreamlive.com/radioitalylive_devices
 https://c32.radioboss.fm/stream/498
 #EXTINF:-1 tvg-name="🇳🇴 挪威 Poslovni FM" group-title="挪威",🇳🇴 挪威 Poslovni FM
 https://ec2s.crolive.com.hr:2665/stream
-#EXTINF:-1 tvg-name="🇸🇮 斯洛文尼亚 Calm Radio Singing Bowls" group-title="斯洛文尼亚",🇸🇮 斯洛文尼亚 Calm Radio Singing Bowls
-https://nl4.mystreaming.net/uber/calmbowls/icecast.audio
 #EXTINF:-1 tvg-name="🇸🇮 斯洛文尼亚 Radio Siamsa" group-title="斯洛文尼亚",🇸🇮 斯洛文尼亚 Radio Siamsa
 https://cast02.siamsa.ie/radio/8000/radio.mp3
 #EXTINF:-1 tvg-name="🇸🇮 斯洛文尼亚 Radio Sierpc" group-title="斯洛文尼亚",🇸🇮 斯洛文尼亚 Radio Sierpc
@@ -469,10 +463,6 @@ https://sonic.portalfoxmix.club/8074/stream
 https://video.mediawebchile.com:8228/stream
 #EXTINF:-1 tvg-name="🇧🇪 比利时 RCF Sud Belgique 106.8" group-title="比利时",🇧🇪 比利时 RCF Sud Belgique 106.8
 http://rcf.streamakaci.com/rcfsudbe.mp3
-#EXTINF:-1 tvg-name="🇧🇪 比利时 VRT Radio 1 94.2" group-title="比利时",🇧🇪 比利时 VRT Radio 1 94.2
-https://radio.vrtcdn.be/vrt/radio1/live.m3u8?ola=true&contentType=LIVESTREAM&filter=%28%21%28type%3D%3D%22audio%22%26%26FourCC%21%3D%22AACL%22%29%29
-#EXTINF:-1 tvg-name="🇧🇪 比利时 VRT Radio 2 Antwerpen" group-title="比利时",🇧🇪 比利时 VRT Radio 2 Antwerpen
-https://radio.vrtcdn.be/vrt/radio2-antwerpen/live.m3u8?ola=true&contentType=LIVESTREAM&filter=%28%21%28type%3D%3D%22audio%22%26%26FourCC%21%3D%22AACL%22%29%29
 #EXTINF:-1 tvg-name="🇫🇷 法国 Bel RTL" group-title="法国",🇫🇷 法国 Bel RTL
 http://belrtl.ice.infomaniak.ch/belrtl-mp3-192.mp3
 #EXTINF:-1 tvg-name="🇫🇷 法国 ClubFM Oost-Vlaanderen" group-title="法国",🇫🇷 法国 ClubFM Oost-Vlaanderen
@@ -601,8 +591,6 @@ https://stream-288.surfernetwork.com/4m4zpadefwhtv
 https://stream-285.surfernetwork.com/rvilzsnnjdutv
 #EXTINF:-1 tvg-name="🇵🇱 波兰 Polskie Radio Dwojka 89.5" group-title="波兰",🇵🇱 波兰 Polskie Radio Dwojka 89.5
 https://stream12.polskieradio.pl/pr2/pr2.sdp/playlist.m3u8
-#EXTINF:-1 tvg-name="🇵🇱 波兰 Polskie Radio Jedynka" group-title="波兰",🇵🇱 波兰 Polskie Radio Jedynka
-https://stream11.polskieradio.pl/pr1/pr1.sdp/playlist.m3u8
 #EXTINF:-1 tvg-name="🇵🇱 波兰 Polskie Radio Program 3" group-title="波兰",🇵🇱 波兰 Polskie Radio Program 3
 http://41.dktr.pl:8000/trojka.ogg
 #EXTINF:-1 tvg-name="🇵🇱 波兰 Polskie Radio 24" group-title="波兰",🇵🇱 波兰 Polskie Radio 24
@@ -673,8 +661,6 @@ http://icy.unitedradio.it/VirginRockParty.mp3
 http://icy.unitedradio.it/VirginRockHits.mp3
 #EXTINF:-1 tvg-name="🇮🇪 爱尔兰 Radio Novaya Volna 107.9" group-title="爱尔兰",🇮🇪 爱尔兰 Radio Novaya Volna 107.9
 https://icecast-trc33.cdnvideo.ru/stream
-#EXTINF:-1 tvg-name="🇮🇪 爱尔兰 Radio Novaya Zhizn" group-title="爱尔兰",🇮🇪 爱尔兰 Radio Novaya Zhizn
-https://nlradio.stream/hifi
 #EXTINF:-1 tvg-name="🇮🇪 爱尔兰 Virgin Radio" group-title="爱尔兰",🇮🇪 爱尔兰 Virgin Radio
 https://playerservices.streamtheworld.com/api/livestream-redirect/VIRGIN_RADIO_SC
 #EXTINF:-1 tvg-name="🇮🇪 爱尔兰 Radio Alegria del Transporte 90.9" group-title="爱尔兰",🇮🇪 爱尔兰 Radio Alegria del Transporte 90.9
@@ -777,8 +763,6 @@ https://playerservices.streamtheworld.com/api/livestream-redirect/WLLFFMAAC_SC
 http://amber.streamguys.com:6050/live
 #EXTINF:-1 tvg-name="🇨🇭 瑞士 WNTA Sports Fan Radio 1330" group-title="瑞士",🇨🇭 瑞士 WNTA Sports Fan Radio 1330
 https://playerservices.streamtheworld.com/api/livestream-redirect/WNTAAMAAC_SC
-#EXTINF:-1 tvg-name="🇨🇭 瑞士 WSEA Sports Radio 100.3 The Team" group-title="瑞士",🇨🇭 瑞士 WSEA Sports Radio 100.3 The Team
-https://playerservices.streamtheworld.com/api/livestream-redirect/WSEAFMAAC_SC
 #EXTINF:-1 tvg-name="🇨🇭 瑞士 Klassik Radio Schweiz" group-title="瑞士",🇨🇭 瑞士 Klassik Radio Schweiz
 https://klassikr.streamabc.net/klr-krschweiz-mp3-192-8951205
 #EXTINF:-1 tvg-name="🇨🇭 瑞士 Radio Bern1" group-title="瑞士",🇨🇭 瑞士 Radio Bern1
@@ -861,10 +845,6 @@ https://fm939.wnyc.org/wnycfm-web
 https://playerservices.streamtheworld.com/api/livestream-redirect/WUAL_HD3_SC
 #EXTINF:-1 tvg-name="🇬🇧 英国 WUOM 91.7 Michigan Radio" group-title="英国",🇬🇧 英国 WUOM 91.7 Michigan Radio
 https://playerservices.streamtheworld.com/api/livestream-redirect/WUOMFM_SC
-#EXTINF:-1 tvg-name="🇳🇱 荷兰 RadioNOS Chorinho & Cia Channel" group-title="荷兰",🇳🇱 荷兰 RadioNOS Chorinho & Cia Channel
-http://channels.radionos.com/stream/11/listen.pls
-#EXTINF:-1 tvg-name="🇳🇱 荷兰 RadioNOS Fitness & Workout" group-title="荷兰",🇳🇱 荷兰 RadioNOS Fitness & Workout
-http://channels.radionos.com/stream/14/?1465137886635.aac
 #EXTINF:-1 tvg-name="🇳🇱 荷兰 1.FM Amsterdam Trance Radio" group-title="荷兰",🇳🇱 荷兰 1.FM Amsterdam Trance Radio
 http://strm112.1.fm/atr_mobile_mp3
 #EXTINF:-1 tvg-name="🇳🇱 荷兰 NPO 3FM Alternative" group-title="荷兰",🇳🇱 荷兰 NPO 3FM Alternative
@@ -891,8 +871,6 @@ https://liferadio.streamabc.net/lfr-crock-mp3-192-6797911?sABC=61p21450%230%2348
 https://23093.live.streamtheworld.com/3MBS.mp3
 #EXTINF:-1 tvg-name="🇵🇹 葡萄牙 Radio Music Sambre 105.8" group-title="葡萄牙",🇵🇹 葡萄牙 Radio Music Sambre 105.8
 http://radiomusicsambre.ice.infomaniak.ch/radiomusicsambre-128.mp3
-#EXTINF:-1 tvg-name="🇵🇹 葡萄牙 Radio Liberdade 95.9 Porto Alegre" group-title="葡萄牙",🇵🇹 葡萄牙 Radio Liberdade 95.9 Porto Alegre
-http://cast4.audiostream.com.br:8655/mp3
 #EXTINF:-1 tvg-name="🇵🇹 葡萄牙 Labgate Classic Rock" group-title="葡萄牙",🇵🇹 葡萄牙 Labgate Classic Rock
 https://s2.ssl-stream.com/radio/8170/radio.mp3
 #EXTINF:-1 tvg-name="🇵🇹 葡萄牙 RadioSky Music Jazz" group-title="葡萄牙",🇵🇹 葡萄牙 RadioSky Music Jazz
@@ -967,8 +945,6 @@ http://0n-classicrock.radionetz.de/0n-classicrock.mp3
 http://0n-jazz.radionetz.de/0n-jazz.mp3
 #EXTINF:-1 tvg-name="🇵🇹 葡萄牙 1A Classic Rock" group-title="葡萄牙",🇵🇹 葡萄牙 1A Classic Rock
 http://1a-classicrock.radionetz.de/1a-classicrock.mp3
-#EXTINF:-1 tvg-name="🇵🇹 葡萄牙 ON Classic Rock" group-title="葡萄牙",🇵🇹 葡萄牙 ON Classic Rock
-https://0n-classicrock.radionetz.de/0n-classicrock.mp3
 #EXTINF:-1 tvg-name="🇵🇹 葡萄牙 Onlineradio Classic Rock" group-title="葡萄牙",🇵🇹 葡萄牙 Onlineradio Classic Rock
 https://stream.0nlineradio.com/classic-rock?ref=radiobrowser
 #EXTINF:-1 tvg-name="🇵🇹 葡萄牙 AAA Top Music Station" group-title="葡萄牙",🇵🇹 葡萄牙 AAA Top Music Station
@@ -1159,8 +1135,6 @@ https://17813.live.streamtheworld.com/CBH_CBC.mp3
 https://27033.live.streamtheworld.com/CBWFM_CBC.mp3
 #EXTINF:-1 tvg-name="🇵🇹 葡萄牙 CBX 90.9 CBC Music Edmonton" group-title="葡萄牙",🇵🇹 葡萄牙 CBX 90.9 CBC Music Edmonton
 https://26373.live.streamtheworld.com/CBXFM_CBC.mp3
-#EXTINF:-1 tvg-name="🇵🇹 葡萄牙 CBL 94.1 CBC Music Toronto" group-title="葡萄牙",🇵🇹 葡萄牙 CBL 94.1 CBC Music Toronto
-https://cbcradiolive.akamaized.net/hls/live/2041036/ES_R1ETR/master.m3u8
 #EXTINF:-1 tvg-name="🇵🇹 葡萄牙 Radio Swiss Classic" group-title="葡萄牙",🇵🇹 葡萄牙 Radio Swiss Classic
 https://livestreaming-node-4.srg-ssr.ch/srgssr/rsc_de/aac/96
 #EXTINF:-1 tvg-name="🇵🇹 葡萄牙 Radio Arremesso" group-title="葡萄牙",🇵🇹 葡萄牙 Radio Arremesso
@@ -1179,8 +1153,6 @@ https://sonic.mistreamingtv.uno/8050/stream
 https://audio.streaminghd.cl:2000/stream/ladobclassicdance/;stream.mp3
 #EXTINF:-1 tvg-name="🇵🇹 葡萄牙 Beijing Music Radio 97.4" group-title="葡萄牙",🇵🇹 葡萄牙 Beijing Music Radio 97.4
 http://lhttp.qingting.fm/live/332/64k.mp3
-#EXTINF:-1 tvg-name="🇵🇹 葡萄牙 Classic FM" group-title="葡萄牙",🇵🇹 葡萄牙 Classic FM
-https://www.classic.nl/player/classicfm.m3u
 #EXTINF:-1 tvg-name="🇪🇸 西班牙 Mad Radio Barcelona" group-title="西班牙",🇪🇸 西班牙 Mad Radio Barcelona
 https://c2.radioboss.fm/stream/588
 #EXTINF:-1 tvg-name="🇪🇸 西班牙 Cadena SER Ràdio Manresa" group-title="西班牙",🇪🇸 西班牙 Cadena SER Ràdio Manresa
@@ -1279,10 +1251,6 @@ https://orf-live.ors-shoutcast.at/oe1-q2a
 http://orf-live.ors-shoutcast.at/tir-q2a
 #EXTINF:-1 tvg-name="🇦🇹 奥地利 Antenne Dusseldorf 104.2" group-title="奥地利",🇦🇹 奥地利 Antenne Dusseldorf 104.2
 https://stream.lokalradio.nrw/444z5n3
-#EXTINF:-1 tvg-name="🇬🇷 希腊 Brantley Gilbert" group-title="希腊",🇬🇷 希腊 Brantley Gilbert
-https://streaming.exclusive.radio/er/brantleygilbert/icecast.audio
-#EXTINF:-1 tvg-name="🇬🇷 希腊 Engelbert Humperdinck" group-title="希腊",🇬🇷 希腊 Engelbert Humperdinck
-https://streaming.exclusive.radio/er/engelberthumperdinck/icecast.audio
 #EXTINF:-1 tvg-name="🇬🇷 希腊 Robert Palmer" group-title="希腊",🇬🇷 希腊 Robert Palmer
 https://streaming.exclusive.radio/er/robertpalmer/icecast.audio
 #EXTINF:-1 tvg-name="🇬🇷 希腊 Robert Cray" group-title="希腊",🇬🇷 希腊 Robert Cray
@@ -1333,12 +1301,8 @@ https://radiostreaming.ert.gr/ert-trito-maestro
 http://live.isol.biz:8500/;stream.nsv
 #EXTINF:-1 tvg-name="🇬🇷 希腊 RNZ Concert" group-title="希腊",🇬🇷 希腊 RNZ Concert
 http://radionz-ice.streamguys.com/fallback-concert_aac128
-#EXTINF:-1 tvg-name="🇩🇪 德国 Cliff Richard" group-title="德国",🇩🇪 德国 Cliff Richard
-https://streaming.exclusive.radio/er/cliffrichard/icecast.audio
 #EXTINF:-1 tvg-name="🇩🇪 德国 Cliff Richard - Hits" group-title="德国",🇩🇪 德国 Cliff Richard - Hits
 https://streaming.exclusive.radio/er/cliffrichardhits/icecast.audio
-#EXTINF:-1 tvg-name="🇩🇪 德国 Def Leppard" group-title="德国",🇩🇪 德国 Def Leppard
-https://streaming.exclusive.radio/er/defleppard/icecast.audio
 #EXTINF:-1 tvg-name="🇩🇪 德国 Leonard Cohen" group-title="德国",🇩🇪 德国 Leonard Cohen
 https://streaming.exclusive.radio/er/leonardcohen/icecast.audio
 #EXTINF:-1 tvg-name="🇩🇪 德国 Little Richard" group-title="德国",🇩🇪 德国 Little Richard
@@ -1721,8 +1685,6 @@ https://streaming.exclusive.radio/er/thedubliners/icecast.audio
 https://stream.audioxi.com/SW
 #EXTINF:-1 tvg-name="🇸🇪 瑞典 Guldkanalen Malmö/Lund" group-title="瑞典",🇸🇪 瑞典 Guldkanalen Malmö/Lund
 http://stream.dbmedia.se/gk96
-#EXTINF:-1 tvg-name="🇨🇭 瑞士 CKJR Sports 1440" group-title="瑞士",🇨🇭 瑞士 CKJR Sports 1440
-https://newcap.leanstream.co/CKJRAM
 #EXTINF:-1 tvg-name="🇨🇭 瑞士 RSI Rete Due" group-title="瑞士",🇨🇭 瑞士 RSI Rete Due
 http://stream.srg-ssr.ch/m/retedue/mp3_128
 #EXTINF:-1 tvg-name="🇨🇭 瑞士 RSI Rete Tre" group-title="瑞士",🇨🇭 瑞士 RSI Rete Tre
@@ -1767,8 +1729,6 @@ http://sc.creacast.com/rts-sete
 https://n11b-e2.revma.ihrhls.com/zc4688?rj-ttl=5&rj-tok=AAABfdrWRmsARmBX5IRIWvQhJQ
 #EXTINF:-1 tvg-name="🇨🇭 瑞士 Fox Sports 1260 WNDE" group-title="瑞士",🇨🇭 瑞士 Fox Sports 1260 WNDE
 https://n26b-e2.revma.ihrhls.com/zc905?rj-ttl=5&rj-tok=AAABfd5CGToAm3RHJaoKGPDJqg
-#EXTINF:-1 tvg-name="🇨🇭 瑞士 Fox Sports 1450 KTZR" group-title="瑞士",🇨🇭 瑞士 Fox Sports 1450 KTZR
-https://n1db-e2.revma.ihrhls.com/zc3286?rj-ttl=5&rj-tok=AAABfd49YDMAk_rqdb5rm7hvmg
 #EXTINF:-1 tvg-name="🇨🇭 瑞士 Fox Sports Pueblo KDZA" group-title="瑞士",🇨🇭 瑞士 Fox Sports Pueblo KDZA
 https://n23b-e2.revma.ihrhls.com/zc4015?rj-ttl=5&rj-tok=AAABfdoHmGEAj6qiejPLqoaY2g
 #EXTINF:-1 tvg-name="🇨🇭 瑞士 KREF Sports Talk 1400" group-title="瑞士",🇨🇭 瑞士 KREF Sports Talk 1400
@@ -1825,8 +1785,6 @@ https://playerservices.streamtheworld.com/api/livestream-redirect/CAI_4CAAAC_SC
 https://antenaone.crossradio.com.br/stream/1
 #EXTINF:-1 tvg-name="🇵🇹 葡萄牙 Music 88.7" group-title="葡萄牙",🇵🇹 葡萄牙 Music 88.7
 http://cast4.audiostream.com.br:8006/live
-#EXTINF:-1 tvg-name="🇵🇹 葡萄牙 Web Rádio Music Gospel" group-title="葡萄牙",🇵🇹 葡萄牙 Web Rádio Music Gospel
-https://player.srvaudio.com.br/player-ssl/9608
 #EXTINF:-1 tvg-name="🇵🇹 葡萄牙 CIBU Classic Rock 94.5" group-title="葡萄牙",🇵🇹 葡萄牙 CIBU Classic Rock 94.5
 http://live.leanstream.co/CIBUFM
 #EXTINF:-1 tvg-name="🇵🇹 葡萄牙 The Lynx Classic Rock" group-title="葡萄牙",🇵🇹 葡萄牙 The Lynx Classic Rock
@@ -1963,8 +1921,6 @@ https://stream.ginnet.cloud/live0119lo-p4rb/_definst_/classic/playlist.m3u8
 http://war.str3am.com:7180/MC01
 #EXTINF:-1 tvg-name="🇵🇹 葡萄牙 Christian Classic Rock Net" group-title="葡萄牙",🇵🇹 葡萄牙 Christian Classic Rock Net
 http://listen.christianhardrock.net/stream/9/
-#EXTINF:-1 tvg-name="🇵🇹 葡萄牙 Classic Rock 105.5 WLTC HD2" group-title="葡萄牙",🇵🇹 葡萄牙 Classic Rock 105.5 WLTC HD2
-http://ice42.securenetsystems.net/WLTCHD2
 #EXTINF:-1 tvg-name="🇵🇹 葡萄牙 CRnet Classic Rock" group-title="葡萄牙",🇵🇹 葡萄牙 CRnet Classic Rock
 https://shoutcast.christianrock.net/stream/9/
 #EXTINF:-1 tvg-name="🇵🇹 葡萄牙 KCHE Classic Hits 92.1" group-title="葡萄牙",🇵🇹 葡萄牙 KCHE Classic Hits 92.1
@@ -1985,8 +1941,6 @@ http://wfuv-music.streamguys.org/music-hi
 http://ice7.securenetsystems.net/WNSX
 #EXTINF:-1 tvg-name="🇵🇹 葡萄牙 WSPT 97.9" group-title="葡萄牙",🇵🇹 葡萄牙 WSPT 97.9
 http://ice7.securenetsystems.net/CWTO
-#EXTINF:-1 tvg-name="🇵🇹 葡萄牙 WSYN Sunny 103.1" group-title="葡萄牙",🇵🇹 葡萄牙 WSYN Sunny 103.1
-https://playerservices.streamtheworld.com/api/livestream-redirect/WSYNFMAAC_SC
 #EXTINF:-1 tvg-name="🇵🇹 葡萄牙 WUFT Classic" group-title="葡萄牙",🇵🇹 葡萄牙 WUFT Classic
 http://ais-sa1.streamon.fm/7648_48k.aac/playlist.m3u8
 #EXTINF:-1 tvg-name="🇵🇹 葡萄牙 WHTZ Z100 New York's #1 Hit Music Station" group-title="葡萄牙",🇵🇹 葡萄牙 WHTZ Z100 New York's #1 Hit Music Station
@@ -2003,8 +1957,6 @@ http://streaming-live-app.rtp.pt/liveradio/antena380a/playlist.m3u8
 https://ice7.securenetsystems.net/RDSPORTS
 #EXTINF:-1 tvg-name="🇩🇰 丹麦 Dr Dre" group-title="丹麦",🇩🇰 丹麦 Dr Dre
 https://streaming.exclusive.radio/er/drdre/icecast.audio
-#EXTINF:-1 tvg-name="🇩🇰 丹麦 Dr Hook" group-title="丹麦",🇩🇰 丹麦 Dr Hook
-https://streaming.exclusive.radio/er/drhook/icecast.audio
 #EXTINF:-1 tvg-name="🇦🇹 奥地利 Antenne Kärnten" group-title="奥地利",🇦🇹 奥地利 Antenne Kärnten
 http://live.antenne.at/ak
 #EXTINF:-1 tvg-name="🇦🇹 奥地利 Antenne Kärnten Sunrise" group-title="奥地利",🇦🇹 奥地利 Antenne Kärnten Sunrise
@@ -2111,22 +2063,16 @@ http://streams.rpr1.de/rpr-entspannung-128-mp3
 http://streams.rpr1.de/rpr-acoustic-128-aac
 #EXTINF:-1 tvg-name="🇩🇪 德国 RPR1 Apré Ski & Ballermann" group-title="德国",🇩🇪 德国 RPR1 Apré Ski & Ballermann
 http://streams.rpr1.de/rpr-apresski-128-mp3?usid=0-0-H-M-D-50
-#EXTINF:-1 tvg-name="🇩🇪 德国 RPR1 2000er Black" group-title="德国",🇩🇪 德国 RPR1 2000er Black
-https://streams.rpr1.de/rpr-2000erblack-128-mp3?usid=0-0-H-M-D-60
 #EXTINF:-1 tvg-name="🇩🇪 德国 RPR1 Chillout Zone" group-title="德国",🇩🇪 德国 RPR1 Chillout Zone
 http://streams.rpr1.de/rpr-chilloutzone-128-mp3?
 #EXTINF:-1 tvg-name="🇩🇪 德国 RPR1 Chilloutzone" group-title="德国",🇩🇪 德国 RPR1 Chilloutzone
 http://streams.rpr1.de/rpr-chilloutzone-128-mp3?usid=0-0-H-A-D-30
 #EXTINF:-1 tvg-name="🇩🇪 德国 RPR1 90er Black" group-title="德国",🇩🇪 德国 RPR1 90er Black
 https://streams.rpr1.de/rpr-90erblack-128-mp3?usid=0-0-H-M-D-60
-#EXTINF:-1 tvg-name="🇩🇪 德国 RPR1 Pfalz" group-title="德国",🇩🇪 德国 RPR1 Pfalz
-https://streams.rpr1.de/rpr-kaiserslautern-128-mp3
 #EXTINF:-1 tvg-name="🇩🇪 德国 RPR1 80er Rock" group-title="德国",🇩🇪 德国 RPR1 80er Rock
 https://streams.rpr1.de/rpr-80errock-128-mp3?usid=0-0-H-M-D-60
 #EXTINF:-1 tvg-name="🇩🇪 德国 RPR1 70er Rock" group-title="德国",🇩🇪 德国 RPR1 70er Rock
 https://streams.rpr1.de/rpr-70errock-128-mp3?usid=0-0-H-M-D-60
-#EXTINF:-1 tvg-name="🇩🇪 德国 RPR1 2000er Rock" group-title="德国",🇩🇪 德国 RPR1 2000er Rock
-https://streams.rpr1.de/rpr-2000errock-128-mp3?usid=0-0-H-M-D-60
 #EXTINF:-1 tvg-name="🇩🇪 德国 RPR1 90er Dance" group-title="德国",🇩🇪 德国 RPR1 90er Dance
 https://streams.rpr1.de/rpr-90erdance-128-mp3?usid=0-0-H-M-D-60
 #EXTINF:-1 tvg-name="🇩🇪 德国 RPR1 90er Rock" group-title="德国",🇩🇪 德国 RPR1 90er Rock
@@ -2685,8 +2631,6 @@ https://rtn.ice.infomaniak.ch/rtn-high.mp3
 http://traxx007.ice.infomaniak.ch/traxx007-low.mp3
 #EXTINF:-1 tvg-name="🇬🇧 英国 Henan Internet Radio Rock Sky Channel" group-title="英国",🇬🇧 英国 Henan Internet Radio Rock Sky Channel
 http://stream3.hndt.com/now/SXJtR4M4/playlist.m3u8
-#EXTINF:-1 tvg-name="🇨🇭 瑞士 Radio Grenzenlos" group-title="瑞士",🇨🇭 瑞士 Radio Grenzenlos
-http://live.grenzenlos.ch:5006/stream
 #EXTINF:-1 tvg-name="🇨🇿 捷克 Retro Club R@dio Diana" group-title="捷克",🇨🇿 捷克 Retro Club R@dio Diana
 https://westradio.cz/radio/8000/radio.mp3
 #EXTINF:-1 tvg-name="🇩🇪 德国 ON Radio 60s" group-title="德国",🇩🇪 德国 ON Radio 60s
@@ -3047,8 +2991,6 @@ http://streaming.radiolausitz.de/radio-lausitz_XMAS_192k_mp3
 https://hermes.bcs-systems.de/radio-lausitz_simulcast_192k_mp3
 #EXTINF:-1 tvg-name="🇩🇪 德国 Radio Regenbogen Metal" group-title="德国",🇩🇪 德国 Radio Regenbogen Metal
 https://streams.regenbogen.de/rr-metal-128-mp3
-#EXTINF:-1 tvg-name="🇩🇪 德国 Radio Welle West Wetterau 87.8" group-title="德国",🇩🇪 德国 Radio Welle West Wetterau 87.8
-http://stream.alexbrueckel.de:8000/r3we_128
 #EXTINF:-1 tvg-name="🇩🇪 德国 Radio Lausitz 80er Kulthits" group-title="德国",🇩🇪 德国 Radio Lausitz 80er Kulthits
 https://hermes.bcs-systems.de/radio-lausitz_80er_192k_mp3
 #EXTINF:-1 tvg-name="🇩🇪 德国 Radio Q 90.9" group-title="德国",🇩🇪 德国 Radio Q 90.9
@@ -3169,8 +3111,6 @@ http://deltafmboulogne.ice.infomaniak.ch/deltafmboulogne-high.mp3
 http://radiotrg.ice.infomaniak.ch/radiotrg-high.mp3
 #EXTINF:-1 tvg-name="🇨🇭 瑞士 FC Radio" group-title="瑞士",🇨🇭 瑞士 FC Radio
 http://fcradio.ice.infomaniak.ch/fcradio-128.mp3
-#EXTINF:-1 tvg-name="🇪🇸 西班牙 RNE Radio 4" group-title="西班牙",🇪🇸 西班牙 RNE Radio 4
-https://rtvelivestream.rtve.es/rtvesec/rne/rne_r4_main.m3u8
 #EXTINF:-1 tvg-name="🇨🇭 瑞士 Delta FM Saint-Omer" group-title="瑞士",🇨🇭 瑞士 Delta FM Saint-Omer
 http://deltafmsaintomer.ice.infomaniak.ch/deltafmsaintomer-high.mp3
 #EXTINF:-1 tvg-name="🇨🇭 瑞士 Clin d'Oeil FM" group-title="瑞士",🇨🇭 瑞士 Clin d'Oeil FM
@@ -3903,8 +3843,6 @@ http://mr-stream.mediaconnect.hu/4737/mr2.aac
 http://stream.diazol.hu:35150/stream
 #EXTINF:-1 tvg-name="🇭🇺 匈牙利 Next FM" group-title="匈牙利",🇭🇺 匈牙利 Next FM
 https://stream.nextfm.hu/radio/8000/nextfmhu.mp3?1590416039
-#EXTINF:-1 tvg-name="🇭🇺 匈牙利 Poptarisznya Blues24" group-title="匈牙利",🇭🇺 匈牙利 Poptarisznya Blues24
-http://adas.poptarisznya.hu:8200/blues.mp3
 #EXTINF:-1 tvg-name="🇭🇺 匈牙利 Lahmacun Radio" group-title="匈牙利",🇭🇺 匈牙利 Lahmacun Radio
 https://streaming.lahmacun.hu/radio/8000/radio.mp3
 #EXTINF:-1 tvg-name="🇭🇺 匈牙利 Ozone FM" group-title="匈牙利",🇭🇺 匈牙利 Ozone FM
@@ -4039,8 +3977,6 @@ https://europaplus.hostingradio.ru:8014/retro320.mp3
 https://ice2.powerhitradio.lt/PHR_AAC
 #EXTINF:-1 tvg-name="🇳🇱 荷兰 BeatClassics" group-title="荷兰",🇳🇱 荷兰 BeatClassics
 http://stream.deejays.nl/beatclassics.aac
-#EXTINF:-1 tvg-name="🇳🇱 荷兰 Fantasy Radio" group-title="荷兰",🇳🇱 荷兰 Fantasy Radio
-http://italo.live-streams.nl/
 #EXTINF:-1 tvg-name="🇳🇱 荷兰 Glow FM 94.0" group-title="荷兰",🇳🇱 荷兰 Glow FM 94.0
 https://stream.glowfm.nl/glowfm.mp3
 #EXTINF:-1 tvg-name="🇳🇱 荷兰 Freez FM" group-title="荷兰",🇳🇱 荷兰 Freez FM
@@ -4381,8 +4317,6 @@ http://cdn.pifm.ru/mp3
 https://a7.radioheart.ru:9010/RH4465
 #EXTINF:-1 tvg-name="🇷🇺 俄罗斯 Nashe Radio" group-title="俄罗斯",🇷🇺 俄罗斯 Nashe Radio
 http://nashe.streamr.ru/nashe-128.mp3
-#EXTINF:-1 tvg-name="🇷🇺 俄罗斯 Rock FM Rock90s" group-title="俄罗斯",🇷🇺 俄罗斯 Rock FM Rock90s
-https://jfm1.hostingradio.ru:14536/rock90.mp3
 #EXTINF:-1 tvg-name="🇷🇺 俄罗斯 Radio 7 Na Semi Kholmakh 104.7" group-title="俄罗斯",🇷🇺 俄罗斯 Radio 7 Na Semi Kholmakh 104.7
 http://radio7server.streamr.ru:8040/radio7256.mp3
 #EXTINF:-1 tvg-name="🇷🇺 俄罗斯 Rock FM Rock70s" group-title="俄罗斯",🇷🇺 俄罗斯 Rock FM Rock70s
@@ -4417,30 +4351,18 @@ http://radiorecord.hostingradio.ru/yo96.aacp
 http://radiorecord.hostingradio.ru/bighits96.aacp
 #EXTINF:-1 tvg-name="🇷🇺 俄罗斯 Radio Rekord Breaks" group-title="俄罗斯",🇷🇺 俄罗斯 Radio Rekord Breaks
 http://radiorecord.hostingradio.ru/brks96.aacp
-#EXTINF:-1 tvg-name="🇷🇺 俄罗斯 Radio Rekord Dream Dance" group-title="俄罗斯",🇷🇺 俄罗斯 Radio Rekord Dream Dance
-https://hls-01-radiorecord.hostingradio.ru/record-dream/playlist.m3u8
-#EXTINF:-1 tvg-name="🇷🇺 俄罗斯 Radio Rekord 80's Dance" group-title="俄罗斯",🇷🇺 俄罗斯 Radio Rekord 80's Dance
-https://hls-01-radiorecord.hostingradio.ru/record-1980/playlist.m3u8
 #EXTINF:-1 tvg-name="🇷🇺 俄罗斯 Radio Rekord Christmas Chill" group-title="俄罗斯",🇷🇺 俄罗斯 Radio Rekord Christmas Chill
 http://radiorecord.hostingradio.ru/christmaschill96.aacp
-#EXTINF:-1 tvg-name="🇷🇺 俄罗斯 Radio Rekord Naftalin FM" group-title="俄罗斯",🇷🇺 俄罗斯 Radio Rekord Naftalin FM
-https://hls-01-radiorecord.hostingradio.ru/record-naft/playlist.m3u8
 #EXTINF:-1 tvg-name="🇷🇺 俄罗斯 Radio Rekord Christmas" group-title="俄罗斯",🇷🇺 俄罗斯 Radio Rekord Christmas
 http://radiorecord.hostingradio.ru/christmas96.aacp
-#EXTINF:-1 tvg-name="🇷🇺 俄罗斯 Radio Rekord Dancecore" group-title="俄罗斯",🇷🇺 俄罗斯 Radio Rekord Dancecore
-https://hls-01-radiorecord.hostingradio.ru/record-dc/playlist.m3u8
 #EXTINF:-1 tvg-name="🇷🇺 俄罗斯 Radio Rekord Complextro" group-title="俄罗斯",🇷🇺 俄罗斯 Radio Rekord Complextro
 http://radiorecord.hostingradio.ru/complextro96.aacp
-#EXTINF:-1 tvg-name="🇷🇺 俄罗斯 Radio Rekord Gop FM" group-title="俄罗斯",🇷🇺 俄罗斯 Radio Rekord Gop FM
-https://hls-01-radiorecord.hostingradio.ru/record-gop/playlist.m3u8
 #EXTINF:-1 tvg-name="🇷🇺 俄罗斯 Radio Maximum" group-title="俄罗斯",🇷🇺 俄罗斯 Radio Maximum
 https://maximum.hostingradio.ru/maximum128.mp3
 #EXTINF:-1 tvg-name="🇷🇺 俄罗斯 Radio Rekord EDM Classics" group-title="俄罗斯",🇷🇺 俄罗斯 Radio Rekord EDM Classics
 http://radiorecord.hostingradio.ru/edmhits96.aacp
 #EXTINF:-1 tvg-name="🇷🇺 俄罗斯 Radio Rekord Dubstep" group-title="俄罗斯",🇷🇺 俄罗斯 Radio Rekord Dubstep
 http://radiorecord.hostingradio.ru/dub96.aacp
-#EXTINF:-1 tvg-name="🇷🇺 俄罗斯 Radio Rekord Technopop" group-title="俄罗斯",🇷🇺 俄罗斯 Radio Rekord Technopop
-https://hls-01-radiorecord.hostingradio.ru/record-technopop/playlist.m3u8
 #EXTINF:-1 tvg-name="🇷🇺 俄罗斯 Radio Rekord EDM" group-title="俄罗斯",🇷🇺 俄罗斯 Radio Rekord EDM
 http://radiorecord.hostingradio.ru/club96.aacp
 #EXTINF:-1 tvg-name="🇷🇺 俄罗斯 Radio Rekord Eurodance" group-title="俄罗斯",🇷🇺 俄罗斯 Radio Rekord Eurodance
@@ -4671,8 +4593,6 @@ https://rfienportugais64k.ice.infomaniak.ch/rfienportugais-64.mp3
 https://tendanceouest-rouen.ice.infomaniak.ch/rouen.mp3
 #EXTINF:-1 tvg-name="🇨🇭 瑞士 Allzic Nationale 7" group-title="瑞士",🇨🇭 瑞士 Allzic Nationale 7
 http://allzic38.ice.infomaniak.ch/allzic38.mp3
-#EXTINF:-1 tvg-name="🇬🇧 英国 Cambridge University Student Radio" group-title="英国",🇬🇧 英国 Cambridge University Student Radio
-http://stream.camfm.co.uk/camfm
 #EXTINF:-1 tvg-name="🇨🇭 瑞士 Guyane 1ère" group-title="瑞士",🇨🇭 瑞士 Guyane 1ère
 https://guyane.ice.infomaniak.ch/guyane-128.mp3
 #EXTINF:-1 tvg-name="🇬🇷 希腊 ERA Proto Programma 91.6" group-title="希腊",🇬🇷 希腊 ERA Proto Programma 91.6
@@ -4839,8 +4759,6 @@ https://icecast.gruppocdt.ch/radio3i-256.mp3
 https://radio-drachenblut.ch:8443/192/listen.mp3
 #EXTINF:-1 tvg-name="🇨🇭 瑞士 UZIC Radio" group-title="瑞士",🇨🇭 瑞士 UZIC Radio
 https://uzic.ice.infomaniak.ch/uzic-128.aac
-#EXTINF:-1 tvg-name="🇨🇭 瑞士 Generation FM" group-title="瑞士",🇨🇭 瑞士 Generation FM
-https://generation.ice.infomaniak.ch/generationfm.mp3
 #EXTINF:-1 tvg-name="🇨🇭 瑞士 GVFM 100% Chorales" group-title="瑞士",🇨🇭 瑞士 GVFM 100% Chorales
 https://100chorales.ice.infomaniak.ch/100chorales-128.aac
 #EXTINF:-1 tvg-name="🇨🇭 瑞士 Radio Swiss Jazz" group-title="瑞士",🇨🇭 瑞士 Radio Swiss Jazz
@@ -4887,8 +4805,6 @@ http://spoonradiorockballads.ice.infomaniak.ch/spoon-rockballads-hd.aac
 https://radio.radio-bollwerk.ch/listen/sweat_pit/radio.mp3
 #EXTINF:-1 tvg-name="🇨🇭 瑞士 Rouge Urban" group-title="瑞士",🇨🇭 瑞士 Rouge Urban
 https://rouge-urban.ice.infomaniak.ch/rouge-urban-128.mp3
-#EXTINF:-1 tvg-name="🇨🇭 瑞士 Skuizz House" group-title="瑞士",🇨🇭 瑞士 Skuizz House
-https://traxx002.ice.infomaniak.ch/traxx002-low.mp3
 #EXTINF:-1 tvg-name="🇨🇭 瑞士 Uzic" group-title="瑞士",🇨🇭 瑞士 Uzic
 http://uzic.ice.infomaniak.ch/uzic-128.mp3
 #EXTINF:-1 tvg-name="🇨🇭 瑞士 Skuizz Ambient" group-title="瑞士",🇨🇭 瑞士 Skuizz Ambient
@@ -4905,8 +4821,6 @@ https://traxx017.ice.infomaniak.ch/traxx017-low.mp3
 https://secretrooftopsessions.ice.infomaniak.ch/secretrooftopsessions-192.aac
 #EXTINF:-1 tvg-name="🇨🇭 瑞士 Skuizz Funk" group-title="瑞士",🇨🇭 瑞士 Skuizz Funk
 https://traxx016.ice.infomaniak.ch/traxx016-low.mp3
-#EXTINF:-1 tvg-name="🇨🇭 瑞士 Wildmountain Radio" group-title="瑞士",🇨🇭 瑞士 Wildmountain Radio
-http://wildmountain.ice.infomaniak.ch/wmr.mp3
 #EXTINF:-1 tvg-name="🇨🇭 瑞士 Skuizz Hits 50s-70s" group-title="瑞士",🇨🇭 瑞士 Skuizz Hits 50s-70s
 https://traxx023.ice.infomaniak.ch/traxx023-1.mp3
 #EXTINF:-1 tvg-name="🇨🇭 瑞士 Skuizz Cool" group-title="瑞士",🇨🇭 瑞士 Skuizz Cool
@@ -4921,12 +4835,8 @@ https://traxx024.ice.infomaniak.ch/traxx024-1.mp3
 https://traxx012.ice.infomaniak.ch/traxx012-low.mp3
 #EXTINF:-1 tvg-name="🇨🇭 瑞士 Skuizz Latino" group-title="瑞士",🇨🇭 瑞士 Skuizz Latino
 https://traxx008.ice.infomaniak.ch/traxx008-low.mp3
-#EXTINF:-1 tvg-name="🇨🇭 瑞士 Skuizz Juice" group-title="瑞士",🇨🇭 瑞士 Skuizz Juice
-https://traxx001.ice.infomaniak.ch/traxx001-low.mp3
 #EXTINF:-1 tvg-name="🇨🇭 瑞士 Skuizz Pop" group-title="瑞士",🇨🇭 瑞士 Skuizz Pop
 https://traxx009.ice.infomaniak.ch/traxx009-low.mp3
-#EXTINF:-1 tvg-name="🇨🇭 瑞士 Skuizz Latino Pop" group-title="瑞士",🇨🇭 瑞士 Skuizz Latino Pop
-https://traxx022.ice.infomaniak.ch/traxx022-1.mp3
 #EXTINF:-1 tvg-name="🇨🇭 瑞士 Skuizz Hits" group-title="瑞士",🇨🇭 瑞士 Skuizz Hits
 https://traxx010.ice.infomaniak.ch/traxx010-low.mp3
 #EXTINF:-1 tvg-name="🇨🇭 瑞士 Skuizz Tech-House" group-title="瑞士",🇨🇭 瑞士 Skuizz Tech-House
@@ -4935,8 +4845,6 @@ https://traxx020.ice.infomaniak.ch/traxx020-low.mp3
 https://traxx004.ice.infomaniak.ch/traxx004-low.mp3
 #EXTINF:-1 tvg-name="🇨🇭 瑞士 Skuizz RnB" group-title="瑞士",🇨🇭 瑞士 Skuizz RnB
 https://traxx007.ice.infomaniak.ch/traxx007-low.mp3
-#EXTINF:-1 tvg-name="🇨🇭 瑞士 Skuizz EDM" group-title="瑞士",🇨🇭 瑞士 Skuizz EDM
-https://traxx003.ice.infomaniak.ch/traxx003-low.mp3
 #EXTINF:-1 tvg-name="🇨🇭 瑞士 Skuizz Soul" group-title="瑞士",🇨🇭 瑞士 Skuizz Soul
 https://traxx006.ice.infomaniak.ch/traxx006-low.mp3
 #EXTINF:-1 tvg-name="🇨🇭 瑞士 Radio Espoir 102.8" group-title="瑞士",🇨🇭 瑞士 Radio Espoir 102.8

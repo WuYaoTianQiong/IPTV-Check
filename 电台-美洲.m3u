@@ -1,24 +1,14 @@
 #EXTM3U x-tvg-url="检测结果_节目单.epg.xml"
-#EXTINF:-1 tvg-name="🇨🇦 加拿大 CBF 95.1 ICI Radio-Canada Première" group-title="加拿大",🇨🇦 加拿大 CBF 95.1 ICI Radio-Canada Première
-https://rcavliveaudio.akamaized.net/hls/live/2006635/P-2QMTL0_MTL/playlist.m3u8
 #EXTINF:-1 tvg-name="🇨🇦 加拿大 CFRO 100.5 Vancouver Cooperative Radio" group-title="加拿大",🇨🇦 加拿大 CFRO 100.5 Vancouver Cooperative Radio
 https://listen-coopradio.sharp-stream.com/coopradio.mp3
 #EXTINF:-1 tvg-name="🇨🇦 加拿大 CHQR 770 Global News Radio" group-title="加拿大",🇨🇦 加拿大 CHQR 770 Global News Radio
 https://live.leanstream.co/CHQRAM-MP3
 #EXTINF:-1 tvg-name="🇨🇦 加拿大 CKBF BFBS Canada 104.1" group-title="加拿大",🇨🇦 加拿大 CKBF BFBS Canada 104.1
 http://edge-audio-04-thn.sharp-stream.com/ssvcbfbs12.aac
-#EXTINF:-1 tvg-name="🇨🇦 加拿大 Radio Maria Canada Spanish" group-title="加拿大",🇨🇦 加拿大 Radio Maria Canada Spanish
-http://rmcesp.radiomaria.ca:8050/;stream.mp3
 #EXTINF:-1 tvg-name="🇨🇦 加拿大 CBHA 90.5 CBC Radio 1" group-title="加拿大",🇨🇦 加拿大 CBHA 90.5 CBC Radio 1
 https://17813.live.streamtheworld.com/CBHA_CBC.mp3
 #EXTINF:-1 tvg-name="🇨🇦 加拿大 CBAM 106.1 CBC Radio 1" group-title="加拿大",🇨🇦 加拿大 CBAM 106.1 CBC Radio 1
 https://26283.live.streamtheworld.com/CBAMFM_CBC.mp3
-#EXTINF:-1 tvg-name="🇨🇦 加拿大 CBME 88.5 CBC Radio 1" group-title="加拿大",🇨🇦 加拿大 CBME 88.5 CBC Radio 1
-https://cbcradiolive.akamaized.net/hls/live/2041030/ES_R1EMT/master.m3u8
-#EXTINF:-1 tvg-name="🇨🇦 加拿大 CBX 93.9 CBC Radio 1" group-title="加拿大",🇨🇦 加拿大 CBX 93.9 CBC Radio 1
-https://cbcradiolive.akamaized.net/hls/live/2041041/ES_R1MED/master.m3u8
-#EXTINF:-1 tvg-name="🇨🇦 加拿大 CBW 89.3 CBC Radio 1" group-title="加拿大",🇨🇦 加拿大 CBW 89.3 CBC Radio 1
-https://cbcradiolive.akamaized.net/hls/live/2040991/ES_R1CWP/master.m3u8
 #EXTINF:-1 tvg-name="🇪🇨 厄瓜多尔 Radio Centro 1030 XEQR" group-title="厄瓜多尔",🇪🇨 厄瓜多尔 Radio Centro 1030 XEQR
 https://playerservices.streamtheworld.com/api/livestream-redirect/XEQR_AMAAC_SC
 #EXTINF:-1 tvg-name="🇪🇨 厄瓜多尔 Radio Centro 97.7 XERC" group-title="厄瓜多尔",🇪🇨 厄瓜多尔 Radio Centro 97.7 XERC
@@ -51,22 +41,16 @@ https://sonicstream-puntual.grupozgh.cl/8076/stream
 http://173.208.177.90:19044/;
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 Colombia Crossover" group-title="哥伦比亚",🇨🇴 哥伦比亚 Colombia Crossover
 https://radio35.virtualtronics.com/proxy/colombiacrossover?mp=/stream
-#EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 Alerta - Bogota 104.4" group-title="哥伦比亚",🇨🇴 哥伦比亚 Alerta - Bogota 104.4
-https://mdstrm.com/audio/632c9c1cbc02c60329991efa/live.m3u8
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 Colombia Salsa Rosa" group-title="哥伦比亚",🇨🇴 哥伦比亚 Colombia Salsa Rosa
 https://play10.tikast.com/proxy/colsalsarosa?mp=/stream
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 Radio Colombia" group-title="哥伦比亚",🇨🇴 哥伦比亚 Radio Colombia
 https://stream-281.surfernetwork.com/w9hkbvzmrottv
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 Colombia La Nuestra" group-title="哥伦比亚",🇨🇴 哥伦比亚 Colombia La Nuestra
 https://stream-281.surfernetwork.com/1e2fnf08gg8uv
-#EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 Caracol Radio - Baranquilla 97.6" group-title="哥伦比亚",🇨🇴 哥伦比亚 Caracol Radio - Baranquilla 97.6
-https://24493.live.streamtheworld.com/CARACOL_RADIOAAC_SC
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 Diciembre Radio Colombia" group-title="哥伦比亚",🇨🇴 哥伦比亚 Diciembre Radio Colombia
 https://stream-286.surfernetwork.com/8mklmefaucjuv
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 Colombia Salsa Dura" group-title="哥伦比亚",🇨🇴 哥伦比亚 Colombia Salsa Dura
 https://play10.tikast.com/proxy/colsalsadura?mp=/stream
-#EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 El Sol - Cali 97.5" group-title="哥伦比亚",🇨🇴 哥伦比亚 El Sol - Cali 97.5
-https://mdstrm.com/audio/632c9b89aa9ace684913b815/live.m3u8
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 Colombia Pop Rock" group-title="哥伦比亚",🇨🇴 哥伦比亚 Colombia Pop Rock
 https://play10.tikast.com/proxy/colpoprock?mp=/stream
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 HJCS La Voz de Bogota 930" group-title="哥伦比亚",🇨🇴 哥伦比亚 HJCS La Voz de Bogota 930
@@ -85,16 +69,8 @@ https://stream-204.surfernetwork.com/gw02fc2zd0quv
 https://radiohd2.streaminghd.co:7098/stream
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 Javeriana Estereo Cali 107.5" group-title="哥伦比亚",🇨🇴 哥伦比亚 Javeriana Estereo Cali 107.5
 https://radio06.cehis.net:9002/stream
-#EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 La FM Plus 96.9" group-title="哥伦比亚",🇨🇴 哥伦比亚 La FM Plus 96.9
-https://mdstrm.com/audio/627c1c39637d89088290f64d/live.m3u8
-#EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 El Sol - Barranquilla 99.1" group-title="哥伦比亚",🇨🇴 哥伦比亚 El Sol - Barranquilla 99.1
-https://mdstrm.com/audio/632cbdb5202d6801a31785b0/icecast.audio
-#EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 HJCF Tropicana - Barranquilla 89.1" group-title="哥伦比亚",🇨🇴 哥伦比亚 HJCF Tropicana - Barranquilla 89.1
-https://24443.live.streamtheworld.com/TR_BARRANQUILLAAAC_SC
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 HJB23 Radio Caracoal - Pereira 88.7" group-title="哥伦比亚",🇨🇴 哥伦比亚 HJB23 Radio Caracoal - Pereira 88.7
 https://24493.live.streamtheworld.com/CR_PEREIRAAAC.aac
-#EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 HJB62 Radio Caracoal - Manizales 101.7" group-title="哥伦比亚",🇨🇴 哥伦比亚 HJB62 Radio Caracoal - Manizales 101.7
-https://24273.live.streamtheworld.com/CR_AM_MANIZALESAAC.aac
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 HJP29 Caracoal - Bucaramanga 99.2" group-title="哥伦比亚",🇨🇴 哥伦比亚 HJP29 Caracoal - Bucaramanga 99.2
 https://24423.live.streamtheworld.com/CR_BUCARAMAAAC.aac
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 HJH26 Caracol Radio - Barranquilla 97.6" group-title="哥伦比亚",🇨🇴 哥伦比亚 HJH26 Caracol Radio - Barranquilla 97.6
@@ -117,18 +93,12 @@ https://cdn4.onstream.audio/proxy/radioreloj/stream
 https://14843.live.streamtheworld.com/MIX_CALIAAC_SC
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 Pechichon Radio Vallenato" group-title="哥伦比亚",🇨🇴 哥伦比亚 Pechichon Radio Vallenato
 https://stream-281.surfernetwork.com/uy0wvup3cveuv
-#EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 Radio Uno - Tunja 102.1" group-title="哥伦比亚",🇨🇴 哥伦比亚 Radio Uno - Tunja 102.1
-https://mdstrm.com/audio/632cea145b9b38085221d5e1/live.m3u8
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 La Reina - Cartagena 95.5" group-title="哥伦比亚",🇨🇴 哥伦比亚 La Reina - Cartagena 95.5
 https://27393.live.streamtheworld.com/RNA_CARTAGENA_SC
-#EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 La Mega - Barranquilla 93.1" group-title="哥伦比亚",🇨🇴 哥伦比亚 La Mega - Barranquilla 93.1
-https://mdstrm.com/audio/632cbad6d1dcd7027f32fff6/icecast.audio
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 La Carinosa - Manizales" group-title="哥伦比亚",🇨🇴 哥伦比亚 La Carinosa - Manizales
 https://mdstrm.com/audio/632cd4975761ac08a9e3ba1a/icecast.audio
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 Radió Policia - Medellin 96.4" group-title="哥伦比亚",🇨🇴 哥伦比亚 Radió Policia - Medellin 96.4
 https://radio35.virtualtronics.com/proxy/radiopolicia964?mp=/stream
-#EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 RCN Deportes" group-title="哥伦比亚",🇨🇴 哥伦比亚 RCN Deportes
-https://mdstrm.com/audio/69a9e92dcc2b7cec9dcad2c3/live.m3u8
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 Radió Policia - Pereira 99.1" group-title="哥伦比亚",🇨🇴 哥伦比亚 Radió Policia - Pereira 99.1
 https://server1.intermediacolombia.com:8068/stream
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 Radio Minuto de Dios Medellin 1230" group-title="哥伦比亚",🇨🇴 哥伦比亚 Radio Minuto de Dios Medellin 1230
@@ -139,24 +109,14 @@ https://mdstrm.com/audio/632ce09fd3ed7a0250cc42d3/icecast.audio
 https://26503.live.streamtheworld.com/RNA_BARRANQUILLA_SC
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 Radio Policia - Bucaramanga 91.7" group-title="哥伦比亚",🇨🇴 哥伦比亚 Radio Policia - Bucaramanga 91.7
 https://stream-204.surfernetwork.com/fzddg2ybssuuv
-#EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 La FM - Cali 98.0" group-title="哥伦比亚",🇨🇴 哥伦比亚 La FM - Cali 98.0
-https://mdstrm.com/audio/632cb714202d6801a3178462/icecast.audio
-#EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 La FM - Pereira 98.5" group-title="哥伦比亚",🇨🇴 哥伦比亚 La FM - Pereira 98.5
-https://mdstrm.com/audio/632c9b23d1dcd7027f32f7fe/icecast.audio
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 Radio Techno Colombia" group-title="哥伦比亚",🇨🇴 哥伦比亚 Radio Techno Colombia
 https://stream-283.surfernetwork.com/tgo6bx3shbkvv
-#EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 La Mega - Cali 92.5" group-title="哥伦比亚",🇨🇴 哥伦比亚 La Mega - Cali 92.5
-https://mdstrm.com/audio/632cb764aa9ace684913bf26/icecast.audio
-#EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 La Mega - Pereira 105.2" group-title="哥伦比亚",🇨🇴 哥伦比亚 La Mega - Pereira 105.2
-https://mdstrm.com/audio/632ce0bf9234f869e9a522af/icecast.audio
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 Son Latino Medellin" group-title="哥伦比亚",🇨🇴 哥伦比亚 Son Latino Medellin
 https://sonlatinomedellin.com/envivo/
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 Radio Tiempo - Cartagena" group-title="哥伦比亚",🇨🇴 哥伦比亚 Radio Tiempo - Cartagena
 https://14843.live.streamtheworld.com/RT_CARTAGENAAAC_SC
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 Radio Cristiana Colombia" group-title="哥伦比亚",🇨🇴 哥伦比亚 Radio Cristiana Colombia
 https://stream-281.surfernetwork.com/a3y646rxcfhvv
-#EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 RadioAcktiva - Medellin" group-title="哥伦比亚",🇨🇴 哥伦比亚 RadioAcktiva - Medellin
-https://24373.live.streamtheworld.com/RADIOACKTIVA_MEDAAC_SC?csegid=2000
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 Radio Uno - Villavicencio 98.3" group-title="哥伦比亚",🇨🇴 哥伦比亚 Radio Uno - Villavicencio 98.3
 https://radiounovillavo.com.co/stream/
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 Radio Ochentas Colombia" group-title="哥伦比亚",🇨🇴 哥伦比亚 Radio Ochentas Colombia
@@ -179,8 +139,6 @@ https://stream-285.surfernetwork.com/42w3pfn7pzzuv
 https://cloud11.vsgtech.co/proxy/vallenatosabroso/stream
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 Yo Soy Cali Salsa" group-title="哥伦比亚",🇨🇴 哥伦比亚 Yo Soy Cali Salsa
 https://stream.integracionvirtual.com/proxy/yosoycalisalsa?mp=/stream
-#EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 Tropicana - Monteria 102.0" group-title="哥伦比亚",🇨🇴 哥伦比亚 Tropicana - Monteria 102.0
-https://24493.live.streamtheworld.com/TR_MONTERIAAAC_SC
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 Tropicana - Bogota 102.9" group-title="哥伦比亚",🇨🇴 哥伦比亚 Tropicana - Bogota 102.9
 https://26663.live.streamtheworld.com/TROPICANAAAC_SC
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 Radio Super Cali" group-title="哥伦比亚",🇨🇴 哥伦比亚 Radio Super Cali
@@ -189,16 +147,10 @@ https://servidor23.brlogic.com:7046/live
 https://24493.live.streamtheworld.com/TR_CARTAGENAAAC_SC
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 Radio Uno - Bogota 88.9" group-title="哥伦比亚",🇨🇴 哥伦比亚 Radio Uno - Bogota 88.9
 https://mdstrm.com/audio/632c9bbcaa9ace684913b81b/icecast.audio
-#EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 Radio Uno - Cali" group-title="哥伦比亚",🇨🇴 哥伦比亚 Radio Uno - Cali
-https://mdstrm.com/audio/632cb7f6b70c350af5bc2903/icecast.audio
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 Tropicana - Bucaramanga 95.7" group-title="哥伦比亚",🇨🇴 哥伦比亚 Tropicana - Bucaramanga 95.7
 https://27423.live.streamtheworld.com/TR_BUCARAMANGAAAC_SC
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 Radio Uno - Ibague 88.3" group-title="哥伦比亚",🇨🇴 哥伦比亚 Radio Uno - Ibague 88.3
 https://mdstrm.com/audio/632cd2236444b8088a11f58d/icecast.audio
-#EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 Radio Uno - Pereira" group-title="哥伦比亚",🇨🇴 哥伦比亚 Radio Uno - Pereira
-https://mdstrm.com/audio/632ce1416197360894629aa6/icecast.audio
-#EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 Tropicana - Pereira 100.7" group-title="哥伦比亚",🇨🇴 哥伦比亚 Tropicana - Pereira 100.7
-https://24283.live.streamtheworld.com/TR_PEREIRAAAC_SC?csegid=2000
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 Tropicana - Ibague 106.3" group-title="哥伦比亚",🇨🇴 哥伦比亚 Tropicana - Ibague 106.3
 https://26653.live.streamtheworld.com/TR_IBAGUEAAC_SC
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 Tropicana - Manizales 105.7" group-title="哥伦比亚",🇨🇴 哥伦比亚 Tropicana - Manizales 105.7
@@ -209,14 +161,8 @@ https://mdstrm.com/audio/632cb505a057b90249b9dcc8/icecast.audio
 https://27693.live.streamtheworld.com/TR_POPAYANAAC_SC
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 Tropicana - Pasto 100.1" group-title="哥伦比亚",🇨🇴 哥伦比亚 Tropicana - Pasto 100.1
 https://26583.live.streamtheworld.com/TR_PASTOAAC_SC
-#EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 Radio Uno - Cucuta" group-title="哥伦比亚",🇨🇴 哥伦比亚 Radio Uno - Cucuta
-https://mdstrm.com/audio/632ccd46d1dcd7027f3303c6/icecast.audio
-#EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 Radio Uno - Barranquilla 95.6" group-title="哥伦比亚",🇨🇴 哥伦比亚 Radio Uno - Barranquilla 95.6
-https://mdstrm.com/audio/632cbb54ebfe48089b0c504d/icecast.audio
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 Tropicana - Neiva 98.3" group-title="哥伦比亚",🇨🇴 哥伦比亚 Tropicana - Neiva 98.3
 https://27573.live.streamtheworld.com/TR_NEIVAAAC_SC
-#EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 Radio Tiempo - Cali 89.5" group-title="哥伦比亚",🇨🇴 哥伦比亚 Radio Tiempo - Cali 89.5
-https://24403.live.streamtheworld.com/RT_CALIAAC_SC
 #EXTINF:-1 tvg-name="🇲🇽 墨西哥 Radio Transamérica 100.1" group-title="墨西哥",🇲🇽 墨西哥 Radio Transamérica 100.1
 http://9595.brasilstream.com.br/stream
 #EXTINF:-1 tvg-name="🇲🇽 墨西哥 Rádio Transamérica 97.7" group-title="墨西哥",🇲🇽 墨西哥 Rádio Transamérica 97.7
@@ -247,8 +193,6 @@ https://playerservices.streamtheworld.com/api/livestream-redirect/XEH_AMAAC_SC
 https://playerservices.streamtheworld.com/api/livestream-redirect/XEHITAAC_SC
 #EXTINF:-1 tvg-name="🇲🇽 墨西哥 WZSP La Zeta 105.3 FM" group-title="墨西哥",🇲🇽 墨西哥 WZSP La Zeta 105.3 FM
 https://ice3.securenetsystems.net/WZSP
-#EXTINF:-1 tvg-name="🇲🇽 墨西哥 WREY Radio Rey 630" group-title="墨西哥",🇲🇽 墨西哥 WREY Radio Rey 630
-https://ice41.securenetsystems.net/WREY
 #EXTINF:-1 tvg-name="🇲🇽 墨西哥 Radio Buena Nueva 97.9" group-title="墨西哥",🇲🇽 墨西哥 Radio Buena Nueva 97.9
 https://archi-us.digitalproserver.com/buena-nueva.aac
 #EXTINF:-1 tvg-name="🇲🇽 墨西哥 Radio Del Maipo" group-title="墨西哥",🇲🇽 墨西哥 Radio Del Maipo
@@ -307,8 +251,6 @@ https://comodin.uy/radio/8000/320.mp3
 https://strm112.1.fm/brazilianbirds_mobile_mp3
 #EXTINF:-1 tvg-name="🇧🇷 巴西 Zoa Radio" group-title="巴西",🇧🇷 巴西 Zoa Radio
 http://paineldj6.com.br:13500/stream
-#EXTINF:-1 tvg-name="🇨🇱 智利 ADN Radio Chile 91.7" group-title="智利",🇨🇱 智利 ADN Radio Chile 91.7
-https://playerservices.streamtheworld.com/api/livestream-redirect/ADNAAC_SC
 #EXTINF:-1 tvg-name="🇨🇱 智利 FM Okey 89.9 Valparaiso" group-title="智利",🇨🇱 智利 FM Okey 89.9 Valparaiso
 https://streaming.fmokey.cl/moviles.mp3
 #EXTINF:-1 tvg-name="🇨🇱 智利 Acordes de Chile" group-title="智利",🇨🇱 智利 Acordes de Chile
@@ -615,8 +557,6 @@ https://playerservices.streamtheworld.com/api/livestream-redirect/WUTCFM_SC
 https://playerservices.streamtheworld.com/api/livestream-redirect/WUTCHD2_SC
 #EXTINF:-1 tvg-name="🇺🇸 美国 WVIA 89.9" group-title="美国",🇺🇸 美国 WVIA 89.9
 https://playerservices.streamtheworld.com/api/livestream-redirect/WVIAFM_SC
-#EXTINF:-1 tvg-name="🇺🇸 美国 WVIA HD2" group-title="美国",🇺🇸 美国 WVIA HD2
-https://playerservices.streamtheworld.com/api/livestream-redirect/WVIAHD2_SC
 #EXTINF:-1 tvg-name="🇺🇸 美国 WVPE Blues3" group-title="美国",🇺🇸 美国 WVPE Blues3
 http://live.str3am.com:2240/live
 #EXTINF:-1 tvg-name="🇺🇸 美国 WVPE News2" group-title="美国",🇺🇸 美国 WVPE News2
@@ -655,8 +595,6 @@ http://ondalatina.stream.laut.fm/ondalatina?t302=2021-12-21_19-28-12&uuid=0b6c8e
 http://31.192.216.8/CUBA
 #EXTINF:-1 tvg-name="🇨🇺 古巴 RMF Cuba + Fakty" group-title="古巴",🇨🇺 古巴 RMF Cuba + Fakty
 http://31.192.216.8/CUBAF
-#EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 HJN49 Tropicana Villavicencio 99.3" group-title="哥伦比亚",🇨🇴 哥伦比亚 HJN49 Tropicana Villavicencio 99.3
-https://playerservices.streamtheworld.com/api/livestream-redirect/TR_VILLAVICENCIOAAC_SC
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 Tropicana Cali 93.1" group-title="哥伦比亚",🇨🇴 哥伦比亚 Tropicana Cali 93.1
 https://playerservices.streamtheworld.com/api/livestream-redirect/TR_CALIAAC
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 HJRX Tropicana 102.9" group-title="哥伦比亚",🇨🇴 哥伦比亚 HJRX Tropicana 102.9
@@ -669,20 +607,14 @@ http://5.79.86.14:8005/live
 https://playerservices.streamtheworld.com/api/livestream-redirect/KUSCMP128_SC
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 Condina Tropical Pereira 970" group-title="哥伦比亚",🇨🇴 哥伦比亚 Condina Tropical Pereira 970
 https://radiohd3.streaminghd.co:8080/stream
-#EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 La FM Plus - Cali" group-title="哥伦比亚",🇨🇴 哥伦比亚 La FM Plus - Cali
-https://mdstrm.com/audio/632cb854b70c350af5bc290b/live.m3u8
 #EXTINF:-1 tvg-name="🇲🇽 墨西哥 Fusión Veracruz 90.1 XHLL" group-title="墨西哥",🇲🇽 墨西哥 Fusión Veracruz 90.1 XHLL
 https://sgaudio.centrocibernetico.com/fusion?aw_0_1st_interests=%5B%22Personal%20Finance%22%2C%22Technology%20%26%20Computing%22%2C%22Telecommuting%22%2C%22Investors%20%26%20Patents%22%2C%22Insurance%22%2C%22Beverages%22%5D
-#EXTINF:-1 tvg-name="🇲🇽 墨西哥 Imagen 103.1 XHEPO" group-title="墨西哥",🇲🇽 墨西哥 Imagen 103.1 XHEPO
-https://playradio.mx/proxy/imagen?mp=/stream
 #EXTINF:-1 tvg-name="🇲🇽 墨西哥 La Gigante 95.3 XHGN" group-title="墨西哥",🇲🇽 墨西哥 La Gigante 95.3 XHGN
 https://s2.yesstreaming.net:17103/stream
 #EXTINF:-1 tvg-name="🇲🇽 墨西哥 La Fiera Veracruz 94.1 XHHV" group-title="墨西哥",🇲🇽 墨西哥 La Fiera Veracruz 94.1 XHHV
 https://sgaudio.centrocibernetico.com/lafiera?aw_0_1st_interests=%5B%22Fast%20Food%22%2C%22Cable%20Companies%22%2C%22Technology%20%26%20Computing%22%2C%22Exercise%22%2C%22Business%20Software%22%2C%22Immigration%22%5D
 #EXTINF:-1 tvg-name="🇲🇽 墨西哥 La Invasora 98.9 XHERO" group-title="墨西哥",🇲🇽 墨西哥 La Invasora 98.9 XHERO
 http://201.159.48.105:8080/
-#EXTINF:-1 tvg-name="🇲🇽 墨西哥 La Ke Buena 95.9 XHCJU" group-title="墨西哥",🇲🇽 墨西哥 La Ke Buena 95.9 XHCJU
-https://playradio.mx/proxy/kebuenav?mp=/stream
 #EXTINF:-1 tvg-name="🇲🇽 墨西哥 La Ke Buena 105.7 XHBM" group-title="墨西哥",🇲🇽 墨西哥 La Ke Buena 105.7 XHBM
 https://playradio.mx/proxy/kebuena?mp=/stream
 #EXTINF:-1 tvg-name="🇲🇽 墨西哥 La Poderosa 107.7 XHYZ" group-title="墨西哥",🇲🇽 墨西哥 La Poderosa 107.7 XHYZ
@@ -735,16 +667,12 @@ https://playerservices.streamtheworld.com/api/livestream-redirect/NOVABRASIL_FOR
 https://playerservices.streamtheworld.com/api/livestream-redirect/NOVABRASIL_ARACAJUAAC_SC
 #EXTINF:-1 tvg-name="🇧🇷 巴西 NovaBrasil 97.5 Brasília" group-title="巴西",🇧🇷 巴西 NovaBrasil 97.5 Brasília
 https://playerservices.streamtheworld.com/api/livestream-redirect/NOVABRASIL_BSBAAC_SC
-#EXTINF:-1 tvg-name="🇧🇷 巴西 NovaBrasil 94.3 Recife" group-title="巴西",🇧🇷 巴西 NovaBrasil 94.3 Recife
-https://playerservices.streamtheworld.com/api/livestream-redirect/NOVABRASIL_RECAAC_SC
 #EXTINF:-1 tvg-name="🇧🇷 巴西 Rádio Nacional AM de Brasilia 980" group-title="巴西",🇧🇷 巴西 Rádio Nacional AM de Brasilia 980
 https://radionacionalbrasilia-stream.ebc.com.br/index.m3u8
 #EXTINF:-1 tvg-name="🇧🇷 巴西 Rádio Nacional do Rio de Janeiro" group-title="巴西",🇧🇷 巴西 Rádio Nacional do Rio de Janeiro
 https://radionacionalrio-stream.ebc.com.br/ebc/radionacionalriodejaneiro/playlist.m3u8
 #EXTINF:-1 tvg-name="🇧🇷 巴西 Rádio Nacional FM de Brasilia 96.1" group-title="巴西",🇧🇷 巴西 Rádio Nacional FM de Brasilia 96.1
 https://radionacionalfm-stream.ebc.com.br/ebc/radionacionalfm/playlist.m3u8
-#EXTINF:-1 tvg-name="🇧🇷 巴西 Sara Brasil 107.5" group-title="巴西",🇧🇷 巴西 Sara Brasil 107.5
-https://hts01.brascast.com:8012/live
 #EXTINF:-1 tvg-name="🇧🇷 巴西 Onlineradio Brazil" group-title="巴西",🇧🇷 巴西 Onlineradio Brazil
 https://stream.0nlineradio.com/brazil?ref=radiobrowser
 #EXTINF:-1 tvg-name="🇧🇷 巴西 CBN Cross Country" group-title="巴西",🇧🇷 巴西 CBN Cross Country
@@ -775,8 +703,6 @@ https://streaming.exclusive.radio/er/chicago/icecast.audio
 https://streaming.exclusive.radio/er/chicagohits/icecast.audio
 #EXTINF:-1 tvg-name="🇺🇸 美国 Whitney Houston" group-title="美国",🇺🇸 美国 Whitney Houston
 https://streaming.exclusive.radio/er/whitneyhouston/icecast.audio
-#EXTINF:-1 tvg-name="🇺🇸 美国 Whitney Houston - Hits" group-title="美国",🇺🇸 美国 Whitney Houston - Hits
-https://streaming.exclusive.radio/er/whitneyhoustonhits/icecast.audio
 #EXTINF:-1 tvg-name="🇺🇸 美国 5PBS 91.1" group-title="美国",🇺🇸 美国 5PBS 91.1
 https://stream04.sigile.net/5pbs-128-mp3
 #EXTINF:-1 tvg-name="🇺🇸 美国 Freakquency" group-title="美国",🇺🇸 美国 Freakquency
@@ -787,8 +713,6 @@ https://streaming.nrjaudio.fm/ounusuqn5eyc
 https://moondigitaledge2.radyotvonline.net/cnnturk/playlist.m3u8
 #EXTINF:-1 tvg-name="🇺🇸 美国 KTU 1035 The Beat of New York" group-title="美国",🇺🇸 美国 KTU 1035 The Beat of New York
 http://n10b-e2.revma.ihrhls.com/zc1473?rj-ttl=5&rj-tok=AAABfd4TULoAWVGcsXELgYr2nA
-#EXTINF:-1 tvg-name="🇺🇸 美国 KFIG 940 ESPN" group-title="美国",🇺🇸 美国 KFIG 940 ESPN
-https://ice5.securenetsystems.net/KFIG
 #EXTINF:-1 tvg-name="🇺🇸 美国 ESPN 1140 KSLD" group-title="美国",🇺🇸 美国 ESPN 1140 KSLD
 https://ice8.securenetsystems.net/KSLD
 #EXTINF:-1 tvg-name="🇺🇸 美国 ESPN 1530 WCKY" group-title="美国",🇺🇸 美国 ESPN 1530 WCKY
@@ -825,12 +749,8 @@ https://stream-285.surfernetwork.com/7p7dg6tuwchvv
 https://stream-175.surfernetwork.com/nkp3d7237qzuv
 #EXTINF:-1 tvg-name="🇲🇽 墨西哥 WLKQ La Raza 102.3/107.1" group-title="墨西哥",🇲🇽 墨西哥 WLKQ La Raza 102.3/107.1
 https://crystalout.surfernetwork.com:8001/WLKQ-FM_MP3
-#EXTINF:-1 tvg-name="🇧🇷 巴西 104 104.1" group-title="巴西",🇧🇷 巴西 104 104.1
-http://cast4.audiostream.com.br:8651/mp3
 #EXTINF:-1 tvg-name="🇧🇷 巴西 Digital Jazz" group-title="巴西",🇧🇷 巴西 Digital Jazz
 http://stm01.virtualcast.com.br:8190/live
-#EXTINF:-1 tvg-name="🇧🇷 巴西 Capao 90.7" group-title="巴西",🇧🇷 巴西 Capao 90.7
-https://cast4.audiostream.com.br:2656/mp3
 #EXTINF:-1 tvg-name="🇧🇷 巴西 Jean Majolo Player" group-title="巴西",🇧🇷 巴西 Jean Majolo Player
 http://jeanmajolo.com.br:8000/radio
 #EXTINF:-1 tvg-name="🇧🇷 巴西 Parceis 99.9" group-title="巴西",🇧🇷 巴西 Parceis 99.9
@@ -845,20 +765,10 @@ https://ice.fabricahost.com.br/otimafm903
 http://live3.livemus.com.br:7002/stream
 #EXTINF:-1 tvg-name="🇧🇷 巴西 Rádio Nacional da Amazonia" group-title="巴西",🇧🇷 巴西 Rádio Nacional da Amazonia
 https://radionacionalamazonia-stream.ebc.com.br/ebc/radionacionalamazonia/playlist.m3u8
-#EXTINF:-1 tvg-name="🇧🇷 巴西 Universidade 106.9" group-title="巴西",🇧🇷 巴西 Universidade 106.9
-http://s26.maxcast.com.br:8280/live
-#EXTINF:-1 tvg-name="🇧🇷 巴西 Torres 101.1" group-title="巴西",🇧🇷 巴西 Torres 101.1
-https://cast4.audiostream.com.br:2661/mp3
-#EXTINF:-1 tvg-name="🇧🇷 巴西 Xangri-La 91.9" group-title="巴西",🇧🇷 巴西 Xangri-La 91.9
-https://cast4.audiostream.com.br:2659/mp3
-#EXTINF:-1 tvg-name="🇧🇷 巴西 Rádios Fay" group-title="巴西",🇧🇷 巴西 Rádios Fay
-https://player.srvaudio.com.br/player-ssl/10172
 #EXTINF:-1 tvg-name="🇧🇷 巴西 Rádio Teresópolis 1510" group-title="巴西",🇧🇷 巴西 Rádio Teresópolis 1510
 http://cast3.hoost.com.br:8096/stream
 #EXTINF:-1 tvg-name="🇨🇱 智利 Bío-Bío Los Ángeles 96.7" group-title="智利",🇨🇱 智利 Bío-Bío Los Ángeles 96.7
 https://unlimited11-cl.dps.live/biobiolosangeles/aac/icecast.audio
-#EXTINF:-1 tvg-name="🇲🇽 墨西哥 LOS40 103.9 XHEWA" group-title="墨西哥",🇲🇽 墨西哥 LOS40 103.9 XHEWA
-https://playradio.mx/proxy/los40?mp=/stream
 #EXTINF:-1 tvg-name="🇲🇽 墨西哥 La Comadre 98.5 XHMT" group-title="墨西哥",🇲🇽 墨西哥 La Comadre 98.5 XHMT
 https://webprod.sipse.com.mx:8080/lacomadre/
 #EXTINF:-1 tvg-name="🇲🇽 墨西哥 Trion 90.1 XHSMR" group-title="墨西哥",🇲🇽 墨西哥 Trion 90.1 XHSMR
@@ -869,8 +779,6 @@ https://www.popextremo.mx/envivo
 https://radioz.egostreaming.pe/radio/3e4f6a1b2c3d4e567890abcd/
 #EXTINF:-1 tvg-name="🇺🇸 美国 KKRQ 100.7 The Fox" group-title="美国",🇺🇸 美国 KKRQ 100.7 The Fox
 https://n06b-e2.revma.ihrhls.com/zc2812?rj-ttl=5&rj-tok=AAABfd3ZoDEAsjwc3Ey5PpN-xA
-#EXTINF:-1 tvg-name="🇺🇸 美国 KPFX 107.9 The Fox" group-title="美国",🇺🇸 美国 KPFX 107.9 The Fox
-https://ice3.securenetsystems.net/KPFX
 #EXTINF:-1 tvg-name="🇺🇸 美国 WRFX 99.7 The Fox" group-title="美国",🇺🇸 美国 WRFX 99.7 The Fox
 https://n45b-e2.revma.ihrhls.com/zc1613?rj-ttl=5&rj-tok=AAABfdqwwSoALr9cq8szs08CxA
 #EXTINF:-1 tvg-name="🇺🇸 美国 KFXX 99.5 The Fox" group-title="美国",🇺🇸 美国 KFXX 99.5 The Fox
@@ -879,14 +787,10 @@ http://ice10.securenetsystems.net/KFXXFM
 https://playerservices.streamtheworld.com/api/livestream-redirect/KOFXFMAAC_SC
 #EXTINF:-1 tvg-name="🇦🇷 阿根廷 Radio Escobar 105.1" group-title="阿根廷",🇦🇷 阿根廷 Radio Escobar 105.1
 http://server4.veemesoft.com.ar:26231//listen.pls
-#EXTINF:-1 tvg-name="🇧🇷 巴西 Cidreira FM 91.3" group-title="巴西",🇧🇷 巴西 Cidreira FM 91.3
-http://cast4.audiostream.com.br:8657/aac?1735784356312
 #EXTINF:-1 tvg-name="🇧🇷 巴西 FM Premium" group-title="巴西",🇧🇷 巴西 FM Premium
 http://cast4.audiostream.com.br:8663/mp3
 #EXTINF:-1 tvg-name="🇧🇷 巴西 Jazz Medley Webradio" group-title="巴西",🇧🇷 巴西 Jazz Medley Webradio
 http://server01.ouvir.radio.br:8006/stream
-#EXTINF:-1 tvg-name="🇧🇷 巴西 Imbe FM 101.5" group-title="巴西",🇧🇷 巴西 Imbe FM 101.5
-https://cast4.audiostream.com.br:2660/mp3
 #EXTINF:-1 tvg-name="🇧🇷 巴西 Radio Camargo 87.9" group-title="巴西",🇧🇷 巴西 Radio Camargo 87.9
 https://stm1.streamproarte.com.br:7020/stream
 #EXTINF:-1 tvg-name="🇧🇷 巴西 Mix FM 91.5 Teresina" group-title="巴西",🇧🇷 巴西 Mix FM 91.5 Teresina
@@ -899,10 +803,6 @@ https://streaming.fox.srv.br:8140/stream
 https://9121.brasilstream.com.br/stream
 #EXTINF:-1 tvg-name="🇧🇷 巴西 Radio Boa Nova 1450" group-title="巴西",🇧🇷 巴西 Radio Boa Nova 1450
 http://srv39.brasilstream.com.br:8592/stream
-#EXTINF:-1 tvg-name="🇧🇷 巴西 Radio Caiçara 1020" group-title="巴西",🇧🇷 巴西 Radio Caiçara 1020
-http://cast4.audiostream.com.br:8654/mp3
-#EXTINF:-1 tvg-name="🇧🇷 巴西 Radio Continental 94.3" group-title="巴西",🇧🇷 巴西 Radio Continental 94.3
-http://cast4.audiostream.com.br:8650/mp3
 #EXTINF:-1 tvg-name="🇧🇷 巴西 Massa FM Curitiba 97.7" group-title="巴西",🇧🇷 巴西 Massa FM Curitiba 97.7
 https://stm01.virtualcast.com.br:8000/massasaopaulo
 #EXTINF:-1 tvg-name="🇧🇷 巴西 Radio CDL 102.9" group-title="巴西",🇧🇷 巴西 Radio CDL 102.9
@@ -915,8 +815,6 @@ https://centova.svdns.com.br:19373/stream/2/
 https://streaming.fox.srv.br:8094/stream
 #EXTINF:-1 tvg-name="🇧🇷 巴西 Radio Bons Tempos" group-title="巴西",🇧🇷 巴西 Radio Bons Tempos
 https://server02.ouvir.radio.br:8050/stream?1609720768800
-#EXTINF:-1 tvg-name="🇧🇷 巴西 Radio Pampa 97.5" group-title="巴西",🇧🇷 巴西 Radio Pampa 97.5
-http://cast4.audiostream.com.br:8653/aac
 #EXTINF:-1 tvg-name="🇧🇷 巴西 Radio Leve" group-title="巴西",🇧🇷 巴西 Radio Leve
 https://s09.maxcast.com.br:8098/live
 #EXTINF:-1 tvg-name="🇧🇷 巴西 Rádio Petrolina 98.3" group-title="巴西",🇧🇷 巴西 Rádio Petrolina 98.3
@@ -925,8 +823,6 @@ http://hd4.matutos.com.br:8324/;stream.mp3
 https://radio.saopaulo01.com.br:7002/stream
 #EXTINF:-1 tvg-name="🇧🇷 巴西 Radio Prefacio" group-title="巴西",🇧🇷 巴西 Radio Prefacio
 https://s10.maxcast.com.br:8014/live
-#EXTINF:-1 tvg-name="🇧🇷 巴西 Tramandai 96.5" group-title="巴西",🇧🇷 巴西 Tramandai 96.5
-https://cast4.audiostream.com.br:2658/mp3
 #EXTINF:-1 tvg-name="🇧🇷 巴西 Radio Web Nas Ondas do Saber" group-title="巴西",🇧🇷 巴西 Radio Web Nas Ondas do Saber
 https://s06.maxcast.com.br:8090/live
 #EXTINF:-1 tvg-name="🇧🇷 巴西 Radio Maranata 103.9" group-title="巴西",🇧🇷 巴西 Radio Maranata 103.9
@@ -945,14 +841,10 @@ https://audio1.tustreaming.cl/9020/stream
 https://audio1.tustreaming.cl/7555/stream
 #EXTINF:-1 tvg-name="🇨🇱 智利 Radio Las Nieves" group-title="智利",🇨🇱 智利 Radio Las Nieves
 https://audio2.tustreaming.cl:10987/stream
-#EXTINF:-1 tvg-name="🇨🇱 智利 Tele13 Radio 103.3" group-title="智利",🇨🇱 智利 Tele13 Radio 103.3
-https://mdstrm.com/audio/5c915613519bce27671c4caa/live.m3u8
 #EXTINF:-1 tvg-name="🇲🇽 墨西哥 Amor 100.1 XHYU" group-title="墨西哥",🇲🇽 墨西哥 Amor 100.1 XHYU
 https://webprod.sipse.com.mx:8080/amor
 #EXTINF:-1 tvg-name="🇲🇽 墨西哥 Kiss FM 97.7 XHGL" group-title="墨西哥",🇲🇽 墨西哥 Kiss FM 97.7 XHGL
 https://webprod.sipse.com.mx:8080/kissfm/
-#EXTINF:-1 tvg-name="🇲🇽 墨西哥 W Radio 100.1 XHPM" group-title="墨西哥",🇲🇽 墨西哥 W Radio 100.1 XHPM
-https://playradio.mx/proxy/wfm?mp=/stream
 #EXTINF:-1 tvg-name="🇲🇽 墨西哥 Radio Anime Nexus" group-title="墨西哥",🇲🇽 墨西哥 Radio Anime Nexus
 http://radio.animenexus.mx:8000/animenexus
 #EXTINF:-1 tvg-name="🇵🇪 秘鲁 Radio Estrella 102.7" group-title="秘鲁",🇵🇪 秘鲁 Radio Estrella 102.7
@@ -967,8 +859,6 @@ https://unlimited5-us.dps.live/biobiovaldivia/aac/icecast.audio
 https://radios.iwstreaming.uy/8030/stream
 #EXTINF:-1 tvg-name="🇺🇾 乌拉圭 🇺🇾 UY Clasica 650" group-title="乌拉圭",🇺🇾 乌拉圭 🇺🇾 UY Clasica 650
 https://radios.iwstreaming.uy/8032/stream
-#EXTINF:-1 tvg-name="🇺🇾 乌拉圭 🇺🇾 UY Del Sol 99.5" group-title="乌拉圭",🇺🇾 乌拉圭 🇺🇾 UY Del Sol 99.5
-http://radio1.dl.uy:9950/?type=http&nocache=2780
 #EXTINF:-1 tvg-name="🇺🇾 乌拉圭 🇺🇾 UY Emisora del Sur 1290" group-title="乌拉圭",🇺🇾 乌拉圭 🇺🇾 UY Emisora del Sur 1290
 https://radios.iwstreaming.uy/8034/stream
 #EXTINF:-1 tvg-name="🇦🇷 阿根廷 Radio 3 780" group-title="阿根廷",🇦🇷 阿根廷 Radio 3 780
@@ -977,10 +867,6 @@ https://radio01.ferozo.com/proxy/ra01000981?mp=/stream
 https://stream.arcast.com.ar/radio/sgodelestero.stream/chunklist_w552289122.m3u8
 #EXTINF:-1 tvg-name="🇧🇴 玻利维亚 Radio Erbol 100.9" group-title="玻利维亚",🇧🇴 玻利维亚 Radio Erbol 100.9
 https://radio.erbol.com.bo/
-#EXTINF:-1 tvg-name="🇧🇷 巴西 Radio Maanaim" group-title="巴西",🇧🇷 巴西 Radio Maanaim
-http://radiostream01.radiomaanaim.com.br:1935/liverm/rmaac/chunklist_w1919834617.m3u8
-#EXTINF:-1 tvg-name="🇨🇦 加拿大 CFAM 950" group-title="加拿大",🇨🇦 加拿大 CFAM 950
-https://goldenwest.leanstream.co/CFAMAM
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CFHK 103.1 Fresh Radio" group-title="哥伦比亚",🇨🇴 哥伦比亚 CFHK 103.1 Fresh Radio
 http://live.leanstream.co/CFHKFM-MP3?args=web_02
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CFLN 97.9 Big Land Labrador's FM" group-title="哥伦比亚",🇨🇴 哥伦比亚 CFLN 97.9 Big Land Labrador's FM
@@ -1003,18 +889,12 @@ https://stream.cfyt.ca/listen/stream/radio.mp3
 http://live.leanstream.co/CHAYFM-MP3
 #EXTINF:-1 tvg-name="🇨🇦 加拿大 CHET 94.5" group-title="加拿大",🇨🇦 加拿大 CHET 94.5
 https://streaming.peacefm.ca/radio
-#EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CHFM 95.9" group-title="哥伦比亚",🇨🇴 哥伦比亚 CHFM 95.9
-https://rogers-hls.leanstream.co/rogers/cal959.stream/playlist.m3u8
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CHHI 95.9 Sun FM" group-title="哥伦比亚",🇨🇴 哥伦比亚 CHHI 95.9 Sun FM
 http://newcap.leanstream.co/CHHIFM
-#EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CHMN 106.5 Mountain FM" group-title="哥伦比亚",🇨🇴 哥伦比亚 CHMN 106.5 Mountain FM
-https://rogers-hls.leanstream.co/rogers/can1065.stream/playlist.m3u8
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CHNL 610 Radio NL" group-title="哥伦比亚",🇨🇴 哥伦比亚 CHNL 610 Radio NL
 http://newcap.leanstream.co/CHNLAM
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CHOY 99.9 Choix FM" group-title="哥伦比亚",🇨🇴 哥伦比亚 CHOY 99.9 Choix FM
 http://mbsradio.leanstream.co/CHOYFM-MP3
-#EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CISQ 107.1 Mountain FM" group-title="哥伦比亚",🇨🇴 哥伦比亚 CISQ 107.1 Mountain FM
-https://rogers-hls.leanstream.co/rogers/squ1071.stream/playlist.m3u8
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CISS Kiss FM 105.3" group-title="哥伦比亚",🇨🇴 哥伦比亚 CISS Kiss FM 105.3
 http://rogers.leanstream.co/rogers/ott1053.stream/icy
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CJEG Kool 101.3 FM" group-title="哥伦比亚",🇨🇴 哥伦比亚 CJEG Kool 101.3 FM
@@ -1025,8 +905,6 @@ http://dns4.83north.ca:8000/cjvm.mp3
 http://rawlco.leanstream.co/CKCKFM
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CKHC 96.9 Radio Humber" group-title="哥伦比亚",🇨🇴 哥伦比亚 CKHC 96.9 Radio Humber
 http://live.leanstream.co/CKHCFM
-#EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CKKS 107.5 KISS Radio" group-title="哥伦比亚",🇨🇴 哥伦比亚 CKKS 107.5 KISS Radio
-https://rogers-hls.leanstream.co/rogers/van1049.stream/playlist.m3u8
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CKMP 90.3 Amp Radio" group-title="哥伦比亚",🇨🇴 哥伦比亚 CKMP 90.3 Amp Radio
 http://newcap.leanstream.co/CKMPFM
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CKNG Fresh Radio 92.5" group-title="哥伦比亚",🇨🇴 哥伦比亚 CKNG Fresh Radio 92.5
@@ -1051,16 +929,8 @@ https://mars.streamerr.co/8342/stream
 http://andromeda.housejunkie.ca:8000/radio.mp3
 #EXTINF:-1 tvg-name="🇺🇸 美国 Soul Radio Classics" group-title="美国",🇺🇸 美国 Soul Radio Classics
 https://listen.soulradio.us/us
-#EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CKFI 97.1" group-title="哥伦比亚",🇨🇴 哥伦比亚 CKFI 97.1
-https://goldenwest.leanstream.co/CKFIFM
-#EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CKSE 106.1" group-title="哥伦比亚",🇨🇴 哥伦比亚 CKSE 106.1
-https://goldenwest.leanstream.co/CKSEFM
-#EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CJYM 1330" group-title="哥伦比亚",🇨🇴 哥伦比亚 CJYM 1330
-https://goldenwest.leanstream.co/CJYMAM
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CKVX 104.9" group-title="哥伦比亚",🇨🇴 哥伦比亚 CKVX 104.9
 https://vin-live2-ais-relay1.leanstream.co/goldenwest/CKVXFM.stream/playlist.m3u8
-#EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CKSW 570" group-title="哥伦比亚",🇨🇴 哥伦比亚 CKSW 570
-https://buf-live1-ais-relay1.leanstream.co/goldenwest/CKSWAM.stream/playlist.m3u8
 #EXTINF:-1 tvg-name="🇨🇱 智利 Alternativa Radio" group-title="智利",🇨🇱 智利 Alternativa Radio
 https://tunein.radiomaniacos.cl/alternativaradio
 #EXTINF:-1 tvg-name="🇨🇱 智利 Alegrate FM 87.5" group-title="智利",🇨🇱 智利 Alegrate FM 87.5
@@ -1085,8 +955,6 @@ https://sonic.mallocohosting.cl:7020/;
 https://streaming.biox3.cl:8544/;
 #EXTINF:-1 tvg-name="🇨🇱 智利 EcoRadiostar" group-title="智利",🇨🇱 智利 EcoRadiostar
 https://estacion.kombi.cl/listen/ecoradiostar/stream
-#EXTINF:-1 tvg-name="🇨🇱 智利 Estación Mix 103.1" group-title="智利",🇨🇱 智利 Estación Mix 103.1
-https://streaming.estacionmix.cl/estacionmix128
 #EXTINF:-1 tvg-name="🇨🇱 智利 FM Okey" group-title="智利",🇨🇱 智利 FM Okey
 https://streaming.fmokey.cl/fmokey
 #EXTINF:-1 tvg-name="🇧🇷 巴西 Fernanda" group-title="巴西",🇧🇷 巴西 Fernanda
@@ -1121,8 +989,6 @@ https://sonic.portalfoxmix.cl/8436/stream
 https://radio.saopaulo01.com.br:10819/stream
 #EXTINF:-1 tvg-name="🇨🇱 智利 La Betonera" group-title="智利",🇨🇱 智利 La Betonera
 https://sa.centaury.cl:9500/live
-#EXTINF:-1 tvg-name="🇨🇱 智利 La Nueva Super 91.9" group-title="智利",🇨🇱 智利 La Nueva Super 91.9
-https://club.asdmedios.cl/radio/8180/radio.mp3
 #EXTINF:-1 tvg-name="🇨🇱 智利 La Vox de Concon Radio" group-title="智利",🇨🇱 智利 La Vox de Concon Radio
 http://sonic.portalfoxmix.cl:9920/;
 #EXTINF:-1 tvg-name="🇨🇱 智利 La Otra Estacion 88.5" group-title="智利",🇨🇱 智利 La Otra Estacion 88.5
@@ -1191,8 +1057,6 @@ https://stm16.voxhd.com.br:10872/;
 https://sonic.nnw.cl/8034/stream
 #EXTINF:-1 tvg-name="🇨🇱 智利 Radio Colo Colo 104.9" group-title="智利",🇨🇱 智利 Radio Colo Colo 104.9
 http://audio2.tustreaming.cl:7040/stream
-#EXTINF:-1 tvg-name="🇨🇱 智利 Radio Club 22" group-title="智利",🇨🇱 智利 Radio Club 22
-https://club.asdmedios.cl:8020/radio.mp3
 #EXTINF:-1 tvg-name="🇨🇱 智利 Radio Comunife" group-title="智利",🇨🇱 智利 Radio Comunife
 https://audio0.tustreaming.cl/7430/stream
 #EXTINF:-1 tvg-name="🇨🇱 智利 Radio Conceptos" group-title="智利",🇨🇱 智利 Radio Conceptos
@@ -1453,8 +1317,6 @@ https://s39.maxcast.com.br:8072/live
 https://9000.brasilstream.com.br/stream?time=1
 #EXTINF:-1 tvg-name="🇨🇦 加拿大 Canal M" group-title="加拿大",🇨🇦 加拿大 Canal M
 http://cad.casthost.ca:8038/stream
-#EXTINF:-1 tvg-name="🇨🇦 加拿大 CFAB 1450" group-title="加拿大",🇨🇦 加拿大 CFAB 1450
-https://mbsradio-ais.leanstream.co/CKENFM-MP3
 #EXTINF:-1 tvg-name="🇨🇦 加拿大 CFAN 99.3 The River" group-title="加拿大",🇨🇦 加拿大 CFAN 99.3 The River
 http://mbsradio.leanstream.co/CFANFM-MP3
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CFCB 570" group-title="哥伦比亚",🇨🇴 哥伦比亚 CFCB 570
@@ -1473,20 +1335,14 @@ https://bayshore.leanstream.co/CFDCFM
 http://live.leanstream.co/CFGQFM-MP3
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CFGN 96.7" group-title="哥伦比亚",🇨🇴 哥伦比亚 CFGN 96.7
 https://stingray.leanstream.co/VOCMAM
-#EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CFGP 97.7 Rock" group-title="哥伦比亚",🇨🇴 哥伦比亚 CFGP 97.7 Rock
-https://rogers-hls.leanstream.co/rogers/gra977.stream/playlist.m3u8
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CFGX 99.9" group-title="哥伦比亚",🇨🇴 哥伦比亚 CFGX 99.9
 http://live.leanstream.co/CFGXFM
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CFHI Boom 104.9" group-title="哥伦比亚",🇨🇴 哥伦比亚 CFHI Boom 104.9
 https://newcap.leanstream.co/CFHIFM
-#EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CFIT Air 106.1" group-title="哥伦比亚",🇨🇴 哥伦比亚 CFIT Air 106.1
-https://goldenwest.leanstream.co/CFITFM
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CFIQ 640" group-title="哥伦比亚",🇨🇴 哥伦比亚 CFIQ 640
 https://corus.leanstream.co/CFIQAM-MP3
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CFJB Rock 95" group-title="哥伦比亚",🇨🇴 哥伦比亚 CFJB Rock 95
 https://cob-ais.leanstream.co/CFJBFM-MP3?args=tunein_01
-#EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CFLT Jack 92.9" group-title="哥伦比亚",🇨🇴 哥伦比亚 CFLT Jack 92.9
-https://rogers-hls.leanstream.co/rogers/hal929.stream/playlist.m3u8
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CFNY 102.1 The Edge" group-title="哥伦比亚",🇨🇴 哥伦比亚 CFNY 102.1 The Edge
 http://live.leanstream.co/CFNYFM-MP3
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CFNR 92.1" group-title="哥伦比亚",🇨🇴 哥伦比亚 CFNR 92.1
@@ -1505,12 +1361,6 @@ http://newcap.leanstream.co/CFRKFM
 http://newcap.leanstream.co/CFRQFM
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CFRV Kiss 107.7" group-title="哥伦比亚",🇨🇴 哥伦比亚 CFRV Kiss 107.7
 https://rogers.leanstream.co/rogers/let1077.stream/icy?environment=tunein
-#EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CFSL 1190" group-title="哥伦比亚",🇨🇴 哥伦比亚 CFSL 1190
-https://goldenwest.leanstream.co/CFSLAM
-#EXTINF:-1 tvg-name="🇨🇦 加拿大 CFRY 920" group-title="加拿大",🇨🇦 加拿大 CFRY 920
-https://goldenwest.leanstream.co/CFRYAM
-#EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CFTR 680 News" group-title="哥伦比亚",🇨🇴 哥伦比亚 CFTR 680 News
-https://rogers-hls.leanstream.co/rogers/tor680.stream/playlist.m3u8
 #EXTINF:-1 tvg-name="🇨🇦 加拿大 CFXE 94.3 Real Country West" group-title="加拿大",🇨🇦 加拿大 CFXE 94.3 Real Country West
 http://newcap.leanstream.co/CFXEFM
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CFXL 103.1 XL103" group-title="哥伦比亚",🇨🇴 哥伦比亚 CFXL 103.1 XL103
@@ -1523,24 +1373,12 @@ https://bhs-live3-ais-relay1.leanstream.co/goldenwest/CFXOFM.stream/playlist.m3u
 http://newcap.leanstream.co/CFXWFM
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CFYM 1210" group-title="哥伦比亚",🇨🇴 哥伦比亚 CFYM 1210
 https://lax-live1-ais-relay1.leanstream.co/goldenwest/CFYMAM.stream/playlist.m3u8
-#EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CHAB 800" group-title="哥伦比亚",🇨🇴 哥伦比亚 CHAB 800
-https://goldenwest.leanstream.co/CHABAM
-#EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CHAS 100.5" group-title="哥伦比亚",🇨🇴 哥伦比亚 CHAS 100.5
-https://rogers-hls.leanstream.co/rogers/sau1005.stream/48k/playlist.m3u8
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CHBM Boom 97.3" group-title="哥伦比亚",🇨🇴 哥伦比亚 CHBM Boom 97.3
 http://newcap.leanstream.co/CHBMFM
-#EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CHBO 107.5" group-title="哥伦比亚",🇨🇴 哥伦比亚 CHBO 107.5
-https://goldenwest.leanstream.co/CHBOFM
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CHED 880" group-title="哥伦比亚",🇨🇴 哥伦比亚 CHED 880
 http://live.leanstream.co/CHEDAM
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CHER 98.3 MAX" group-title="哥伦比亚",🇨🇴 哥伦比亚 CHER 98.3 MAX
 http://mbsradio.leanstream.co/CHERFM-MP3
-#EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CHDI Sonic 102.9" group-title="哥伦比亚",🇨🇴 哥伦比亚 CHDI Sonic 102.9
-http://rogers-hls.leanstream.co:8000/rogers/edm1029.stream/48k/playlist.m3u8
-#EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CHEZ 106.1" group-title="哥伦比亚",🇨🇴 哥伦比亚 CHEZ 106.1
-https://rogers-hls.leanstream.co/rogers/ott1061.stream/playlist.m3u8
-#EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CHFI 98.1" group-title="哥伦比亚",🇨🇴 哥伦比亚 CHFI 98.1
-https://rogers-hls.leanstream.co/rogers/tor981.stream/playlist.m3u8
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CHFX FX 101.9" group-title="哥伦比亚",🇨🇴 哥伦比亚 CHFX FX 101.9
 http://mbsradio.leanstream.co/CHFXFM-MP3
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CHGB 97.7 The Beach" group-title="哥伦比亚",🇨🇴 哥伦比亚 CHGB 97.7 The Beach
@@ -1561,40 +1399,22 @@ http://mbsradio.leanstream.co/CHNSFM-MP3
 http://live.leanstream.co/CHOKAM
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CHOO 99.5" group-title="哥伦比亚",🇨🇴 哥伦比亚 CHOO 99.5
 https://stingray.leanstream.co/CHOOFM
-#EXTINF:-1 tvg-name="🇨🇦 加拿大 CHPO 93.1" group-title="加拿大",🇨🇦 加拿大 CHPO 93.1
-https://goldenwest.leanstream.co/CHPOFM
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CHQR NewsTalk 770" group-title="哥伦比亚",🇨🇴 哥伦比亚 CHQR NewsTalk 770
 http://corus-hls.leanstream.co/corus/CHQRAM.stream/playlist.m3u8
-#EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CHRB 1140" group-title="哥伦比亚",🇨🇴 哥伦比亚 CHRB 1140
-https://buf-live1-ais-relay1.leanstream.co/goldenwest/CHRBAM.stream/playlist.m3u8
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CHRK 101.9 The Giant" group-title="哥伦比亚",🇨🇴 哥伦比亚 CHRK 101.9 The Giant
 https://newcap.leanstream.co/CHRKFM
 #EXTINF:-1 tvg-name="🇨🇦 加拿大 CHSP Real Country 97.7" group-title="加拿大",🇨🇦 加拿大 CHSP Real Country 97.7
 http://newcap.leanstream.co/CHSPFM
-#EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CHSM 1250 SteinbachOnline" group-title="哥伦比亚",🇨🇴 哥伦比亚 CHSM 1250 SteinbachOnline
-https://goldenwest.leanstream.co/goldenwest/CHSMAM.stream/playlist.m3u8?args=app_02
-#EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CHSN 102.3" group-title="哥伦比亚",🇨🇴 哥伦比亚 CHSN 102.3
-https://buf-live1-ais-relay1.leanstream.co/goldenwest/CHSNFM.stream/playlist.m3u8
-#EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CHST 102.3" group-title="哥伦比亚",🇨🇴 哥伦比亚 CHST 102.3
-https://rogers-hls.leanstream.co/rogers/lon1023.stream/playlist.m3u8
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CHTN 100.3 Ocean 100" group-title="哥伦比亚",🇨🇴 哥伦比亚 CHTN 100.3 Ocean 100
 http://newcap.leanstream.co/CHTNFM
-#EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CHTT KISS 103.1" group-title="哥伦比亚",🇨🇴 哥伦比亚 CHTT KISS 103.1
-https://rogers-hls.leanstream.co/rogers/vic1031.stream/playlist.m3u8
-#EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CHUR 100.5" group-title="哥伦比亚",🇨🇴 哥伦比亚 CHUR 100.5
-https://rogers-hls.leanstream.co/rogers/nor1005.stream/playlist.m3u8
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CHUP Soft Rock 97.7" group-title="哥伦比亚",🇨🇴 哥伦比亚 CHUP Soft Rock 97.7
 http://rawlco.leanstream.co/CHUPFM-MP3
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CHWC 104.9 The Beach" group-title="哥伦比亚",🇨🇴 哥伦比亚 CHWC 104.9 The Beach
 http://bayshore.leanstream.co/CHWCFM
 #EXTINF:-1 tvg-name="🇨🇦 加拿大 CHVO 103.9 KIXX Country" group-title="加拿大",🇨🇦 加拿大 CHVO 103.9 KIXX Country
 http://newcap.leanstream.co/CHVOFM
-#EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CHVN 95.1" group-title="哥伦比亚",🇨🇴 哥伦比亚 CHVN 95.1
-https://goldenwest.leanstream.co/CHVNFM
 #EXTINF:-1 tvg-name="🇨🇦 加拿大 CHWY 106.7" group-title="加拿大",🇨🇦 加拿大 CHWY 106.7
 https://bhs-live1-ais-relay1.leanstream.co/goldenwest/CHWYFM.stream/playlist.m3u8
-#EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CHYM 96.7" group-title="哥伦比亚",🇨🇴 哥伦比亚 CHYM 96.7
-https://rogers-hls.leanstream.co/rogers/kit967.stream/playlist.m3u8
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CHYR MIX 96.7" group-title="哥伦比亚",🇨🇴 哥伦比亚 CHYR MIX 96.7
 http://live.leanstream.co/CHYRFM
 #EXTINF:-1 tvg-name="🇨🇦 加拿大 CIBQ 105.7 Real Country" group-title="加拿大",🇨🇦 加拿大 CIBQ 105.7 Real Country
@@ -1611,22 +1431,10 @@ http://newcap.leanstream.co/CIGVFM
 http://newcap.leanstream.co/CIJKFM
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CIHT Hot 89.9" group-title="哥伦比亚",🇨🇴 哥伦比亚 CIHT Hot 89.9
 http://newcap.leanstream.co/CIHTFM
-#EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CIKR 105.7" group-title="哥伦比亚",🇨🇴 哥伦比亚 CIKR 105.7
-https://rogers-hls.leanstream.co/rogers/kin1057.stream/playlist.m3u8
-#EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CIKZ 106.7" group-title="哥伦比亚",🇨🇴 哥伦比亚 CIKZ 106.7
-https://rogers-hls.leanstream.co/rogers/kit1067.stream/playlist.m3u8
-#EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CIKX 93.5" group-title="哥伦比亚",🇨🇴 哥伦比亚 CIKX 93.5
-https://mbsradio-ais.leanstream.co/CIKXFM-MP3
-#EXTINF:-1 tvg-name="🇨🇦 加拿大 CILG 100.7" group-title="加拿大",🇨🇦 加拿大 CILG 100.7
-https://goldenwest.leanstream.co/CILGFM
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CILB Boom 103.5" group-title="哥伦比亚",🇨🇴 哥伦比亚 CILB Boom 103.5
 http://newcap.leanstream.co/CILBFM-MP3
-#EXTINF:-1 tvg-name="🇨🇦 加拿大 CILU 102.7 Lakehead University" group-title="加拿大",🇨🇦 加拿大 CILU 102.7 Lakehead University
-http://luradio-server.lakeheadu.ca:8000/stereo128
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CILQ 107.1 Q107" group-title="哥伦比亚",🇨🇴 哥伦比亚 CILQ 107.1 Q107
 http://live.leanstream.co/CILQFM
-#EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CILT 96.7" group-title="哥伦比亚",🇨🇴 哥伦比亚 CILT 96.7
-https://goldenwest.leanstream.co/CILTFM
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CILV 88.5" group-title="哥伦比亚",🇨🇴 哥伦比亚 CILV 88.5
 https://stingray.leanstream.co/CILVFM
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CIMJ 106.1 Magic 106" group-title="哥伦比亚",🇨🇴 哥伦比亚 CIMJ 106.1 Magic 106
@@ -1635,8 +1443,6 @@ http://live.leanstream.co/CIMJFM-MP3
 https://vin-live1-ais-relay1.leanstream.co/goldenwest/CIMGFM.stream/playlist.m3u8
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CING 95.3 Energy" group-title="哥伦比亚",🇨🇴 哥伦比亚 CING 95.3 Energy
 http://live.leanstream.co/CINGFM-MP3
-#EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CIOC Ocean 98.5" group-title="哥伦比亚",🇨🇴 哥伦比亚 CIOC Ocean 98.5
-https://rogers-hls.leanstream.co/rogers/vic985.stream/playlist.m3u8
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CIOK 100.5 K-100" group-title="哥伦比亚",🇨🇴 哥伦比亚 CIOK 100.5 K-100
 http://mbsradio.leanstream.co/CIOKFM-MP3
 #EXTINF:-1 tvg-name="🇨🇦 加拿大 CIOI 101.5 The Hawk" group-title="加拿大",🇨🇦 加拿大 CIOI 101.5 The Hawk
@@ -1649,12 +1455,6 @@ http://newcap.leanstream.co/CIRKFM
 http://live.leanstream.co/CISNFM-MP3
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CISO 89.1" group-title="哥伦比亚",🇨🇴 哥伦比亚 CISO 89.1
 https://bayshore.leanstream.co/CISOFM
-#EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CISS KiSS 105.3" group-title="哥伦比亚",🇨🇴 哥伦比亚 CISS KiSS 105.3
-http://rogers-hls.leanstream.co:8000/rogers/ott1053.stream/48k/playlist.m3u8
-#EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CITI 92.1" group-title="哥伦比亚",🇨🇴 哥伦比亚 CITI 92.1
-https://rogers-hls.leanstream.co/rogers/win921.stream/playlist.m3u8
-#EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CIWW CityNews" group-title="哥伦比亚",🇨🇴 哥伦比亚 CIWW CityNews
-https://rogers-hls.leanstream.co/rogers/ott1011.stream/playlist.m3u8
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CIXF Boom 101.1" group-title="哥伦比亚",🇨🇴 哥伦比亚 CIXF Boom 101.1
 http://newcap.leanstream.co/CIXFFM
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CIXK MIX 106.5" group-title="哥伦比亚",🇨🇴 哥伦比亚 CIXK MIX 106.5
@@ -1663,30 +1463,18 @@ http://bayshore.leanstream.co/CIXKFM
 http://rawlco.leanstream.co/CIZLFM
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CIZZ Z 98.9" group-title="哥伦比亚",🇨🇴 哥伦比亚 CIZZ Z 98.9
 http://newcap.leanstream.co/CIZZFM
-#EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CJAQ Jack 96.9" group-title="哥伦比亚",🇨🇴 哥伦比亚 CJAQ Jack 96.9
-https://rogers-hls.leanstream.co/rogers/cal969.stream/playlist.m3u8
-#EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CJAX Jack 96.9" group-title="哥伦比亚",🇨🇴 哥伦比亚 CJAX Jack 96.9
-https://rogers-hls.leanstream.co/rogers/van969.stream/playlist.m3u8
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CJAW 103.9" group-title="哥伦比亚",🇨🇴 哥伦比亚 CJAW 103.9
 https://lax-live2-ais-relay1.leanstream.co/goldenwest/CJAWFM.stream/playlist.m3u8
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CJBQ 800" group-title="哥伦比亚",🇨🇴 哥伦比亚 CJBQ 800
 http://live.leanstream.co/CJBQAM-MP3
 #EXTINF:-1 tvg-name="🇨🇦 加拿大 CJCB 1270" group-title="加拿大",🇨🇦 加拿大 CJCB 1270
 http://mbsradio.leanstream.co/CJCBAM-MP3
-#EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CJCJ 104.1" group-title="哥伦比亚",🇨🇴 哥伦比亚 CJCJ 104.1
-https://mbsradio-ais.leanstream.co/CJCJFM-MP3
-#EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CJCL Sportsnet 590 The Fan" group-title="哥伦比亚",🇨🇴 哥伦比亚 CJCL Sportsnet 590 The Fan
-https://rogers-hls.leanstream.co/rogers/tor590.stream/playlist.m3u8
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CJCW 590" group-title="哥伦比亚",🇨🇴 哥伦比亚 CJCW 590
 http://mbsradio.leanstream.co/CJCWAM-MP3
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CJDJ 102.1 Rock 102" group-title="哥伦比亚",🇨🇴 哥伦比亚 CJDJ 102.1 Rock 102
 http://rawlco.leanstream.co/CJDJFM-MP3
-#EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CJCY 102.1" group-title="哥伦比亚",🇨🇴 哥伦比亚 CJCY 102.1
-https://rogers-hls.leanstream.co/rogers/med1021.stream/playlist.m3u8
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CJDV 107.5 Dave Rocks" group-title="哥伦比亚",🇨🇴 哥伦比亚 CJDV 107.5 Dave Rocks
 http://live.leanstream.co/CJDVFM-MP3
-#EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CJEL 93.5" group-title="哥伦比亚",🇨🇴 哥伦比亚 CJEL 93.5
-https://goldenwest.leanstream.co/goldenwest/CJELFM.stream/playlist.m3u8
 #EXTINF:-1 tvg-name="🇨🇦 加拿大 CJGV Peggy @99.1" group-title="加拿大",🇨🇦 加拿大 CJGV Peggy @99.1
 http://live.leanstream.co/CJGVFM-MP3
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CJIQ 88.3 Tri-Cities Alternative" group-title="哥伦比亚",🇨🇴 哥伦比亚 CJIQ 88.3 Tri-Cities Alternative
@@ -1701,52 +1489,30 @@ http://rawlco.leanstream.co/CJMEAM-MP3
 http://newcap.leanstream.co/CJMOFM
 #EXTINF:-1 tvg-name="🇨🇦 加拿大 CJMU 102.3" group-title="加拿大",🇨🇦 加拿大 CJMU 102.3
 https://bayshore.leanstream.co/CJMUFM
-#EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CJMX 105.3" group-title="哥伦比亚",🇨🇴 哥伦比亚 CJMX 105.3
-https://rogers-hls.leanstream.co/rogers/sud1053.stream/playlist.m3u8
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CJOB 680" group-title="哥伦比亚",🇨🇴 哥伦比亚 CJOB 680
 http://live.leanstream.co/CJOBAM-MP3
-#EXTINF:-1 tvg-name="🇨🇦 加拿大 CJOK Country 93.3" group-title="加拿大",🇨🇦 加拿大 CJOK Country 93.3
-https://rogers-hls.leanstream.co/rogers/for933.stream/playlist.m3u8
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CJOY 1460 Greatest Hits" group-title="哥伦比亚",🇨🇴 哥伦比亚 CJOY 1460 Greatest Hits
 http://live.leanstream.co/CJOYAM
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CJOT Boom 99.7" group-title="哥伦比亚",🇨🇴 哥伦比亚 CJOT Boom 99.7
 http://live.leanstream.co/CJOTFM-MP3
-#EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CJPG 96.5" group-title="哥伦比亚",🇨🇴 哥伦比亚 CJPG 96.5
-https://goldenwest.leanstream.co/CJPGFM
 #EXTINF:-1 tvg-name="🇨🇦 加拿大 CJPR 94.9 Real Country Southwest" group-title="加拿大",🇨🇦 加拿大 CJPR 94.9 Real Country Southwest
 http://newcap.leanstream.co/CJPRFM-MP3
-#EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CJRB 1220" group-title="哥伦比亚",🇨🇴 哥伦比亚 CJRB 1220
-https://goldenwest.leanstream.co/CJRBAM
-#EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CJQM 104.3" group-title="哥伦比亚",🇨🇴 哥伦比亚 CJQM 104.3
-https://rogers-hls.leanstream.co/rogers/sau1043.stream/playlist.m3u8
-#EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CJQQ 92.1" group-title="哥伦比亚",🇨🇴 哥伦比亚 CJQQ 92.1
-https://rogers-hls.leanstream.co/rogers/tim921.stream/playlist.m3u8
-#EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CJRQ 92.7" group-title="哥伦比亚",🇨🇴 哥伦比亚 CJRQ 92.7
-https://rogers-hls.leanstream.co/rogers/sud927.stream/playlist.m3u8
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CJRW 102.1 Spud" group-title="哥伦比亚",🇨🇴 哥伦比亚 CJRW 102.1 Spud
 http://mbsradio.leanstream.co/CJRWFM-MP3
-#EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CJRX 106.7 Rock" group-title="哥伦比亚",🇨🇴 哥伦比亚 CJRX 106.7 Rock
-https://rogers-hls.leanstream.co/rogers/let1067.stream/playlist.m3u8
 #EXTINF:-1 tvg-name="🇨🇦 加拿大 CJSP/CJWF Windsor's Country 95.9/92.7" group-title="加拿大",🇨🇦 加拿大 CJSP/CJWF Windsor's Country 95.9/92.7
 http://live.leanstream.co/CJWFFM
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CJTN 107.1 Rock 107" group-title="哥伦比亚",🇨🇴 哥伦比亚 CJTN 107.1 Rock 107
 http://live.leanstream.co/CJTNFM-MP3
-#EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CJUV 94.1" group-title="哥伦比亚",🇨🇴 哥伦比亚 CJUV 94.1
-https://goldenwest.leanstream.co/CJUVFM
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CJXY 107.9 Y108" group-title="哥伦比亚",🇨🇴 哥伦比亚 CJXY 107.9 Y108
 http://live.leanstream.co/CJXYFM-MP3
 #EXTINF:-1 tvg-name="🇨🇦 加拿大 CJXL 96.1 XL 96" group-title="加拿大",🇨🇦 加拿大 CJXL 96.1 XL 96
 http://newcap.leanstream.co/CJXLFM
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CJXK 95.3 K-Rock" group-title="哥伦比亚",🇨🇴 哥伦比亚 CJXK 95.3 K-Rock
 http://newcap.leanstream.co/CJXKFM
-#EXTINF:-1 tvg-name="🇨🇦 加拿大 CJXR 107.7" group-title="加拿大",🇨🇦 加拿大 CJXR 107.7
-https://vin-live2-ais-relay1.leanstream.co/goldenwest/CJXRFM.stream/playlist.m3u8
 #EXTINF:-1 tvg-name="🇨🇦 加拿大 CJYQ 930 KIXX Country" group-title="加拿大",🇨🇦 加拿大 CJYQ 930 KIXX Country
 http://newcap.leanstream.co/CJYQAM
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CJYC 98.9 Kool 98" group-title="哥伦比亚",🇨🇴 哥伦比亚 CJYC 98.9 Kool 98
 https://mbsradio.leanstream.co/CJYCFM-MP3
-#EXTINF:-1 tvg-name="🇨🇦 加拿大 CKAT 600" group-title="加拿大",🇨🇦 加拿大 CKAT 600
-https://rogers-hls.leanstream.co/rogers/nor600.stream/playlist.m3u8
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CKBA Boom 94.1" group-title="哥伦比亚",🇨🇴 哥伦比亚 CKBA Boom 94.1
 http://newcap.leanstream.co/CKBAFM-MP3
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CKBT 91.5 The Beat" group-title="哥伦比亚",🇨🇴 哥伦比亚 CKBT 91.5 The Beat
@@ -1765,8 +1531,6 @@ http://live.leanstream.co/CKDKFM-MP3
 http://live.leanstream.co/CKDJFM-MP3?tunein
 #EXTINF:-1 tvg-name="🇨🇦 加拿大 CKDH 101.7" group-title="加拿大",🇨🇦 加拿大 CKDH 101.7
 http://mbsradio.leanstream.co/CKDHFM-MP3
-#EXTINF:-1 tvg-name="🇨🇦 加拿大 CKDM 730" group-title="加拿大",🇨🇦 加拿大 CKDM 730
-https://ckdm.smartstreamingsolutions.ca/ssl/CKDM
 #EXTINF:-1 tvg-name="🇨🇦 加拿大 CKDQ 92.5" group-title="加拿大",🇨🇦 加拿大 CKDQ 92.5
 https://stingray.leanstream.co/CKDQAM
 #EXTINF:-1 tvg-name="🇨🇦 加拿大 CKEN AVR 97.7" group-title="加拿大",🇨🇦 加拿大 CKEN AVR 97.7
@@ -1779,8 +1543,6 @@ https://newcap.leanstream.co/CKEZFM
 http://rogers.leanstream.co/rogers/tim993.stream/icy
 #EXTINF:-1 tvg-name="🇨🇦 加拿大 CKGY Real Country 95.5" group-title="加拿大",🇨🇦 加拿大 CKGY Real Country 95.5
 http://newcap.leanstream.co/CKGYFM-MP3
-#EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CKIS KISS 92.5" group-title="哥伦比亚",🇨🇴 哥伦比亚 CKIS KISS 92.5
-https://rogers-hls.leanstream.co/rogers/tor925.stream/playlist.m3u8
 #EXTINF:-1 tvg-name="🇨🇦 加拿大 CKIX 99.1 Hits" group-title="加拿大",🇨🇦 加拿大 CKIX 99.1 Hits
 http://newcap.leanstream.co/CKIXFM
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CKKO 96.3 K" group-title="哥伦比亚",🇨🇴 哥伦比亚 CKKO 96.3 K
@@ -1791,10 +1553,6 @@ http://newcap.leanstream.co/CKKYFM
 http://live.leanstream.co/CKLOFM
 #EXTINF:-1 tvg-name="🇨🇦 加拿大 CKLN 97.1 KIXX Country" group-title="加拿大",🇨🇦 加拿大 CKLN 97.1 KIXX Country
 http://newcap.leanstream.co/CKLNFM
-#EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CKMB 107.5" group-title="哥伦比亚",🇨🇴 哥伦比亚 CKMB 107.5
-https://cob.leanstream.co/CKMBFM
-#EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CKMH 105.3 Rock" group-title="哥伦比亚",🇨🇴 哥伦比亚 CKMH 105.3 Rock
-https://rogers-hls.leanstream.co/rogers/med1053.stream/playlist.m3u8
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CKNB 950" group-title="哥伦比亚",🇨🇴 哥伦比亚 CKNB 950
 http://mbsradio.leanstream.co/CKNBAM-MP3
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CKNX 920" group-title="哥伦比亚",🇨🇴 哥伦比亚 CKNX 920
@@ -1805,8 +1563,6 @@ http://live.leanstream.co/CKNWAM
 http://rawlco.leanstream.co/CKOMAM
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CKPE The Cape 94.9" group-title="哥伦比亚",🇨🇴 哥伦比亚 CKPE The Cape 94.9
 http://mbsradio.leanstream.co/CKPEFM-MP3
-#EXTINF:-1 tvg-name="🇨🇦 加拿大 CKQC Country 107.1" group-title="加拿大",🇨🇦 加拿大 CKQC Country 107.1
-https://rogers-hls.leanstream.co/rogers/abb1071.stream/playlist.m3u8
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CKQK 105.5 Hot 105" group-title="哥伦比亚",🇨🇴 哥伦比亚 CKQK 105.5 Hot 105
 http://newcap.leanstream.co/CKQKFM
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CKRA Capital 96.3" group-title="哥伦比亚",🇨🇴 哥伦比亚 CKRA Capital 96.3
@@ -1819,48 +1575,32 @@ http://live.leanstream.co/CKRYFM-MP3
 http://newcap.leanstream.co/CKSAFM
 #EXTINF:-1 tvg-name="🇨🇦 加拿大 CKSQ 93.3 Real Country" group-title="加拿大",🇨🇦 加拿大 CKSQ 93.3 Real Country
 http://newcap.leanstream.co/CKSQFM
-#EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CKSR Star 98.3" group-title="哥伦比亚",🇨🇴 哥伦比亚 CKSR Star 98.3
-https://rogers-hls.leanstream.co/rogers/chi983.stream/playlist.m3u8
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CKSY 94.3" group-title="哥伦比亚",🇨🇴 哥伦比亚 CKSY 94.3
 http://live.leanstream.co/CKSYFM
-#EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CKTO 100.9" group-title="哥伦比亚",🇨🇴 哥伦比亚 CKTO 100.9
-https://mbsradio-ais.leanstream.co/CKTOFM-MP3
-#EXTINF:-1 tvg-name="🇨🇦 加拿大 CKTY 99.5" group-title="加拿大",🇨🇦 加拿大 CKTY 99.5
-https://mbsradio-ais.leanstream.co/CKTYFM-MP3
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CKUE Cool 95.1" group-title="哥伦比亚",🇨🇴 哥伦比亚 CKUE Cool 95.1
 http://live.leanstream.co/CKUEFM
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CKUL Mix 96.5" group-title="哥伦比亚",🇨🇴 哥伦比亚 CKUL Mix 96.5
 http://newcap.leanstream.co/CKULFM
-#EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CKUV 100.9" group-title="哥伦比亚",🇨🇴 哥伦比亚 CKUV 100.9
-https://goldenwest.leanstream.co/CKUVFM
 #EXTINF:-1 tvg-name="🇨🇦 加拿大 CKVH Real Country 93.5" group-title="加拿大",🇨🇦 加拿大 CKVH Real Country 93.5
 http://newcap.leanstream.co/CKVHFM
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CKWM Magic 94.9" group-title="哥伦比亚",🇨🇴 哥伦比亚 CKWM Magic 94.9
 http://mbsradio.leanstream.co/CKWMFM-MP3
 #EXTINF:-1 tvg-name="🇨🇦 加拿大 CKWB Real Country 97.9" group-title="加拿大",🇨🇦 加拿大 CKWB Real Country 97.9
 http://newcap.leanstream.co/CKWBFM
-#EXTINF:-1 tvg-name="🇨🇦 加拿大 CKXC 93.5" group-title="加拿大",🇨🇦 加拿大 CKXC 93.5
-https://rogers-hls.leanstream.co/rogers/kin935.stream/48k/playlist.m3u8
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CKXD 98.7 K Rock" group-title="哥伦比亚",🇨🇴 哥伦比亚 CKXD 98.7 K Rock
 http://newcap.leanstream.co/CKXDFM
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CKXG 102.3 K-Rock" group-title="哥伦比亚",🇨🇴 哥伦比亚 CKXG 102.3 K-Rock
 http://newcap.leanstream.co/CKXGFM
-#EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CKY KISS 102.3" group-title="哥伦比亚",🇨🇴 哥伦比亚 CKY KISS 102.3
-https://rogers-hls.leanstream.co/rogers/win1023.stream/playlist.m3u8
 #EXTINF:-1 tvg-name="🇨🇦 加拿大 CKYC 93.7 Country 93" group-title="加拿大",🇨🇦 加拿大 CKYC 93.7 Country 93
 http://bayshore.leanstream.co/CKYCFM
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CKXX 103.9 K Rock" group-title="哥伦比亚",🇨🇴 哥伦比亚 CKXX 103.9 K Rock
 http://newcap.leanstream.co/CKXXFM
-#EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CKYX 97.9 Rock" group-title="哥伦比亚",🇨🇴 哥伦比亚 CKYX 97.9 Rock
-http://rogers-hls.leanstream.co:8000/rogers/for979.stream/48k/playlist.m3u8
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 CKZZ Z95.3" group-title="哥伦比亚",🇨🇴 哥伦比亚 CKZZ Z95.3
 http://newcap.leanstream.co/CKZZFM
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 VOCM 590" group-title="哥伦比亚",🇨🇴 哥伦比亚 VOCM 590
 http://newcap.leanstream.co/VOCMAM
 #EXTINF:-1 tvg-name="🇨🇴 哥伦比亚 VOCM 97.5 K-Rock" group-title="哥伦比亚",🇨🇴 哥伦比亚 VOCM 97.5 K-Rock
 http://newcap.leanstream.co/VOCMFM
-#EXTINF:-1 tvg-name="🇨🇦 加拿大 KBOW" group-title="加拿大",🇨🇦 加拿大 KBOW
-https://butte.leanstream.co/KBOWAM
 #EXTINF:-1 tvg-name="🇺🇸 美国 KHUM 104.7/104.3" group-title="美国",🇺🇸 美国 KHUM 104.7/104.3
 http://lostcoast.streamguys.us/khum-hi
 #EXTINF:-1 tvg-name="🇨🇦 加拿大 KOKE 99.3/98.5" group-title="加拿大",🇨🇦 加拿大 KOKE 99.3/98.5

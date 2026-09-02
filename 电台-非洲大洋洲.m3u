@@ -1,8 +1,6 @@
 #EXTM3U x-tvg-url="检测结果_节目单.epg.xml"
 #EXTINF:-1 tvg-name="🇨🇩 刚果金 Top Congo 88.4" group-title="刚果金",🇨🇩 刚果金 Top Congo 88.4
 http://topcongofm2.ice.infomaniak.ch/topcongofm2-64.mp3
-#EXTINF:-1 tvg-name="🇬🇭 加纳 Joy FM" group-title="加纳",🇬🇭 加纳 Joy FM
-https://ice5.securenetsystems.net:80/JOYFM
 #EXTINF:-1 tvg-name="🇬🇭 加纳 Munghana Lonene FM" group-title="加纳",🇬🇭 加纳 Munghana Lonene FM
 http://27793.live.streamtheworld.com/MUNGANALONENEAAC.aac
 #EXTINF:-1 tvg-name="🇿🇦 南非 Radio 702 92.7" group-title="南非",🇿🇦 南非 Radio 702 92.7
@@ -57,12 +55,8 @@ https://streaming.nrjaudio.fm/ouucsb5n3nje
 http://listen.senemultimedia.net:8090/stream
 #EXTINF:-1 tvg-name="🇦🇴 安哥拉 Burna Boy" group-title="安哥拉",🇦🇴 安哥拉 Burna Boy
 https://streaming.exclusive.radio/er/burnaboy/icecast.audio
-#EXTINF:-1 tvg-name="🇳🇬 尼日利亚 La Voz del Cipres de las Guaitecas 93.1" group-title="尼日利亚",🇳🇬 尼日利亚 La Voz del Cipres de las Guaitecas 93.1
-https://live.lavozdelcipres.cl/radiomelinka.ogv
 #EXTINF:-1 tvg-name="🇲🇦 摩洛哥 Hits 1 Maroc" group-title="摩洛哥",🇲🇦 摩洛哥 Hits 1 Maroc
 https://radio12.pro-fhi.net/live/Hits1radio
-#EXTINF:-1 tvg-name="🇫🇯 斐济 CFBC 930" group-title="斐济",🇫🇯 斐济 CFBC 930
-https://mbsradio-ais.leanstream.co/CFBCAM-MP3
 #EXTINF:-1 tvg-name="🇳🇿 新西兰 RNZ Pacific" group-title="新西兰",🇳🇿 新西兰 RNZ Pacific
 http://radionz-ice.streamguys.com/international_aac64
 #EXTINF:-1 tvg-name="🇦🇺 澳大利亚 ABC Kids Listen" group-title="澳大利亚",🇦🇺 澳大利亚 ABC Kids Listen
@@ -77,8 +71,6 @@ https://playerservices.streamtheworld.com/api/livestream-redirect/KABCAMAAC_SC
 https://streaming.viphosting.cl/8098/stream
 #EXTINF:-1 tvg-name="🇨🇮 科特迪瓦 Derti 98.6" group-title="科特迪瓦",🇨🇮 科特迪瓦 Derti 98.6
 http://derti.live24.gr/derty1000
-#EXTINF:-1 tvg-name="🇰🇪 肯尼亚 CKBC 104.9" group-title="肯尼亚",🇰🇪 肯尼亚 CKBC 104.9
-https://mbsradio-ais.leanstream.co/CKBCFM-MP3
 #EXTINF:-1 tvg-name="🇩🇿 阿尔及利亚 Niall Horan" group-title="阿尔及利亚",🇩🇿 阿尔及利亚 Niall Horan
 https://streaming.exclusive.radio/er/niallhoran/icecast.audio
 #EXTINF:-1 tvg-name="🇦🇺 澳大利亚 2GHR 96.7" group-title="澳大利亚",🇦🇺 澳大利亚 2GHR 96.7
@@ -95,14 +87,10 @@ https://stream.tcom.net.au/2ten
 https://stream.tripleafm.com.au//
 #EXTINF:-1 tvg-name="🇿🇦 南非 Yarona 106.6" group-title="南非",🇿🇦 南非 Yarona 106.6
 https://iceant.antfarm.co.za/yarona
-#EXTINF:-1 tvg-name="🇦🇺 澳大利亚 Hope 103.2" group-title="澳大利亚",🇦🇺 澳大利亚 Hope 103.2
-http://stream.hopemedia.com.au/hope-mp3
 #EXTINF:-1 tvg-name="🇳🇿 新西兰 Plains 96.9" group-title="新西兰",🇳🇿 新西兰 Plains 96.9
 http://live.accessmedia.nz/plains.stream_aac/playlist.m3u8
 #EXTINF:-1 tvg-name="🇦🇺 澳大利亚 Christmas Hope" group-title="澳大利亚",🇦🇺 澳大利亚 Christmas Hope
 http://stream.hopemedia.com.au/christmashope-hq
-#EXTINF:-1 tvg-name="🇦🇺 澳大利亚 Inspire Digital" group-title="澳大利亚",🇦🇺 澳大利亚 Inspire Digital
-http://stream.hopemedia.com.au/inspire
 #EXTINF:-1 tvg-name="🇿🇦 南非 Bosveld Stereo" group-title="南非",🇿🇦 南非 Bosveld Stereo
 http://capeant.antfarm.co.za:8000/Bosveld
 #EXTINF:-1 tvg-name="🇦🇺 澳大利亚 4RFM 96.9" group-title="澳大利亚",🇦🇺 澳大利亚 4RFM 96.9
@@ -139,8 +127,6 @@ http://beldifm.hf.ma/radio/8000/radio.mp3
 https://streaming.rimradio.ma/live
 #EXTINF:-1 tvg-name="🇦🇺 澳大利亚 2BBB FM" group-title="澳大利亚",🇦🇺 澳大利亚 2BBB FM
 https://23203.live.streamtheworld.com/2BBBAAC.aac
-#EXTINF:-1 tvg-name="🇦🇺 澳大利亚 2BOB 104.7 FM" group-title="澳大利亚",🇦🇺 澳大利亚 2BOB 104.7 FM
-https://playerservices.streamtheworld.com/api/livestream-redirect/2BOB.mp3
 #EXTINF:-1 tvg-name="🇦🇺 澳大利亚 2DRY 107.7" group-title="澳大利亚",🇦🇺 澳大利亚 2DRY 107.7
 https://23093.live.streamtheworld.com/2DRYAAC.aac
 #EXTINF:-1 tvg-name="🇦🇺 澳大利亚 2GB 873" group-title="澳大利亚",🇦🇺 澳大利亚 2GB 873
@@ -157,8 +143,6 @@ https://streaming.2yyyradio.com/radio/8000/radio.mp3
 https://23203.live.streamtheworld.com/3CRAAC.aac
 #EXTINF:-1 tvg-name="🇦🇺 澳大利亚 3KND 1503" group-title="澳大利亚",🇦🇺 澳大利亚 3KND 1503
 https://23093.live.streamtheworld.com/3KNDAAC.aac
-#EXTINF:-1 tvg-name="🇦🇺 澳大利亚 3GG 531" group-title="澳大利亚",🇦🇺 澳大利亚 3GG 531
-https://17843.live.streamtheworld.com/3GGAAC.aac
 #EXTINF:-1 tvg-name="🇦🇺 澳大利亚 3RPH 1179" group-title="澳大利亚",🇦🇺 澳大利亚 3RPH 1179
 https://23153.live.streamtheworld.com/3RPHAAC.aac
 #EXTINF:-1 tvg-name="🇦🇺 澳大利亚 3ZZZ 92.3" group-title="澳大利亚",🇦🇺 澳大利亚 3ZZZ 92.3
@@ -179,8 +163,6 @@ https://playerservices.streamtheworld.com/api/livestream-redirect/ROC_4ROAAC.aac
 https://ice.cr6.streamzilla.xlcdn.com:8000/sz=RTV_Hattem=RadioHattem?
 #EXTINF:-1 tvg-name="🇦🇺 澳大利亚 5GFM 89.3" group-title="澳大利亚",🇦🇺 澳大利亚 5GFM 89.3
 https://stream04.sigile.net/gulffm-64-aac
-#EXTINF:-1 tvg-name="🇦🇺 澳大利亚 5AA 1395" group-title="澳大利亚",🇦🇺 澳大利亚 5AA 1395
-https://playerservices.streamtheworld.com/api/livestream-redirect/FIVEAA_AAC48.aac?src=redirect
 #EXTINF:-1 tvg-name="🇦🇺 澳大利亚 5AU 1242" group-title="澳大利亚",🇦🇺 澳大利亚 5AU 1242
 https://playerservices.streamtheworld.com/api/livestream-redirect/AUG_5AUAAC.aac
 #EXTINF:-1 tvg-name="🇦🇺 澳大利亚 5RAM 1079 Life 107.9" group-title="澳大利亚",🇦🇺 澳大利亚 5RAM 1079 Life 107.9
@@ -191,8 +173,6 @@ https://playerservices.streamtheworld.com/api/livestream-redirect/HOB_7HO.mp3
 https://radio12.shoutcast.net.au:2020/stream/8032
 #EXTINF:-1 tvg-name="🇦🇺 澳大利亚 8CCC 102.1" group-title="澳大利亚",🇦🇺 澳大利亚 8CCC 102.1
 https://23163.live.streamtheworld.com/8CCC.mp3
-#EXTINF:-1 tvg-name="🇦🇺 澳大利亚 Radio 4CC 927" group-title="澳大利亚",🇦🇺 澳大利亚 Radio 4CC 927
-https://playerservices.streamtheworld.com/api/livestream-redirect/GLA_4CCAAC.aac
 #EXTINF:-1 tvg-name="🇦🇺 澳大利亚 2XS 92.2" group-title="澳大利亚",🇦🇺 澳大利亚 2XS 92.2
 http://125.236.204.178:8001/listen.mp3
 #EXTINF:-1 tvg-name="🇦🇺 澳大利亚 48FM 100.1" group-title="澳大利亚",🇦🇺 澳大利亚 48FM 100.1

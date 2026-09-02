@@ -1,56 +1,24 @@
 #EXTM3U x-tvg-url="检测结果_节目单.epg.xml"
-#EXTINF:-1 tvg-name="🇶🇦 卡塔尔 Al Jazeera العربية" group-title="卡塔尔",🇶🇦 卡塔尔 Al Jazeera العربية
-https://live-hls-web-aja.getaj.net/AJA/index.m3u8
 #EXTINF:-1 tvg-name="🇮🇳 印度 NDTV India" group-title="印度",🇮🇳 印度 NDTV India
 https://ndtvindiaelemarchana.akamaized.net/hls/live/2003679/ndtvindia/master.m3u8
-#EXTINF:-1 tvg-name="🇮🇳 印度 India Today" group-title="印度",🇮🇳 印度 India Today
-https://indiatodaylive.akamaized.net/hls/live/2014320/indiatoday/indiatodaylive/playlist.m3u8
 #EXTINF:-1 tvg-name="🇹🇷 土耳其 TapahtumaTV Eveo" group-title="土耳其",🇹🇷 土耳其 TapahtumaTV Eveo
 https://live-fi.tvkaista.net/tapahtumatv-eveo/live.m3u8?src=freetv
-#EXTINF:-1 tvg-name="🇹🇷 土耳其 AlphaTV" group-title="土耳其",🇹🇷 土耳其 AlphaTV
-https://alphatvlive2.siliconweb.com/alphatvlive/live_abr/playlist.m3u8
 #EXTINF:-1 tvg-name="🇹🇷 土耳其 INTV" group-title="土耳其",🇹🇷 土耳其 INTV
 http://tv1.intv.mk:1935/live/intv/index.m3u8
-#EXTINF:-1 tvg-name="🇹🇷 土耳其 TRT Haber" group-title="土耳其",🇹🇷 土耳其 TRT Haber
-https://tv-trthaber.medya.trt.com.tr/master.m3u8
-#EXTINF:-1 tvg-name="🇹🇷 土耳其 TRT Çocuk" group-title="土耳其",🇹🇷 土耳其 TRT Çocuk
-https://tv-trtcocuk.medya.trt.com.tr/master.m3u8
 #EXTINF:-1 tvg-name="🇹🇷 土耳其 TRT World" group-title="土耳其",🇹🇷 土耳其 TRT World
 https://tv-trtworld.medya.trt.com.tr/master.m3u8
-#EXTINF:-1 tvg-name="🇹🇷 土耳其 TRT Avaz" group-title="土耳其",🇹🇷 土耳其 TRT Avaz
-https://tv-trtavaz.medya.trt.com.tr/master.m3u8
 #EXTINF:-1 tvg-name="🇹🇷 土耳其 TRT EBA Ortaokul" group-title="土耳其",🇹🇷 土耳其 TRT EBA Ortaokul
 https://tv-e-okul01.medya.trt.com.tr/master.m3u8
 #EXTINF:-1 tvg-name="🇸🇬 新加坡 CNA" group-title="新加坡",🇸🇬 新加坡 CNA
 https://live1.mediadesk.al/cnatvlive.m3u8
-#EXTINF:-1 tvg-name="🇦🇪 阿联酋 Al Arabiya Business" group-title="阿联酋",🇦🇪 阿联酋 Al Arabiya Business
-https://live.alarabiya.net/alarabiapublish/aswaaq.smil/playlist.m3u8
-#EXTINF:-1 tvg-name="🇦🇪 阿联酋 Al Arabiya العربية" group-title="阿联酋",🇦🇪 阿联酋 Al Arabiya العربية
-https://live.alarabiya.net/alarabiapublish/alarabiya.smil/playlist.m3u8
-#EXTINF:-1 tvg-name="🇰🇷 韩国 TVN 3" group-title="韩国",🇰🇷 韩国 TVN 3
-https://mdstrm.com/live-stream-playlist/5653641561b4eba30a7e4929.m3u8
 #EXTINF:-1 tvg-name="🇰🇷 韩国 Arirang" group-title="韩国",🇰🇷 韩国 Arirang
 http://amdlive.ctnd.com.edgesuite.net/arirang_1ch/smil:arirang_1ch.smil/playlist.m3u8
 #EXTINF:-1 tvg-name="🇰🇷 韩国 Arirang World" group-title="韩国",🇰🇷 韩国 Arirang World
 http://amdlive.ctnd.com.edgesuite.net/arirang_1ch/smil:arirang_1ch.smil/chunklist_b2256000_sleng.m3u8
 #EXTINF:-1 tvg-name="🇲🇾 马来西亚 RTM Manduria" group-title="马来西亚",🇲🇾 马来西亚 RTM Manduria
 https://5f22d76e220e1.streamlock.net/rtm/rtm/playlist.m3u8
-#EXTINF:-1 tvg-name="🇮🇶 伊拉克 Al-Hurra Iraq" group-title="伊拉克",🇮🇶 伊拉克 Al-Hurra Iraq
-https://mbnvvideoingest-i.akamaihd.net/hls/live/1004674/MBNV_ALHURRA_IRAQ/playlist.m3u8
-#EXTINF:-1 tvg-name="🇶🇦 卡塔尔 Al Jazeera" group-title="卡塔尔",🇶🇦 卡塔尔 Al Jazeera
-https://live-hls-apps-aje-fa.getaj.net/AJE/index.m3u8
-#EXTINF:-1 tvg-name="🇯🇵 日本 NHK WORLD JAPAN" group-title="日本",🇯🇵 日本 NHK WORLD JAPAN
-https://master.nhkworld.jp/nhkworld-tv/playlist/live.m3u8
-#EXTINF:-1 tvg-name="🇰🇷 韩国 MBC 4" group-title="韩国",🇰🇷 韩国 MBC 4
-https://mbc4-prod-dub-ak.akamaized.net/out/v1/c08681f81775496ab4afa2bac7ae7638/index.m3u8
-#EXTINF:-1 tvg-name="🇰🇷 韩国 MBC Bollywood" group-title="韩国",🇰🇷 韩国 MBC Bollywood
-https://shls-mbcbollywood-prod-dub.shahid.net/out/v1/a79c9d7ef2a64a54a64d5c4567b3462a/index.m3u8
-#EXTINF:-1 tvg-name="🇰🇷 韩国 MBC Persia" group-title="韩国",🇰🇷 韩国 MBC Persia
-https://shls-mbcpersia-prod-dub.shahid.net/out/v1/bdc7cd0d990e4c54808632a52c396946/index.m3u8
 #EXTINF:-1 tvg-name="🇬🇪 格鲁吉亚 First Channel (1TV)" group-title="格鲁吉亚",🇬🇪 格鲁吉亚 First Channel (1TV)
 https://tv.cdn.xsg.ge/gpb-1tv/index.m3u8
-#EXTINF:-1 tvg-name="🇬🇪 格鲁吉亚 Formula" group-title="格鲁吉亚",🇬🇪 格鲁吉亚 Formula
-https://c4635.cdn.xsg.ge/c4635/TVFormula/index.m3u8
 #EXTINF:-1 tvg-name="🇯🇵 日本 " group-title="日本",🇯🇵 日本 
 https://stream3.shopch.jp/HLS/master.m3u8
 #EXTINF:-1 tvg-name="🇬🇪 格鲁吉亚 Radio Imedi 105.9" group-title="格鲁吉亚",🇬🇪 格鲁吉亚 Radio Imedi 105.9
@@ -67,8 +35,6 @@ https://mgugaklive.nowcdn.co.kr/gugakvideo/gugakvideo.stream/playlist.m3u8
 https://live.knou.ac.kr/knou1/live1/playlist.m3u8
 #EXTINF:-1 tvg-name="🇰🇷 韩国 NHTV" group-title="韩国",🇰🇷 韩国 NHTV
 http://nonghyup.flive.skcdn.com/nonghyup/_definst_/nhlive/playlist.m3u8
-#EXTINF:-1 tvg-name="🇸🇦 沙特阿拉伯 Al Ghad TV" group-title="沙特阿拉伯",🇸🇦 沙特阿拉伯 Al Ghad TV
-https://eazyvwqssi.erbvr.com/alghadtv/alghadtv.m3u8
 #EXTINF:-1 tvg-name="🇸🇦 沙特阿拉伯 Huda TV" group-title="沙特阿拉伯",🇸🇦 沙特阿拉伯 Huda TV
 https://cdn.bestream.io:19360/elfaro1/elfaro1.m3u8
 #EXTINF:-1 tvg-name="🇸🇾 叙利亚 Watan TV" group-title="叙利亚",🇸🇾 叙利亚 Watan TV
@@ -87,21 +53,9 @@ http://1.222.207.80:1935/live/cjbtv/playlist.m3u8
 https://alrayyancdn.vidgyor.com/pub-noalrayy3pwz0l/liveabr/playlist_dvr.m3u8
 #EXTINF:-1 tvg-name="🇶🇦 卡塔尔 Al Rayyan Old TV" group-title="卡塔尔",🇶🇦 卡塔尔 Al Rayyan Old TV
 https://alrayyancdn.vidgyor.com/pub-nooldraybinbdh/liveabr/playlist_dvr.m3u8
-#EXTINF:-1 tvg-name="🇸🇦 沙特阿拉伯 Al Quran Al Kareem TV" group-title="沙特阿拉伯",🇸🇦 沙特阿拉伯 Al Quran Al Kareem TV
-https://al-ekhbaria-prod-dub.shahid.net/out/v1/9885cab0a3ec4008b53bae57a27ca76b/index.m3u8
-#EXTINF:-1 tvg-name="🇸🇦 沙特阿拉伯 Wanasah" group-title="沙特阿拉伯",🇸🇦 沙特阿拉伯 Wanasah
-https://shls-wanasah-prod-dub.shahid.net/out/v1/c84ef3128e564b74a6a796e8b6287de6/index.m3u8
 #EXTINF:-1 tvg-name="🇯🇵 日本 富士电视台 Fuji TV" group-title="日本",🇯🇵 日本 富士电视台 Fuji TV
 https://fujitv4.mov3.co/hls/fujitv.m3u8
-#EXTINF:-1 tvg-name="🇯🇵 日本 テレビ朝日" group-title="日本",🇯🇵 日本 テレビ朝日
-http://tvasahi.mov3.co/hls/tvasahi.m3u8
 #EXTINF:-1 tvg-name="🇯🇵 日本 东京电视台 TV Tokyo" group-title="日本",🇯🇵 日本 东京电视台 TV Tokyo
 https://tvtokyo.mov3.co/hls/tvtokyo.m3u8
-#EXTINF:-1 tvg-name="🇹🇷 土耳其 RadioItaliaTV" group-title="土耳其",🇹🇷 土耳其 RadioItaliaTV
-https://radioitaliatv.akamaized.net/hls/live/2093117/RadioitaliaTV/master.m3u8
 #EXTINF:-1 tvg-name="🇯🇴 约旦 Radio Jordan 96.3" group-title="约旦",🇯🇴 约旦 Radio Jordan 96.3
 https://jrtv-live.ercdn.net/jrradio/englishradiovideo.m3u8
-#EXTINF:-1 tvg-name="🇰🇷 韩国 韩国电影1" group-title="韩国",🇰🇷 韩国 韩国电影1
-https://stream.ads.ottera.tv/playlist.m3u8?network_id=595
-#EXTINF:-1 tvg-name="🇰🇷 韩国 韩国电影2" group-title="韩国",🇰🇷 韩国 韩国电影2
-https://stream.ads.ottera.tv/playlist.m3u8?network_id=743

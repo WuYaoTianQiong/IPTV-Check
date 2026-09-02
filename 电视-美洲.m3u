@@ -3,43 +3,21 @@
 https://amdici.akamaized.net/hls/live/873426/ICI-Live-Stream/master.m3u8
 #EXTINF:-1 tvg-name="🇨🇦 加拿大 Toronto 360 TV" group-title="加拿大",🇨🇦 加拿大 Toronto 360 TV
 http://cdn3.toronto360.tv:8081/toronto360/hd/playlist.m3u8
-#EXTINF:-1 tvg-name="🇨🇦 加拿大 Global News" group-title="加拿大",🇨🇦 加拿大 Global News
-https://live.corusdigitaldev.com/groupd/live/49a91e7f-1023-430f-8d66-561055f3d0f7/live.isml/.m3u8
 #EXTINF:-1 tvg-name="🇧🇷 巴西 COM Brasil" group-title="巴西",🇧🇷 巴西 COM Brasil
 https://br5093.streamingdevideo.com.br/abc/abc/playlist.m3u8
-#EXTINF:-1 tvg-name="🇧🇷 巴西 Rede Brasil" group-title="巴西",🇧🇷 巴西 Rede Brasil
-https://video09.logicahost.com.br/redebrasiloficial/redebrasiloficial/playlist.m3u8
 #EXTINF:-1 tvg-name="🇺🇸 美国 CNN International" group-title="美国",🇺🇸 美国 CNN International
 https://turnerlive.warnermediacdn.com/hls/live/586495/cnngo/cnn_slate/VIDEO_0_3564000.m3u8
 #EXTINF:-1 tvg-name="🇺🇸 美国 SABC News" group-title="美国",🇺🇸 美国 SABC News
 https://sabconetanw.cdn.mangomolo.com/news/smil:news.stream.smil/chunklist_b250000_t64MjQwcA==.m3u8
-#EXTINF:-1 tvg-name="🇧🇷 巴西 TV Câmara" group-title="巴西",🇧🇷 巴西 TV Câmara
-https://stream3.camara.gov.br/tv1/manifest.m3u8
 #EXTINF:-1 tvg-name="🇧🇷 巴西 TV Cultura" group-title="巴西",🇧🇷 巴西 TV Cultura
 https://player-tvcultura.stream.uol.com.br/live/tvcultura.m3u8
 #EXTINF:-1 tvg-name="🇦🇷 阿根廷 TV Universidad" group-title="阿根廷",🇦🇷 阿根廷 TV Universidad
 https://stratus.stream.cespi.unlp.edu.ar/hls/tvunlp.m3u8
-#EXTINF:-1 tvg-name="🇺🇸 美国 Bloomberg Asia" group-title="美国",🇺🇸 美国 Bloomberg Asia
-https://epg.pw/stream/d2edf469b9079064a283f4b0811cbf6f2597ebbb3d08dcf77036a4b5a791b7cf.m3u8
-#EXTINF:-1 tvg-name="🇺🇸 美国 Newsmax" group-title="美国",🇺🇸 美国 Newsmax
-http://nmxlive.akamaized.net/hls/live/529965/Live_1/index.m3u8
-#EXTINF:-1 tvg-name="🇨🇦 加拿大 ICI RDI" group-title="加拿大",🇨🇦 加拿大 ICI RDI
-https://rcavlive.akamaized.net/hls/live/704025/xcanrdi/master.m3u8
-#EXTINF:-1 tvg-name="🇨🇦 加拿大 ICI Télé HD Ⓖ" group-title="加拿大",🇨🇦 加拿大 ICI Télé HD Ⓖ
-https://rcavlive.akamaized.net/hls/live/696615/xcancbft/master.m3u8
 #EXTINF:-1 tvg-name="🇨🇦 加拿大 Savoir Média" group-title="加拿大",🇨🇦 加拿大 Savoir Média
 https://hls.savoir.media/live/stream.m3u8
-#EXTINF:-1 tvg-name="🇨🇱 智利 UCV Televisión" group-title="智利",🇨🇱 智利 UCV Televisión
-https://unlimited1-cl-isp.dps.live/ucvtv2/ucvtv2.smil/playlist.m3u8
-#EXTINF:-1 tvg-name="🇨🇱 智利 T13 en vivo" group-title="智利",🇨🇱 智利 T13 en vivo
-https://redirector.rudo.video/hls-video/10b92cafdf3646cbc1e727f3dc76863621a327fd/t13/t13.smil/playlist.m3u8
 #EXTINF:-1 tvg-name="🇺🇸 美国 TBN Baltia" group-title="美国",🇺🇸 美国 TBN Baltia
 http://dc.tbnbaltia.eu:8088/dvr/rewind-21600.m3u8
-#EXTINF:-1 tvg-name="🇺🇸 美国 Al-Hurra" group-title="美国",🇺🇸 美国 Al-Hurra
-https://mbnvvideoingest-i.akamaihd.net/hls/live/1004673/MBNV_ALHURRA_MAIN/playlist.m3u8
 #EXTINF:-1 tvg-name="🇵🇪 秘鲁 Negocios" group-title="秘鲁",🇵🇪 秘鲁 Negocios
 https://streaming013.gestec-video.com/hls/negociostv.m3u8
 #EXTINF:-1 tvg-name="🇵🇪 秘鲁 Latina TV" group-title="秘鲁",🇵🇪 秘鲁 Latina TV
 https://streamtv.latinamedios.com:3413/live/latinatvlive.m3u8
-#EXTINF:-1 tvg-name="🇺🇸 美国 AccuWeather NOW" group-title="美国",🇺🇸 美国 AccuWeather NOW
-https://cdn-ue1-prod.tsv2.amagi.tv/linear/amg00684-accuweather-accuweather-plex/playlist.m3u8
